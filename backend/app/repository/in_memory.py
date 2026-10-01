@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.models.attempt import Attempt
+from app.models.attempt import Attempt, AttemptStatus
 from app.models.exam import Exam
 
 
@@ -50,6 +50,24 @@ class InMemoryAttemptRepository:
             ),
             None,
         )
+
+    def start_or_resume(self, attempt: Attempt) -> Attempt:
+        """In-memory equivalent of the atomic PostgreSQL start operation."""
+        existing = self.get_by_exam_and_student(
+            attempt.exam_id,
+            attempt.student_id,
+        )
+        if existing is not None:
+            if existing.status == AttemptStatus.IN_PROGRESS and not existing.is_expired():
+                return existing
+            if existing.status == AttemptStatus.SUBMITTED:
+                return existing
+            if existing.status == AttemptStatus.IN_PROGRESS:
+                existing.status = AttemptStatus.EXPIRED
+                self.save(existing)
+
+        self.save(attempt)
+        return attempt
 
     def list_by_student(self, student_id: str) -> list[Attempt]:
         return [

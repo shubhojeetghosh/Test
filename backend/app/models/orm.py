@@ -18,6 +18,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Index,
     Numeric,
     String,
     Text,
@@ -188,6 +189,12 @@ class QuestionModel(Base):
     __tablename__ = "questions"
 
     __table_args__ = (
+        Index(
+            "ix_questions_set_status_number",
+            "set_id",
+            "status",
+            "question_number",
+        ),
         UniqueConstraint(
             "exam_id",
             "question_number",
@@ -359,6 +366,12 @@ class ExamSessionModel(Base):
     __tablename__ = "exam_sessions"
 
     __table_args__ = (
+        Index(
+            "ix_exam_sessions_user_exam_id",
+            "user_id",
+            "exam_id",
+            "id",
+        ),
         CheckConstraint(
             "status IN ('IN_PROGRESS','SUBMITTED','AUTO_SUBMITTED')",
             name="valid_attempt_status"
@@ -506,6 +519,11 @@ class AudioPlayLogModel(Base):
     __tablename__ = "audio_play_logs"
 
     __table_args__ = (
+        Index(
+            "ix_audio_play_logs_attempt_question",
+            "attempt_id",
+            "question_id",
+        ),
         CheckConstraint(
             "play_count >= 0 AND play_count <= 2",
             name="valid_play_count"

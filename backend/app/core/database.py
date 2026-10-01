@@ -15,15 +15,16 @@ def _pool_setting(name: str, default: int, minimum: int = 0) -> int:
         return default
 
 
-# One modest pool per worker keeps horizontally scaled deployments within
-# typical PostgreSQL connection budgets. Override with environment variables.
+# Serverless functions can create many instances. Keep each instance's local
+# pool deliberately small; raise these only after checking the database's
+# pooled connection limit and expected number of warm instances.
 engine = create_engine(
     settings.DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
     pool_recycle=_pool_setting("DB_POOL_RECYCLE", 300, 1),
-    pool_size=_pool_setting("DB_POOL_SIZE", 3, 1),
-    max_overflow=_pool_setting("DB_MAX_OVERFLOW", 2),
+    pool_size=_pool_setting("DB_POOL_SIZE", 1, 1),
+    max_overflow=_pool_setting("DB_MAX_OVERFLOW", 0),
     pool_timeout=_pool_setting("DB_POOL_TIMEOUT", 10, 1),
     connect_args={"connect_timeout": 10},
 )

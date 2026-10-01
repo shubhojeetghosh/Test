@@ -1,10 +1,17 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
+from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.routes.auth import get_current_user_id
-from app.models.attempt import AttemptStatus
-from app.models.orm import ExamModel, ExamSetModel
+from app.models.orm import (
+    ExamModel,
+    ExamSessionModel,
+    ExamSetModel,
+    OptionModel,
+    QuestionModel,
+    StudentAnswerModel,
+)
 
 
 router = APIRouter(
@@ -15,15 +22,12 @@ router = APIRouter(
 
 @router.get("/dashboard")
 def get_student_dashboard(
-    request: Request,
     db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
     """
     Return dashboard statistics for the logged-in student.
     """
-
-    attempt_repo = request.app.state.attempt_repo
 
     # =========================================================
     # AVAILABLE TESTS
@@ -32,158 +36,88 @@ def get_student_dashboard(
     tests_available = db.query(ExamSetModel).count()
 
     # =========================================================
-    # GET STUDENT ATTEMPTS
+    # Get the most recent submitted attempt per exam in SQL. This avoids
+    # loading every attempt and answer into Python, then issuing one query per
+    # exam as student histories grow.
     # =========================================================
 
-    attempts = attempt_repo.list_by_student(
-        str(current_user_id)
+    latest_attempts = (
+        db.query(
+            ExamSessionModel.exam_id.label("exam_id"),
+            func.max(ExamSessionModel.id).label("attempt_id"),
+        )
+        .filter(
+            ExamSessionModel.user_id == current_user_id,
+            ExamSessionModel.status.in_(("SUBMITTED", "AUTO_SUBMITTED")),
+        )
+        .group_by(ExamSessionModel.exam_id)
+        .subquery()
     )
 
-    completed_attempts = [
-        attempt
-        for attempt in attempts
-        if attempt.status == AttemptStatus.SUBMITTED
-    ]
-
-    # =========================================================
-    # KEEP ONLY THE LATEST COMPLETED ATTEMPT FOR EACH EXAM
-    # =========================================================
-
-    latest_attempt_by_exam = {}
-
-    for attempt in completed_attempts:
-        exam_key = str(attempt.exam_id)
-
-        existing = latest_attempt_by_exam.get(exam_key)
-
-        if existing is None:
-            latest_attempt_by_exam[exam_key] = attempt
-            continue
-
-        existing_date = existing.started_at
-        current_date = attempt.started_at
-
-        if current_date and (
-            existing_date is None
-            or current_date > existing_date
-        ):
-            latest_attempt_by_exam[exam_key] = attempt
-
-    # =========================================================
-    # CALCULATE RESULTS
-    # =========================================================
+    result_rows = (
+        db.query(
+            ExamModel.title.label("test_name"),
+            ExamSessionModel.started_at.label("started_at"),
+            ExamModel.total_marks.label("total_marks"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (OptionModel.is_correct.is_(True), QuestionModel.marks),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("score"),
+            func.coalesce(
+                func.sum(case((OptionModel.is_correct.is_(True), 1), else_=0)),
+                0,
+            ).label("correct_answers"),
+        )
+        .join(latest_attempts, latest_attempts.c.exam_id == ExamModel.id)
+        .join(ExamSessionModel, ExamSessionModel.id == latest_attempts.c.attempt_id)
+        .outerjoin(
+            StudentAnswerModel,
+            StudentAnswerModel.attempt_id == ExamSessionModel.id,
+        )
+        .outerjoin(
+            QuestionModel,
+            and_(
+                QuestionModel.id == StudentAnswerModel.question_id,
+                QuestionModel.exam_id == ExamModel.id,
+            ),
+        )
+        .outerjoin(
+            OptionModel,
+            and_(
+                OptionModel.id == StudentAnswerModel.selected_option_id,
+                OptionModel.question_id == StudentAnswerModel.question_id,
+            ),
+        )
+        .group_by(ExamModel.id, ExamSessionModel.id)
+        .all()
+    )
 
     percentages = []
     recent_results = []
-
-    for attempt in latest_attempt_by_exam.values():
-
-        try:
-            exam_id = int(attempt.exam_id)
-        except (ValueError, TypeError):
-            continue
-
-        exam = (
-            db.query(ExamModel)
-            .filter(ExamModel.id == exam_id)
-            .first()
-        )
-
-        if exam is None:
-            continue
-
-        questions = list(exam.questions)
-
-        total_marks = 0.0
-        score = 0.0
-        correct_answers = 0
-
-        # -----------------------------------------------------
-        # Map question ID -> selected option ID
-        # -----------------------------------------------------
-
-        answer_map = {
-            str(answer.question_id): answer.selected_option_id
-            for answer in attempt.answers.values()
-        }
-
-        # -----------------------------------------------------
-        # Calculate score from actual questions/options
-        # -----------------------------------------------------
-
-        for question in questions:
-
-            marks = float(question.marks or 0)
-
-            total_marks += marks
-
-            selected_option_id = answer_map.get(
-                str(question.id)
-            )
-
-            if selected_option_id is None:
-                continue
-
-            correct_option = next(
-                (
-                    option
-                    for option in question.options
-                    if option.is_correct
-                ),
-                None,
-            )
-
-            if (
-                correct_option is not None
-                and int(selected_option_id)
-                == int(correct_option.id)
-            ):
-                correct_answers += 1
-                score += marks
-
-        # -----------------------------------------------------
-        # Calculate percentage
-        # -----------------------------------------------------
-
-        if total_marks > 0:
-            percentage = (
-                score / total_marks
-            ) * 100
-        else:
-            percentage = 0.0
-
-        percentage = round(percentage, 2)
-
+    for row in result_rows:
+        total_marks = float(row.total_marks or 0)
+        score = float(row.score or 0)
+        percentage = round((score / total_marks) * 100, 2) if total_marks > 0 else 0.0
         percentages.append(percentage)
-
-        # -----------------------------------------------------
-        # Store recent result
-        # -----------------------------------------------------
-
-        recent_results.append(
-            {
-                "test_name": exam.title,
-                "date": (
-                    attempt.started_at.isoformat()
-                    if attempt.started_at
-                    else None
-                ),
-                "score": round(score, 2),
-                "percentage": percentage,
-                "correct_answers": correct_answers,
-                "result": "Completed",
-            }
-        )
+        recent_results.append({
+            "test_name": row.test_name,
+            "date": row.started_at.isoformat() if row.started_at else None,
+            "score": round(score, 2),
+            "percentage": percentage,
+            "correct_answers": int(row.correct_answers or 0),
+            "result": "Completed",
+        })
 
     # =========================================================
     # COMPLETED TESTS
     # =========================================================
 
-    completed_exam_ids = set(
-        latest_attempt_by_exam.keys()
-    )
-
-    tests_completed = len(completed_exam_ids)
+    tests_completed = len(result_rows)
 
     # =========================================================
     # AVERAGE / BEST SCORE
@@ -220,10 +154,7 @@ def get_student_dashboard(
     # RECENT RESULTS
     # =========================================================
 
-    recent_results.sort(
-        key=lambda item: item["date"] or "",
-        reverse=True,
-    )
+    recent_results.sort(key=lambda item: item["date"] or "", reverse=True)
 
     # =========================================================
     # RESPONSE

@@ -3395,44 +3395,106 @@ console.log(
 console.log("Token exists:", !!token);
 console.log("=====================================");
 
-const questionsResponse = await fetch(
-    `${apiBase}/api/exam-sets/${encodeURIComponent(setId)}/questions`,
-    {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
+const questionsUrl =
+    `${apiBase}/api/exam-sets/${encodeURIComponent(setId)}/questions`;
+const questionPageSize = 200;
+const questionHeaders = {
+    "Authorization": `Bearer ${token}`
+};
+
+const fetchQuestionPage = async (offset) => {
+    const pageResponse = await fetch(
+        `${questionsUrl}?limit=${questionPageSize}&offset=${offset}`,
+        { method: "GET", headers: questionHeaders }
+    );
+
+    if (!pageResponse.ok) {
+        const errorText = await pageResponse.text();
+        console.error(
+            "Exam questions API error:",
+            pageResponse.status,
+            errorText
+        );
+        throw new Error(
+            `Unable to load exam questions (${pageResponse.status})`
+        );
     }
-);
 
-        if (!questionsResponse.ok) {
+    const totalHeader = pageResponse.headers.get("X-Total-Count");
+    return {
+        questions: await pageResponse.json(),
+        total: totalHeader === null ? NaN : Number(totalHeader)
+    };
+};
 
-            const errorText =
-                await questionsResponse.text();
+const firstQuestionPage = await fetchQuestionPage(0);
+const allQuestions = Array.isArray(firstQuestionPage.questions)
+    ? [...firstQuestionPage.questions]
+    : (firstQuestionPage.questions.questions || []);
+const questionCount = Number.isFinite(firstQuestionPage.total)
+    ? firstQuestionPage.total
+    : NaN;
 
-            console.error(
-                "Attempt questions API error:",
-                questionsResponse.status,
-                errorText
-            );
-
-            throw new Error(
-                `Unable to load exam questions (${questionsResponse.status})`
-            );
+if (Number.isFinite(questionCount)) {
+    // Fetch later pages in small parallel batches to keep large sets quick
+    // without opening an unbounded number of requests at once.
+    for (
+        let offset = questionPageSize;
+        offset < questionCount;
+        offset += questionPageSize * 4
+    ) {
+        const offsets = [];
+        for (let batchOffset = offset;
+            batchOffset < questionCount &&
+            batchOffset < offset + questionPageSize * 4;
+            batchOffset += questionPageSize
+        ) {
+            offsets.push(batchOffset);
         }
 
-        const data =
-            await questionsResponse.json();
+        const pages = await Promise.all(
+            offsets.map((pageOffset) => fetchQuestionPage(pageOffset))
+        );
+        pages.forEach((page) => {
+            if (Array.isArray(page.questions)) {
+                allQuestions.push(...page.questions);
+            } else if (Array.isArray(page.questions.questions)) {
+                allQuestions.push(...page.questions.questions);
+            }
+        });
+    }
+} else {
+    // Compatibility fallback for older API deployments that don't expose
+    // the pagination count header yet.
+    const seenQuestionIds = new Set(
+        allQuestions.map((question) => String(question.id))
+    );
+    let offset = allQuestions.length;
+    while (offset > 0) {
+        const page = await fetchQuestionPage(offset);
+        const questions = Array.isArray(page.questions)
+            ? page.questions
+            : (page.questions.questions || []);
+        if (questions.length === 0) break;
+        const newQuestions = questions.filter((question) => {
+            const id = String(question.id);
+            if (seenQuestionIds.has(id)) return false;
+            seenQuestionIds.add(id);
+            return true;
+        });
+        if (newQuestions.length === 0) break;
+        allQuestions.push(...newQuestions);
+        if (questions.length < questionPageSize) break;
+        offset += questions.length;
+    }
+}
 
         console.log(
             "QUESTIONS FROM ATTEMPT API:",
-            data
+            allQuestions
         );
 
-        studentExamQuestions =
-            Array.isArray(data)
-                ? data
-                : (data.questions || []);
+        studentExamQuestions = allQuestions;
 
         if (
             studentExamQuestions.length === 0

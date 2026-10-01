@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -20,6 +20,9 @@ router = APIRouter(
 )
 def get_set_questions(
     set_id: int,
+    response: Response,
+    limit: int = Query(default=200, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -29,22 +32,26 @@ def get_set_questions(
     Correct answers are intentionally not included.
     """
 
-    # Get all published questions in ONE query
-    questions = (
-        db.query(QuestionModel)
-        .filter(
-            QuestionModel.set_id == set_id,
-            QuestionModel.status == "PUBLISHED",
-        )
-        .order_by(QuestionModel.question_number.asc())
-        .all()
+    base_query = db.query(QuestionModel).filter(
+        QuestionModel.set_id == set_id,
+        QuestionModel.status == "PUBLISHED",
     )
+    total_count = base_query.count()
+    response.headers["X-Total-Count"] = str(total_count)
 
-    if not questions:
+    if total_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No published questions found for this exam set.",
         )
+
+    questions = (
+        base_query
+        .order_by(QuestionModel.question_number.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
     # Get all options for all questions in ONE query
     question_ids = [question.id for question in questions]

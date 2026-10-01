@@ -63,61 +63,6 @@ def start_attempt(
             detail="Exam not found.",
         )
 
-    # --------------------------------------------------------
-    # CHECK FOR EXISTING ATTEMPT
-    # --------------------------------------------------------
-
-    existing_attempt = attempt_repo.get_by_exam_and_student(
-        exam_id=exam_id,
-        student_id=str(current_user_id),
-    )
-
-    if existing_attempt is not None:
-
-        # ----------------------------------------------------
-        # EXISTING ACTIVE ATTEMPT
-        # ----------------------------------------------------
-
-        if existing_attempt.status == AttemptStatus.IN_PROGRESS:
-
-            if not existing_attempt.is_expired():
-
-                return StartAttemptResponse(
-                    attempt_id=existing_attempt.id,
-                    exam_id=existing_attempt.exam_id,
-                    started_at=existing_attempt.started_at,
-                    expires_at=existing_attempt.expires_at,
-                    status=existing_attempt.status.value,
-                    duration_minutes=exam.duration_minutes,
-                )
-
-            # Existing attempt expired
-            existing_attempt.status = AttemptStatus.EXPIRED
-            attempt_repo.save(existing_attempt)
-
-        # ----------------------------------------------------
-        # EXISTING SUBMITTED ATTEMPT
-        # ----------------------------------------------------
-
-        elif existing_attempt.status == AttemptStatus.SUBMITTED:
-
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already attempted this exam.",
-            )
-
-        # ----------------------------------------------------
-        # EXISTING EXPIRED ATTEMPT
-        # ----------------------------------------------------
-
-        elif existing_attempt.status == AttemptStatus.EXPIRED:
-
-            pass
-
-    # --------------------------------------------------------
-    # CREATE NEW ATTEMPT
-    # --------------------------------------------------------
-
     attempt_id = f"attempt_{uuid.uuid4().hex[:8]}"
 
     attempt = Attempt(
@@ -137,7 +82,15 @@ def start_attempt(
             detail=str(exc),
         )
 
-    attempt_repo.save(attempt)
+    # The production repository serializes simultaneous starts in PostgreSQL
+    # and returns a database-backed ID that works on any Vercel instance.
+    attempt = attempt_repo.start_or_resume(attempt)
+
+    if attempt.status == AttemptStatus.SUBMITTED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already attempted this exam.",
+        )
 
     return StartAttemptResponse(
         attempt_id=attempt.id,
@@ -301,7 +254,13 @@ def submit_answer(
     # SAVE ATTEMPT
     # --------------------------------------------------------
 
-    attempt_repo.save(attempt)
+    try:
+        attempt_repo.save(attempt)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
     # --------------------------------------------------------
     # GET THE SAVED ANSWER
@@ -377,9 +336,10 @@ def get_attempt_status(
     # CHECK EXPIRATION
     # --------------------------------------------------------
 
+    was_in_progress = attempt.status == AttemptStatus.IN_PROGRESS
     QuizTimer.is_expired(attempt)
-
-    attempt_repo.save(attempt)
+    if was_in_progress and attempt.status == AttemptStatus.EXPIRED:
+        attempt_repo.save(attempt)
 
     # --------------------------------------------------------
     # CALCULATE REMAINING TIME
@@ -801,15 +761,26 @@ def log_audio_play(
     # RECORD AUDIO PLAY
     # --------------------------------------------------------
 
-    audio_tracker.log_play(
-        attempt_id=attempt_id,
-        question_id=audio_data.question_id,
-        audio_url=audio_data.audio_url,
-    )
+    if attempt.status != AttemptStatus.IN_PROGRESS or attempt.is_expired():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Audio can only be played during an active attempt.",
+        )
+
+    try:
+        plays_used = audio_tracker.record_play(
+            attempt_id=attempt_id,
+            question_id=audio_data.question_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
     return AudioPlayResponse(
-        attempt_id=attempt_id,
         question_id=audio_data.question_id,
-        audio_url=audio_data.audio_url,
-        played_at=datetime.now(timezone.utc),
+        plays_used=plays_used,
+        plays_remaining=max(0, audio_tracker.MAX_PLAYS - plays_used),
+        allowed=True,
     )
