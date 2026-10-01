@@ -1,0 +1,116 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head><script src="../api-config.js"></script> <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>EPS TOPIK TEST EXAM</title>
+  <link rel="stylesheet" href="styles.css"> 
+</head> 
+<body> 
+  <header class="topbar"> 
+    <div class="brand-row"> 
+      <div class="logo">EPS TOPIK TEST EXAM</div> 
+    </div> <div class="stats"> 
+      <div>Set No. <b id="setNumber">--</b></div>
+      <div>Solved: <b id="solved">0</b></div> 
+      <div>Unsolved: <b id="unsolved">--</b></div> 
+      <div>Total Questions: <b id="totalQuestions">--</b></div> 
+    </div> 
+  </header> 
+  <div class="section-bar" id="sectionBar">
+  <span id="sectionName">읽기</span>
+  <span id="sectionTotal">Total Questions: --</span>
+</div>
+  <main class="exam"> 
+  <section class="question-area"> 
+
+    <div class="question-head"> 
+      <div>
+        <small id="group"></small> 
+        <h1 id="qTitle">1.</h1> 
+      </div>
+
+      <div class="timer-box">
+        <span>TIME LEFT</span>
+        <b id="timer">--:--</b>
+      </div>
+    </div>
+
+    <div class="question-panel"> 
+        
+      <div class="prompt" id="prompt"></div> 
+        
+        <div class="content-row"> 
+          
+          <div class="media-panel" id="mediaPanel"> 
+          
+          <!-- Question Text --> 
+           <div id="mediaText" class="media-text hidden"></div> 
+           
+           <!-- Question Image --> 
+            <img id="mediaImage" class="hidden" alt="Question visual" > 
+            
+            <!-- Question Audio --> 
+             <div class="audio-placeholder hidden" id="audioPlaceholder" > 
+              <button id="audioButton">▶</button> 
+              <span>Listen to the question</span> 
+            </div> 
+          
+          </div> 
+          
+          <div class="options" id="options"></div> 
+        
+        </div> 
+      
+      </div> 
+      
+      <div class="controls"> 
+        <button id="prevBtn">&lt;&lt; Previous</button> 
+        <button id="allBtn" type="button"> View All Questions </button> 
+        <button id="nextBtn">Next &gt;&gt;</button> 
+      </div> 
+    
+    </section> 
+  </main> 
+  <div class="overlay hidden" id="submitModal"> 
+    <div class="submit-box"> 
+      <button class="close" data-close="submitModal">×</button> 
+      <div class="warning">!</div> 
+      <h2>Submit your exam?</h2> 
+      <p id="submitText"></p> 
+      <div class="modal-actions"> 
+        <button type="button" id="cancelSubmitBtn"> Cancel </button> 
+        <button class="submit" id="confirmSubmit">Submit Exam</button> 
+      </div> 
+    </div> 
+  </div> 
+  <div class="overlay hidden" id="resultModal"> 
+    <div class="result-box"> <h1>You have successfully submitted your test.</h1> 
+      <div>Total questions: <b id="resultTotal">--</b></div> 
+      <div>Answered: <b id="resultAnswered">0</b></div> 
+      <div>Unanswered: <b id="resultUnanswered">--</b></div> 
+      <div class="note">Correct/Wrong scoring can be connected when the answer key is added.</div> 
+      <button class="submit" id="closeResult">View submitted questions</button> 
+    </div> </div> <div id="allQuestionsModal" class="all-questions-modal hidden"> 
+      <div class="all-questions-box"> <div class="all-questions-header"> 
+        <h2>All Questions</h2> 
+        <button id="closeAllQuestions" type="button" class="close-all-btn" > × </button> 
+      </div> 
+      <p class="all-questions-subtitle"> Select a question to jump directly to it. </p> 
+      <div id="allQuestionsGrid" class="all-questions-grid"></div> 
+      <div class="all-questions-legend"> 
+        <span> 
+          
+          <span class="legend-box current"></span> Current </span> 
+          <span> 
+           
+            <span class="legend-box answered"></span> Answered </span> 
+          <span> 
+            
+            <span class="legend-box unanswered"></span> Unanswered </span> 
+        </div> 
+      </div> 
+    </div> 
+    <script src="script.js"></script> 
+  </body> 
+  
+  </html>

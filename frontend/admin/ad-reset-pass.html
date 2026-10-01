@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EPS TOPIK - Reset Admin Password</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+</head>
+
+
+<body class="admin-login-body">
+
+
+<main class="admin-login-page">
+
+  <section class="admin-login-card">
+
+
+    <!-- ================= LOGO ================= -->
+
+    <a href="../index.html" class="admin-login-logo">
+
+      <div class="admin-logo-mark">
+        K
+      </div>
+
+      <div>
+
+        <h1>
+          EPS TOPIK
+        </h1>
+
+        <span>
+          ADMIN PORTAL
+        </span>
+
+      </div>
+
+    </a>
+
+
+    <!-- ================= HEADING ================= -->
+
+    <div class="admin-login-heading">
+
+      <p class="admin-eyebrow">
+        PASSWORD RESET
+      </p>
+
+      <h2>
+        Create new password
+      </h2>
+
+      <p>
+        Enter a new password for your administrator
+        account.
+      </p>
+
+    </div>
+
+
+    <!-- ================= MESSAGE ================= -->
+
+    <div
+      id="adminResetMessage"
+      class="message-box"
+    ></div>
+
+
+    <!-- ================= FORM ================= -->
+
+    <form id="adminResetPasswordForm">
+
+
+      <!-- NEW PASSWORD -->
+
+      <div class="form-group">
+
+        <label for="adminNewPassword">
+          New Password
+        </label>
+
+
+        <div class="password-box">
+
+          <input
+            type="password"
+            id="adminNewPassword"
+            placeholder="Enter new password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          >
+
+
+          <button
+            type="button"
+            class="show-password"
+            id="showAdminNewPassword"
+          >
+            Show
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- CONFIRM PASSWORD -->
+
+      <div class="form-group">
+
+        <label for="adminConfirmPassword">
+          Confirm New Password
+        </label>
+
+
+        <div class="password-box">
+
+          <input
+            type="password"
+            id="adminConfirmPassword"
+            placeholder="Re-enter new password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          >
+
+
+          <button
+            type="button"
+            class="show-password"
+            id="showAdminConfirmPassword"
+          >
+            Show
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- PASSWORD REQUIREMENT -->
+
+      <div class="admin-password-requirement">
+
+        <span>
+          Password must contain at least 8 characters.
+        </span>
+
+      </div>
+
+
+      <!-- RESET BUTTON -->
+
+      <button
+        type="submit"
+        id="adminResetPasswordButton"
+        class="ad-login-submit"
+      >
+        Reset Password
+      </button>
+
+
+    </form>
+
+
+    <!-- ================= SECURITY NOTE ================= -->
+
+    <div class="admin-security-note">
+
+      <div class="admin-security-icon">
+        🔒
+      </div>
+
+      <div>
+
+        <strong>
+          Keep your account secure
+        </strong>
+
+        <p>
+          Use a strong password that you don't use
+          for other accounts.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================= BACK ================= -->
+
+    <a
+      href="ad-login.html"
+      class="admin-back-home"
+    >
+      ← Back to Admin Login
+    </a>
+
+
+  </section>
+
+</main>
+
+
+
+<script>
+const API_BASE_URL=(location.hostname==="localhost"||location.hostname==="127.0.0.1")?window.API_BASE_URL:window.API_BASE_URL;
+const np=document.getElementById("adminNewPassword"),cp=document.getElementById("adminConfirmPassword"),sn=document.getElementById("showAdminNewPassword"),sc=document.getElementById("showAdminConfirmPassword"),form=document.getElementById("adminResetPasswordForm"),button=document.getElementById("adminResetPasswordButton"),message=document.getElementById("adminResetMessage"),email=sessionStorage.getItem("admin_reset_email"),verified=sessionStorage.getItem("admin_reset_otp_verified");
+function showMessage(t,type="error"){message.textContent=t;message.className="message-box "+type;}
+function toggle(i,b){i.type=i.type==="password"?"text":"password";b.textContent=i.type==="password"?"Show":"Hide";}
+sn.addEventListener("click",()=>toggle(np,sn));sc.addEventListener("click",()=>toggle(cp,sc));
+if(!email||verified!=="true"){showMessage("Please verify the password reset OTP before setting a new password.");button.disabled=true;}
+form.addEventListener("submit",async e=>{e.preventDefault();showMessage("");if(!email||verified!=="true"){showMessage("Password reset verification is required. Please verify the OTP first.");return;}const password=np.value,confirm=cp.value;if(password.length<8){showMessage("Password must contain at least 8 characters.");np.focus();return;}if(password!==confirm){showMessage("Passwords do not match.");cp.focus();return;}button.disabled=true;button.textContent="Resetting...";try{const r=await fetch(`${API_BASE_URL}/auth/admin/reset-password`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});let d={};try{d=await r.json();}catch(_){}if(!r.ok)throw new Error(d.detail||"Unable to reset the password.");sessionStorage.removeItem("admin_reset_email");sessionStorage.removeItem("admin_reset_otp_verified");showMessage(d.message||"Password reset successfully.","success");setTimeout(()=>location.href="ad-login.html",800);}catch(err){console.error(err);showMessage(err.message||"Unable to connect to the backend. Please try again.");}finally{button.disabled=false;button.textContent="Reset Password";}});
+</script>
+
+
+</body>
+
+</html>

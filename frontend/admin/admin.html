@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../api-config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | EPS TOPIK</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+    <div class="admin-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <div class="sidebar-logo">
+                <div class="logo-icon">E</div>
+                <div>
+                    <h2>EPS TOPIK</h2>
+                    <span>Admin Panel</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <p class="nav-title">MAIN</p>
+
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <span class="nav-icon">▦</span>
+                    Dashboard
+                </a>
+
+                <a href="#" class="nav-item" data-section="users">
+                    <span class="nav-icon">♙</span>
+                    Users
+                </a>
+
+                <a href="#" class="nav-item" data-section="quizzes">
+                    <span class="nav-icon">▤</span>
+                    Quizzes
+                </a>
+
+                <a href="#" class="nav-item" data-section="results">
+    <span class="nav-icon">◒</span>
+    Results
+</a>
+
+<a href="#" class="nav-item" data-section="payments">
+    <span class="nav-icon">₹</span>
+    Payments
+</a>
+
+<p class="nav-title">SYSTEM</p>
+
+                <a href="#" class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙</span>
+                    Settings
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+             <div class="admin-mini-profile">
+    <div class="profile-avatar" id="sidebarAdminAvatar"></div>
+
+    <div class="profile-info">
+        <strong id="sidebarAdminName"></strong>
+        <span id="sidebarAdminRole"></span>
+    </div>
+</div>
+                <button class="logout-btn" id="logoutBtn">
+                    <span>↪</span>
+                    Logout
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Topbar -->
+            <header class="topbar">
+
+                <div class="mobile-menu" id="mobileMenu">
+                    ☰
+                </div>
+
+                <div class="page-heading">
+                    <h1 id="pageTitle">Dashboard</h1>
+                    <p id="pageSubtitle">
+                        Overview of your EPS TOPIK platform
+                    </p>
+                </div>
+
+                <div class="topbar-right">
+
+                    <button class="notification-btn" title="Notifications">
+                        ♢
+                        <span class="notification-dot"></span>
+                    </button>
+
+                 <div class="top-profile">
+    <div class="profile-avatar" id="topAdminAvatar"></div>
+
+    <div>
+        <strong id="topAdminName"></strong>
+        <span id="topAdminRole"></span>
+    </div>
+</div>
+
+                </div>
+
+            </header>
+
+
+            <!-- Dashboard Section -->
+            <section class="content-section active" id="dashboard">
+
+                <div class="welcome-card">
+
+                    <div>
+                        <span class="welcome-label">WELCOME BACK</span>
+                        <h2>Good morning, <span id="welcomeAdminName"></span> 👋</h2>
+                        <p>
+                            Here's what's happening on your EPS TOPIK platform today.
+                        </p>
+                    </div>
+
+                    <div class="welcome-decoration">
+                        EPS
+                    </div>
+
+                </div>
+
+
+               <div class="stats-grid">
+
+    <div class="stat-card">
+        <div class="stat-icon users-icon">♙</div>
+
+        <div class="stat-content">
+            <span>Total Users</span>
+            <h3 id="totalUsers">—</h3>
+            <small class="positive">
+                <span id="usersGrowth">—</span>
+                <em>this month</em>
+            </small>
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-icon quiz-icon">▤</div>
+
+        <div class="stat-content">
+            <span>Total Quizzes</span>
+            <h3 id="totalQuizzes">0</h3>
+            <small class="positive">
+                <span id="quizzesGrowth">↑ 0%</span>
+                <em>this month</em>
+            </small>
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-icon question-icon">?</div>
+
+        <div class="stat-content">
+            <span>Total Questions</span>
+            <h3 id="totalQuestions">0</h3>
+            <small class="positive">
+                <span id="questionsGrowth">↑ 0%</span>
+                <em>this month</em>
+            </small>
+        </div>
+    </div>
+
+
+    <div class="stat-card">
+        <div class="stat-icon attempt-icon">◒</div>
+
+        <div class="stat-content">
+            <span>Total Attempts</span>
+            <h3 id="totalAttempts">0</h3>
+            <small class="positive">
+                <span id="attemptsGrowth">↑ 0%</span>
+                <em>this month</em>
+            </small>
+        </div>
+    </div>
+
+</div>
+
+
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+
+                    <!-- Recent Activity -->
+                    <div class="panel recent-panel">
+
+                        <div class="panel-header">
+                            <div>
+                                <h3>Recent Activity</h3>
+                                <p>Latest activity from users</p>
+                            </div>
+
+                            <button class="view-all-btn">
+                                View All
+                            </button>
+                        </div>
+
+                       <div class="activity-list" id="activityList">
+    <!-- Recent activities will be loaded dynamically -->
+</div>
+
+</div> <!-- CLOSE recent-panel -->
+
+<!-- Quick Actions -->
+<div class="panel quick-panel">
+
+                        <div class="panel-header">
+                            <div>
+                                <h3>Quick Actions</h3>
+                                <p>Manage your platform</p>
+                            </div>
+                        </div>
+
+                        <div class="quick-actions">
+
+                         <button
+    class="primary-btn"
+    onclick="window.location.href='admin-create-quiz.html'"
+>
+    + Create Quiz
+</button>
+
+                            <button class="quick-action" data-action="user">
+                                <span class="quick-icon">♙</span>
+                                <div>
+                                    <strong>Manage Users</strong>
+                                    <small>View all users</small>
+                                </div>
+                            </button>
+
+                            <button class="quick-action" data-action="results">
+                                <span class="quick-icon">◒</span>
+                                <div>
+                                    <strong>View Results</strong>
+                                    <small>Check performance</small>
+                                </div>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Users Section -->
+            <section class="content-section" id="users">
+
+                <div class="section-header">
+                    <div>
+                        <h2>User Management</h2>
+                        <p>Manage registered users on the platform.</p>
+                    </div>
+
+                    <button class="primary-btn" id="addUserBtn">
+    + Add User
+</button>
+                </div>
+
+                <div class="panel">
+
+                    <div class="table-toolbar">
+                        <input
+                            type="text"
+                            placeholder="Search users..."
+                            id="userSearch"
+                        >
+                    </div>
+
+                    <div class="table-container">
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+<tbody id="usersTable">
+    <!-- Dynamic users will be inserted here -->
+</tbody>
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Quizzes Section -->
+            <section class="content-section" id="quizzes">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Quiz Management</h2>
+                        <p>Create and manage quizzes.</p>
+                    </div>
+
+                   <button
+    class="primary-btn"
+    onclick="window.location.href='admin-create-quiz.html'"
+>
+    + Create Quiz
+</button>
+                </div>
+
+               <div class="panel">
+
+    <div class="table-container">
+
+        <table>
+            <thead>
+    <tr>
+        <th>Quiz</th>
+        <th>Set No.</th>
+        <th>Questions</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+
+            <tbody id="quizzesTable">
+                <!-- Dynamic quizzes will be inserted here -->
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+            </section>
+
+
+            <!-- Results Section -->
+<section class="content-section" id="results">
+
+    <div class="section-header">
+        <div>
+            <h2>Results</h2>
+            <p>View student performance and quiz results.</p>
+        </div>
+    </div>
+
+
+    <!-- Result Statistics -->
+    <div class="results-cards">
+
+        <div class="panel result-box">
+            <div class="result-box-top">
+                <span>Total Attempts</span>
+                <span class="result-icon">◒</span>
+            </div>
+
+            <strong id="totalResultAttempts">0</strong>
+            <small>All quiz attempts</small>
+        </div>
+
+
+        <div class="panel result-box">
+            <div class="result-box-top">
+                <span>Average Score</span>
+                <span class="result-icon">%</span>
+            </div>
+
+           <strong id="averageScore">—</strong>
+            <small>Across all attempts</small>
+        </div>
+
+
+        <div class="panel result-box">
+            <div class="result-box-top">
+                <span>Pass Rate</span>
+                <span class="result-icon">✓</span>
+            </div>
+
+            <strong id="passRate">—</strong>
+            <small>Students who passed</small>
+        </div>
+
+
+        <div class="panel result-box">
+            <div class="result-box-top">
+                <span>Today's Attempts</span>
+                <span class="result-icon">◷</span>
+            </div>
+
+            <strong id="todayAttempts">—</strong>
+            <small>Attempts today</small>
+        </div>
+
+    </div>
+
+
+    <!-- Results Table -->
+    <div class="panel results-table-panel">
+
+        <div class="panel-header results-panel-header">
+
+            <div>
+                <h3>Quiz Results</h3>
+                <p>Review individual student performance.</p>
+            </div>
+
+        </div>
+
+
+        <!-- Filters -->
+        <div class="results-filters">
+
+            <div class="results-search">
+                <input
+                    type="text"
+                    id="resultSearch"
+                    placeholder="Search student or quiz..."
+                >
+            </div>
+
+
+            <select id="resultQuizFilter">
+                <option value="all">All Quizzes</option>
+            </select>
+
+
+            <select id="resultStatusFilter">
+                <option value="all">All Status</option>
+                <option value="passed">Passed</option>
+                <option value="failed">Failed</option>
+            </select>
+
+        </div>
+
+
+        <!-- Table -->
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>STUDENT</th>
+                        <th>QUIZ</th>
+                        <th>SCORE</th>
+                        <th>PERCENTAGE</th>
+                        <th>STATUS</th>
+                        <th>DATE</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+
+                <tbody id="resultsTableBody">
+                    <!-- Results will be inserted by JavaScript -->
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- Empty State -->
+        <div
+            class="results-empty"
+            id="resultsEmpty"
+            style="display: none;"
+        >
+            <div class="empty-icon">◒</div>
+            <h3>No results found</h3>
+            <p>Try changing your search or filters.</p>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- Payments Section -->
+<section class="content-section" id="payments">
+
+    <div class="section-header">
+        <div>
+            <h2>Payments</h2>
+            <p>Manage and monitor payment activity.</p>
+        </div>
+    </div>
+
+    <div class="panel payments-panel">
+
+        <div class="panel-header">
+            <div>
+                <h3>Payment Transactions</h3>
+                <p>Payment information will appear here.</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>USER</th>
+                        <th>AMOUNT</th>
+                        <th>STATUS</th>
+                        <th>DATE</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+
+                <tbody id="paymentsTableBody">
+                    <!-- Payment data will be loaded from backend -->
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div
+            class="payments-empty"
+            id="paymentsEmpty"
+        >
+            <div class="empty-icon">₹</div>
+            <h3>No payment data available</h3>
+            <p>Payment transactions will appear here when available.</p>
+        </div>
+
+    </div>
+
+</section>
+
+
+  <!-- =========================
+     SETTINGS SECTION
+========================= -->
+
+<section class="content-section" id="settings">
+
+    <div class="section-header">
+        <div>
+            <h2>Settings</h2>
+            <p>Manage administrator and platform settings.</p>
+        </div>
+    </div>
+
+
+    <div class="settings-grid">
+
+        <!-- Administrator Profile -->
+        <div class="settings-card">
+
+            <div class="settings-card-icon">
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <div class="settings-card-content">
+
+                <h3>Administrator Profile</h3>
+
+                <p>
+                    View and manage the administrator's profile
+                    information.
+                </p>
+
+                <a
+                    href="admin-profile.html"
+                    class="settings-action-btn"
+                >
+                    Manage Profile
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- Account Security -->
+        <div class="settings-card">
+
+            <div class="settings-card-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+
+            <div class="settings-card-content">
+
+                <h3>Account Security</h3>
+
+                <p>
+                    Manage password and security settings
+                    for the administrator account.
+                </p>
+
+                <a
+                    href="account-security.html"
+                    class="settings-action-btn"
+                >
+                    Manage Security
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- Admin Access Management -->
+        <div class="settings-card">
+
+            <div class="settings-card-icon">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+
+            <div class="settings-card-content">
+
+                <h3>Admin Access Management</h3>
+
+                <p>
+                    Verify another person's Gmail and grant
+                    administrator access to the platform.
+                </p>
+
+                <a
+                    href="admin-access.html"
+                    class="settings-action-btn"
+                >
+                    Manage Admin Access
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- Quiz Settings -->
+        <div class="settings-card">
+
+            <div class="settings-card-icon">
+                <i class="fa-solid fa-clipboard-question"></i>
+            </div>
+
+            <div class="settings-card-content">
+
+                <h3>Quiz Settings</h3>
+
+                <p>
+                    Manage general quiz configuration and
+                    platform quiz behaviour.
+                </p>
+
+                <a
+                    href="quiz-settings.html"
+                    class="settings-action-btn"
+                >
+                    Manage Quiz Settings
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- Platform Information -->
+        <div class="settings-card">
+
+            <div class="settings-card-icon">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+
+            <div class="settings-card-content">
+
+                <h3>Platform Information</h3>
+
+                <p>
+                    View platform, system and application
+                    information.
+                </p>
+
+                <a
+                    href="platform-info.html"
+                    class="settings-action-btn"
+                >
+                    View Platform Info
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- Terms & Conditions -->
+        <div class="settings-card">
+
+            <div class="settings-card-icon">
+                <i class="fa-solid fa-file-contract"></i>
+            </div>
+
+            <div class="settings-card-content">
+
+                <h3>Terms &amp; Conditions</h3>
+
+                <p>
+                    Review the terms and conditions of the
+                    EPS TOPIK Quiz Platform.
+                </p>
+
+                <button
+                    type="button"
+                    id="viewTermsBtn"
+                    class="settings-action-btn terms-view-btn"
+                >
+                    View Terms &amp; Conditions
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Settings Information -->
+    <div class="settings-notice">
+
+        <div class="settings-notice-icon">
+            <i class="fa-solid fa-circle-info"></i>
+        </div>
+
+        <div>
+
+            <strong>Administrator Settings</strong>
+
+            <p>
+                Administrator profile, security, access,
+                and quiz settings will be connected to the
+                backend as the corresponding features are
+                implemented. Terms &amp; Conditions are
+                currently hardcoded into this admin panel.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+        </main>
+
+    </div>
+  <!-- Terms & Conditions Modal -->
+<div class="modal-overlay" id="termsModal">
+
+    <div class="modal terms-modal">
+
+        <div class="modal-header">
+
+            <div>
+                <h3>Terms & Conditions</h3>
+                <p>EPS TOPIK Quiz Platform</p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeTermsModal"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="terms-content">
+
+            <div class="terms-intro">
+                <strong>Welcome to EPS TOPIK Quiz Platform</strong>
+
+                <p>
+                    These Terms & Conditions explain the rules and
+                    guidelines for using the EPS TOPIK Quiz Platform.
+                    By accessing or using the platform, users agree
+                    to follow these terms.
+                </p>
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>1. Use of the Platform</h4>
+
+                <p>
+                    The platform is designed to help users practice
+                    and improve their EPS TOPIK examination knowledge
+                    through quizzes and learning activities.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>2. User Account</h4>
+
+                <p>
+                    Users are responsible for providing accurate
+                    information when creating an account and for
+                    keeping their account credentials secure.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>3. Quiz Attempts</h4>
+
+                <p>
+                    Quiz results are intended for learning and
+                    practice purposes. Users should complete quizzes
+                    honestly and should not attempt to manipulate,
+                    modify, or interfere with quiz results.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>4. Prohibited Activities</h4>
+
+                <p>
+                    Users must not attempt to gain unauthorized access
+                    to the platform, interfere with its operation,
+                    copy restricted content, or misuse another user's
+                    account.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>5. Content</h4>
+
+                <p>
+                    Quiz questions, explanations, platform content,
+                    graphics, and other materials provided through
+                    the platform should not be reproduced or
+                    distributed without appropriate permission.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>6. Privacy</h4>
+
+                <p>
+                    User information should be handled responsibly
+                    and used only for purposes related to operating
+                    and improving the platform.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>7. Platform Availability</h4>
+
+                <p>
+                    We aim to keep the platform available and
+                    functional, but temporary interruptions may occur
+                    because of maintenance, updates, technical
+                    problems, or other circumstances.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>8. Changes to These Terms</h4>
+
+                <p>
+                    These Terms & Conditions may be updated when
+                    necessary. Users are encouraged to review the
+                    latest version of the terms when using the
+                    platform.
+                </p>
+
+            </div>
+
+
+            <div class="terms-section">
+
+                <h4>9. Acceptance of Terms</h4>
+
+                <p>
+                    By using the EPS TOPIK Quiz Platform, users
+                    acknowledge that they have read and agreed to
+                    these Terms & Conditions.
+                </p>
+
+            </div>
+
+
+            <div class="terms-footer">
+
+                <strong>Last Updated: September 2026</strong>
+
+                <span>
+                    EPS TOPIK Quiz Platform
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="modal-actions">
+
+            <button
+                type="button"
+                class="primary-btn"
+                id="closeTermsBtn"
+            >
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>  
+
+    <!-- View Result Modal -->
+<div class="modal-overlay" id="viewResultModal">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <div>
+                <h3>Result Details</h3>
+                <p>View student quiz performance</p>
+            </div>
+
+            <button
+                class="modal-close"
+                id="closeViewResultModal"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="result-details">
+
+            <div class="result-detail-row">
+                <span>Student</span>
+                <strong id="resultStudent">-</strong>
+            </div>
+
+            <div class="result-detail-row">
+                <span>Quiz</span>
+                <strong id="resultQuiz">-</strong>
+            </div>
+
+            <div class="result-detail-row">
+                <span>Score</span>
+                <strong id="resultScore">-</strong>
+            </div>
+
+            <div class="result-detail-row">
+                <span>Percentage</span>
+                <strong id="resultPercentage">-</strong>
+            </div>
+
+            <div class="result-detail-row">
+                <span>Status</span>
+                <strong id="resultStatus">-</strong>
+            </div>
+
+            <div class="result-detail-row">
+                <span>Submitted</span>
+                <strong id="resultDate">-</strong>
+            </div>
+
+        </div>
+
+
+        <div class="modal-actions">
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="closeViewResult"
+            >
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+    <!-- Add User Modal -->
+<div class="modal-overlay" id="addUserModal">
+    <div class="modal">
+
+        <div class="modal-header">
+            <div>
+                <h3>Add New User</h3>
+                <p>Create a new user account</p>
+            </div>
+
+            <button class="modal-close" id="closeAddUserModal">
+                &times;
+            </button>
+        </div>>
+
+        <form id="addUserForm">
+
+            <div class="form-group">
+                <label for="newUserName">Full Name</label>
+                <input
+                    type="text"
+                    id="newUserName"
+                    placeholder="Enter full name"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="newUserEmail">Email</label>
+                <input
+                    type="email"
+                    id="newUserEmail"
+                    placeholder="Enter email address"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="newUserStatus">Status</label>
+
+                <select id="newUserStatus">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelAddUser"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    Add User
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-overlay" id="editUserModal">
+    <div class="modal">
+
+        <div class="modal-header">
+            <div>
+                <h3>Edit User</h3>
+                <p>Update user information</p>
+            </div>
+
+            <button
+                class="modal-close"
+                id="closeEditUserModal"
+                type="button"
+            >
+                &times;
+            </button>
+        </div>
+
+        <form id="editUserForm">
+
+            <!-- Hidden user ID -->
+            <input type="hidden" id="editUserId">
+
+            <div class="form-group">
+                <label for="editUserName">Full Name</label>
+
+                <input
+                    type="text"
+                    id="editUserName"
+                    placeholder="Enter full name"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="editUserEmail">Email</label>
+
+                <input
+                    type="email"
+                    id="editUserEmail"
+                    placeholder="Enter email address"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="editUserStatus">Status</label>
+
+                <select id="editUserStatus">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelEditUser"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    Save Changes
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+    <script src="admin.js"></script>
+
+</body>
+</html>

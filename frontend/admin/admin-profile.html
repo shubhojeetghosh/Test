@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>EPS TOPIK - Administrator Profile</title>
+
+    <link
+        rel="stylesheet"
+        href="admin.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="admin-layout">
+
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+
+            <div class="logo-icon">
+                E
+            </div>
+
+            <div>
+
+                <h2>EPS TOPIK</h2>
+
+                <span>
+                    Admin Panel
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <p class="nav-title">
+                MAIN
+            </p>
+
+
+            <a
+                href="admin.html"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▦
+                </span>
+
+                Dashboard
+
+            </a>
+
+
+            <a
+                href="admin.html#users"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ♙
+                </span>
+
+                Users
+
+            </a>
+
+
+            <a
+                href="admin.html#quizzes"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▤
+                </span>
+
+                Quizzes
+
+            </a>
+
+
+            <a
+                href="admin.html#results"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ◒
+                </span>
+
+                Results
+
+            </a>
+
+
+            <a
+                href="admin.html#payments"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ₹
+                </span>
+
+                Payments
+
+            </a>
+
+
+            <p class="nav-title">
+                SYSTEM
+            </p>
+
+
+            <a
+                href="admin.html#settings"
+                class="nav-item active"
+            >
+
+                <span class="nav-icon">
+                    ⚙
+                </span>
+
+                Settings
+
+            </a>
+
+        </nav>
+
+
+        <!-- SIDEBAR PROFILE -->
+
+        <div class="sidebar-bottom">
+
+            <div class="admin-mini-profile">
+
+                <div
+                    class="profile-avatar"
+                    id="sidebarAdminAvatar"
+                >
+                    A
+                </div>
+
+
+                <div class="profile-info">
+
+                    <strong id="sidebarAdminName">
+                        Administrator
+                    </strong>
+
+                    <span id="sidebarAdminRole">
+                        Admin
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="logout-btn"
+                onclick="window.location.href='admin-login.html'"
+            >
+
+                ↪ Logout
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+
+            <div class="page-heading">
+
+                <h1>
+                    Administrator Profile
+                </h1>
+
+                <p>
+                    Manage administrator profile information
+                </p>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+
+                <!-- Notifications -->
+
+                <button
+                    type="button"
+                    class="notification-btn"
+                    title="Notifications"
+                >
+
+                    ♢
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+
+                <!-- Admin Profile -->
+
+                <div class="top-profile">
+
+                    <div
+                        class="profile-avatar"
+                        id="topAdminAvatar"
+                    >
+                        A
+                    </div>
+
+
+                    <div>
+
+                        <strong id="topAdminName">
+                            Administrator
+                        </strong>
+
+                        <span id="topAdminRole">
+                            Admin
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =====================================================
+             PROFILE SECTION
+             ===================================================== -->
+
+        <section class="content-section active">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <h2>
+                        Administrator Profile
+                    </h2>
+
+                    <p>
+                        View and manage your administrator account
+                        information.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- BACK TO SETTINGS -->
+
+            <a
+                href="admin.html#settings"
+                class="settings-back-btn"
+            >
+
+                ← Back to Settings
+
+            </a>
+
+
+
+            <!-- PROFILE CARD -->
+
+            <div class="settings-card">
+
+
+                <div class="settings-card-header">
+
+
+                    <div class="settings-card-icon profile-settings-icon">
+                        👤
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            Profile Information
+                        </h3>
+
+                        <p>
+                            Administrator account details
+                        </p>
+
+                    </div>
+
+                               </div>
+
+
+                <!-- =====================================================
+                     PROFILE PICTURE
+                     ===================================================== -->
+
+                <div class="profile-picture-section">
+
+                    <div class="profile-picture-preview-wrapper">
+
+                        <div
+                            class="profile-picture-preview"
+                            id="profilePicturePreview"
+                        >
+                            A
+                        </div>
+
+                    </div>
+
+
+                    <div class="profile-picture-content">
+
+                        <h4>
+                            Profile Picture
+                        </h4>
+
+                        <p>
+                            Upload a profile picture that will appear
+                            in the admin dashboard.
+                        </p>
+
+
+                        <div class="profile-picture-actions">
+
+                            <label
+                                for="profilePictureInput"
+                                class="secondary-btn profile-upload-btn"
+                            >
+                                Change Profile Picture
+                            </label>
+
+                            <button
+                                type="button"
+                                class="secondary-btn profile-remove-btn"
+                                id="removeProfilePicture"
+                            >
+                                Remove
+                            </button>
+
+                        </div>
+
+
+                        <input
+                            type="file"
+                            id="profilePictureInput"
+                            accept="image/png,image/jpeg,image/webp"
+                            hidden
+                        >
+
+
+                        <small class="profile-picture-help">
+                            JPG, PNG or WebP. Maximum size: 2 MB.
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+
+                <form
+                    id="adminProfileForm"
+                    class="settings-form"
+                >
+
+                    <!-- NAME -->
+
+                    <div class="settings-field">
+
+                        <label for="adminProfileName">
+                            Administrator Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="adminProfileName"
+                            name="name"
+                            placeholder="Administrator name"
+                            autocomplete="name"
+                        >
+
+                    </div>
+
+
+
+                    <!-- EMAIL -->
+
+                    <div class="settings-field">
+
+                        <label for="adminProfileEmail">
+                            Email Address
+                        </label>
+
+                        <input
+                            type="email"
+                            id="adminProfileEmail"
+                            name="email"
+                            placeholder="Administrator email"
+                            autocomplete="email"
+                            readonly
+                        >
+
+                    </div>
+
+
+
+                    <!-- ROLE -->
+
+                    <div class="settings-field">
+
+                        <label for="adminProfileRole">
+                            Account Role
+                        </label>
+
+                        <input
+                            type="text"
+                            id="adminProfileRole"
+                            name="role"
+                            value="Admin"
+                            readonly
+                        >
+
+                    </div>
+
+
+
+                    <!-- ACTIONS -->
+
+                    <div class="profile-form-actions">
+
+                        <button
+                            type="submit"
+                            class="primary-btn"
+                            id="saveAdminProfile"
+                        >
+                            Save Changes
+                        </button>
+
+
+                        <a
+                            href="admin.html#settings"
+                            class="secondary-btn"
+                        >
+                            Cancel
+                        </a>
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+
+
+            <!-- INFORMATION NOTICE -->
+
+            <div class="settings-notice">
+
+
+                <div class="settings-notice-icon">
+                    i
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        Administrator Information
+                    </strong>
+
+                    <p>
+                        Administrator profile information will be
+                        loaded from the authenticated backend account
+                        once backend integration is connected.
+                        No administrator credentials are stored
+                        locally in this page.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+</div>
+
+
+
+<script src="admin.js"></script>
+
+</body>
+
+</html>

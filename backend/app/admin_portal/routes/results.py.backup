@@ -1,0 +1,142 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.database.database import get_db
+from app.admin_portal.models.exam_attempt import ExamSession
+from app.admin_portal.models.result import Result
+from app.admin_portal.models.user import User
+from app.admin_portal.models.exam import Exam
+
+
+router = APIRouter(
+    prefix="/admin",
+    tags=["Admin Results"],
+)
+
+
+# =========================
+# GET ALL EXAM ATTEMPTS
+# =========================
+
+@router.get("/attempts")
+def get_attempts(
+    db: Session = Depends(get_db),
+):
+    attempts = db.scalars(
+        select(ExamSession)
+        .order_by(ExamSession.id.desc())
+    ).all()
+
+    result = []
+
+    for attempt in attempts:
+        user = db.scalar(
+            select(User).where(User.id == attempt.user_id)
+        )
+
+        exam = db.scalar(
+            select(Exam).where(Exam.id == attempt.exam_id)
+        )
+
+        attempt_result = db.scalar(
+            select(Result).where(
+                Result.attempt_id == attempt.id
+            )
+        )
+
+        result.append(
+            {
+                "attempt_id": attempt.id,
+                "student": {
+                    "id": user.id if user else None,
+                    "name": user.name if user else None,
+                    "email": user.email if user else None,
+                },
+                "exam": {
+                    "id": exam.id if exam else None,
+                    "title": exam.title if exam else None,
+                },
+                "started_at": attempt.started_at,
+                "submitted_at": attempt.submitted_at,
+                "status": attempt.status,
+                "result": (
+                    {
+                        "total_questions": attempt_result.total_questions,
+                        "correct_answers": attempt_result.correct_answers,
+                        "wrong_answers": attempt_result.wrong_answers,
+                        "unanswered": attempt_result.unanswered,
+                        "score": float(attempt_result.score),
+                        "percentage": float(attempt_result.percentage),
+                    }
+                    if attempt_result
+                    else None
+                ),
+            }
+        )
+
+    return result
+
+
+# =========================
+# GET SINGLE ATTEMPT
+# =========================
+
+@router.get("/attempts/{attempt_id}")
+def get_attempt(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+):
+    attempt = db.scalar(
+        select(ExamSession).where(
+            ExamSession.id == attempt_id
+        )
+    )
+
+    if attempt is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam attempt not found",
+        )
+
+    user = db.scalar(
+        select(User).where(User.id == attempt.user_id)
+    )
+
+    exam = db.scalar(
+        select(Exam).where(Exam.id == attempt.exam_id)
+    )
+
+    attempt_result = db.scalar(
+        select(Result).where(
+            Result.attempt_id == attempt.id
+        )
+    )
+
+    return {
+        "attempt_id": attempt.id,
+        "student": {
+            "id": user.id if user else None,
+            "name": user.name if user else None,
+            "email": user.email if user else None,
+        },
+        "exam": {
+            "id": exam.id if exam else None,
+            "title": exam.title if exam else None,
+        },
+        "started_at": attempt.started_at,
+        "submitted_at": attempt.submitted_at,
+        "status": attempt.status,
+        "result": (
+            {
+                "total_questions": attempt_result.total_questions,
+                "correct_answers": attempt_result.correct_answers,
+                "wrong_answers": attempt_result.wrong_answers,
+                "unanswered": attempt_result.unanswered,
+                "score": float(attempt_result.score),
+                "percentage": float(attempt_result.percentage),
+            }
+            if attempt_result
+            else None
+        ),
+    }

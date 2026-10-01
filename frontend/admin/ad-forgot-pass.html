@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EPS TOPIK - Admin Password Recovery</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+</head>
+
+
+<body class="admin-login-body">
+
+
+<main class="admin-login-page">
+
+  <section class="admin-login-card">
+
+
+    <!-- ================= LOGO ================= -->
+
+    <a href="../index.html" class="admin-login-logo">
+
+      <div class="admin-logo-mark">
+        K
+      </div>
+
+      <div>
+
+        <h1>
+          EPS TOPIK
+        </h1>
+
+        <span>
+          ADMIN PORTAL
+        </span>
+
+      </div>
+
+    </a>
+
+
+    <!-- ================= HEADING ================= -->
+
+    <div class="admin-login-heading">
+
+      <p class="admin-eyebrow">
+        PASSWORD RECOVERY
+      </p>
+
+      <h2>
+        Forgot password?
+      </h2>
+
+      <p>
+        Enter your registered administrator email.
+        We will send a 6-digit verification OTP
+        to your email.
+      </p>
+
+    </div>
+
+
+    <!-- ================= MESSAGE ================= -->
+
+    <div
+      id="adminForgotMessage"
+      class="message-box"
+      role="alert"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- ================= FORM ================= -->
+
+    <form id="adminForgotPasswordForm">
+
+
+      <div class="form-group">
+
+        <label for="adminForgotEmail">
+          Admin Email
+        </label>
+
+        <input
+          type="email"
+          id="adminForgotEmail"
+          placeholder="Enter registered admin email"
+          autocomplete="email"
+          required
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="adminSendOtpButton"
+        class="admin-login-submit"
+      >
+        Send OTP
+      </button>
+
+
+    </form>
+
+
+    <!-- ================= INFO ================= -->
+
+    <div class="admin-security-note">
+
+      <div class="admin-security-icon">
+        🔒
+      </div>
+
+      <div>
+
+        <strong>
+          Secure password recovery
+        </strong>
+
+        <p>
+          A verification code will only be sent
+          to a registered administrator account.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================= BACK ================= -->
+
+    <div class="admin-user-login">
+
+      <span>
+        Remember your password?
+      </span>
+
+      <a href="ad-login.html">
+        Sign in
+      </a>
+
+    </div>
+
+
+    <a
+      href="ad-login.html"
+      class="admin-back-home"
+    >
+      ← Back to Admin Login
+    </a>
+
+
+  </section>
+
+</main>
+
+
+<script>
+const API_BASE_URL=(location.hostname==="localhost"||location.hostname==="127.0.0.1")?window.API_BASE_URL:window.API_BASE_URL;
+const form=document.getElementById("adminForgotPasswordForm"),emailInput=document.getElementById("adminForgotEmail"),button=document.getElementById("adminSendOtpButton"),message=document.getElementById("adminForgotMessage");
+function showMessage(t,type="error"){message.textContent=t;message.className="message-box "+type;}
+form.addEventListener("submit",async e=>{e.preventDefault();showMessage("");const email=emailInput.value.trim().toLowerCase();if(!email){showMessage("Please enter your registered admin email.");return;}button.disabled=true;button.textContent="Sending...";try{const r=await fetch(`${API_BASE_URL}/auth/admin/forgot-password`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});let d={};try{d=await r.json();}catch(_){}if(!r.ok)throw new Error(d.detail||"Unable to send the verification OTP.");sessionStorage.setItem("admin_reset_email",email);sessionStorage.removeItem("admin_reset_otp_verified");showMessage(d.message||"A password reset OTP has been sent to your registered email.","success");location.href="ad-verify-otp.html";}catch(err){console.error(err);showMessage(err.message||"Unable to connect to the backend. Please try again.");}finally{button.disabled=false;button.textContent="Send OTP";}});
+</script>
+
+
+</body>
+
+</html>

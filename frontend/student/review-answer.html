@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>EPS TOPIK - Review Answers</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="review-page">
+
+  <!-- ================= NAVBAR ================= -->
+
+  <header class="dashboard-navbar">
+
+    <a href="dashboard.html" class="dashboard-brand">
+
+      <div class="dashboard-logo">K</div>
+
+      <div>
+        <h1>EPS TOPIK</h1>
+        <span>EXAM PLATFORM</span>
+      </div>
+
+    </a>
+
+    <div class="user-menu">
+      <a href="answers.html" class="profile-nav-btn">
+        ← Back to Result
+      </a>
+    </div>
+
+  </header>
+
+
+  <!-- ================= MAIN ================= -->
+
+  <main class="review-container">
+
+    <!-- HEADING -->
+
+    <section class="review-heading">
+
+      <span class="dashboard-eyebrow">
+        ANSWER REVIEW
+      </span>
+
+      <h1>Review your answers</h1>
+
+      <p>
+        Check your submitted answers and compare them
+        with the correct answers.
+      </p>
+
+    </section>
+
+
+    <!-- ================= SUMMARY ================= -->
+
+    <section class="review-summary">
+
+      <div class="review-summary-item">
+        <span>Total Questions</span>
+        <strong id="reviewTotal">—</strong>
+      </div>
+
+      <div class="review-summary-item correct-summary">
+        <span>Correct</span>
+        <strong id="reviewCorrect">—</strong>
+      </div>
+
+      <div class="review-summary-item wrong-summary">
+        <span>Incorrect</span>
+        <strong id="reviewWrong">—</strong>
+      </div>
+
+      <div class="review-summary-item">
+        <span>Unanswered</span>
+        <strong id="reviewUnanswered">—</strong>
+      </div>
+
+    </section>
+
+
+    <!-- ================= FILTERS ================= -->
+
+    <section class="review-toolbar">
+
+      <div>
+
+        <button
+          type="button"
+          class="review-filter active"
+          data-filter="all"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          class="review-filter"
+          data-filter="correct"
+        >
+          Correct
+        </button>
+
+        <button
+          type="button"
+          class="review-filter"
+          data-filter="wrong"
+        >
+          Incorrect
+        </button>
+
+        <button
+          type="button"
+          class="review-filter"
+          data-filter="unanswered"
+        >
+          Unanswered
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= QUESTIONS ================= -->
+
+    <section
+      class="review-question-list"
+      id="reviewQuestionList"
+      aria-live="polite"
+    >
+
+      <p id="reviewLoading">
+        Loading your answers...
+      </p>
+
+    </section>
+
+
+    <!-- ================= BOTTOM ================= -->
+
+    <section class="review-bottom">
+
+      <button
+        type="button"
+        class="review-back-button"
+        id="backToResult"
+      >
+        ← Back to Result
+      </button>
+
+      <button
+        type="button"
+        class="review-dashboard-button"
+        id="goToDashboard"
+      >
+        Go to Dashboard →
+      </button>
+
+    </section>
+
+  </main>
+
+
+  <!-- ================= FOOTER ================= -->
+
+  <footer class="dashboard-footer">
+
+    <p>
+      © 2026 EPS TOPIK Exam Platform
+    </p>
+
+    <div>
+      <a href="#">Help</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+
+  </footer>
+
+
+  <script src="review-config.js"></script>
+<script src="review-api.js"></script>
+<script src="review-answer.js"></script>
+</body>
+
+</html>

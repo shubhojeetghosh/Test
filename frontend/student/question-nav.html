@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../api-config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPS TOPIK - Question Navigator</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* =========================
+   PAGE
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 5% 15%, rgba(37, 99, 235, 0.07) 0 110px, transparent 111px),
+    radial-gradient(circle at 96% 30%, rgba(37, 99, 235, 0.06) 0 130px, transparent 131px),
+    #f5f8ff;
+
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #14213d;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.nav-header {
+  background: #ffffff;
+  color: #14213d;
+  padding: 20px 5% 0;
+  border-bottom: 1px solid #e3e9f3;
+  box-shadow: 0 3px 15px rgba(30, 64, 175, 0.05);
+}
+
+
+/* =========================
+   TOP HEADER
+========================= */
+
+.nav-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  background: transparent;
+  padding: 0;
+
+  border-radius: 0;
+  box-shadow: none;
+
+  color: #14213d;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+
+  border-radius: 14px;
+
+  background: #eaf1ff;
+  color: #2563eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.profile-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #14213d;
+}
+
+.profile-roll {
+  font-size: 13px;
+  font-weight: 500;
+  color: #718096;
+  margin-top: 3px;
+}
+
+
+/* =========================
+   BRAND
+========================= */
+
+.nav-top::after {
+  content: "EPS TOPIK  •  Question Navigator";
+
+  font-size: 18px;
+  font-weight: 700;
+  color: #14213d;
+  letter-spacing: 0.2px;
+}
+
+
+/* =========================
+   STATISTICS
+========================= */
+
+.nav-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+
+  gap: 14px;
+
+  align-items: stretch;
+
+  padding-bottom: 20px;
+}
+
+.nav-stat {
+  background: #f8faff;
+
+  min-height: 55px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #dce5f3;
+  border-radius: 10px;
+
+  font-size: 14px;
+  color: #52627a;
+
+  padding: 12px;
+}
+
+.nav-stat b {
+  color: #14213d;
+  margin-left: 5px;
+}
+
+.nav-stat.spacer {
+  display: none;
+}
+
+.nav-stat.total {
+  background: #eaf1ff;
+
+  border-color: #cdddf7;
+
+  justify-content: center;
+
+  color: #2563eb;
+
+  font-weight: 700;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.nav-main {
+  max-width: 1050px;
+
+  margin: 0 auto;
+
+  padding: 42px 25px 110px;
+
+  min-height: calc(100vh - 180px);
+
+  position: relative;
+}
+
+
+/* =========================
+   SECTION TITLE
+========================= */
+
+.nav-section-title {
+  text-align: left;
+
+  color: #14213d;
+
+  font-size: 21px;
+
+  font-weight: 800;
+
+  margin: 0 0 18px;
+
+  padding-left: 15px;
+
+  border-left: 4px solid #2563eb;
+}
+
+
+/* =========================
+   QUESTION GRID
+========================= */
+
+.nav-grid {
+  display: grid;
+
+  grid-template-columns: repeat(10, 1fr);
+
+  gap: 14px;
+
+  margin-bottom: 42px;
+}
+
+
+/* =========================
+   QUESTION BUTTON
+========================= */
+
+.nav-q {
+  height: 62px;
+
+  background: #ffffff;
+
+  border: 1px solid #d5e0ef;
+
+  border-radius: 12px;
+
+  color: #263854;
+
+  font-size: 18px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 10px rgba(30, 64, 175, 0.04);
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.nav-q:hover {
+  background: #eef4ff;
+
+  border-color: #8fb2ed;
+
+  color: #2563eb;
+
+  transform: translateY(-2px);
+
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.10);
+}
+
+
+/* =========================
+   ANSWERED QUESTION
+========================= */
+
+.nav-q.answered {
+  background: #2563eb;
+
+  color: #ffffff;
+
+  border-color: #2563eb;
+
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.20);
+}
+
+
+/* =========================
+   BOTTOM BUTTONS
+========================= */
+
+.nav-submit {
+  position: fixed;
+
+  right: 3%;
+
+  bottom: 22px;
+
+  background: #2563eb;
+
+  border: none;
+
+  color: #ffffff;
+
+  border-radius: 10px;
+
+  padding: 14px 25px;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: 0 7px 18px rgba(37, 99, 235, 0.22);
+
+  transition: 0.2s ease;
+}
+
+.nav-submit:hover {
+  background: #1d4ed8;
+
+  transform: translateY(-1px);
+}
+
+
+.nav-back {
+  position: fixed;
+
+  left: 3%;
+
+  bottom: 22px;
+
+  background: #ffffff;
+
+  border: 1px solid #d3deee;
+
+  color: #52627a;
+
+  border-radius: 10px;
+
+  padding: 13px 22px;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.nav-back:hover {
+  border-color: #2563eb;
+
+  color: #2563eb;
+
+  background: #f8fbff;
+}
+
+
+/* =========================
+   MOBILE / TABLET
+========================= */
+
+@media(max-width: 900px) {
+
+  .nav-top::after {
+    font-size: 16px;
+  }
+
+  .nav-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .nav-grid {
+    grid-template-columns: repeat(5, 1fr);
+
+    gap: 12px;
+  }
+
+  .nav-q {
+    height: 58px;
+
+    font-size: 17px;
+  }
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width: 600px) {
+
+  .nav-header {
+    padding: 15px 15px 0;
+  }
+
+  .nav-top {
+    padding-bottom: 15px;
+  }
+
+  .nav-top::after {
+    font-size: 14px;
+
+    text-align: right;
+  }
+
+  .profile-avatar {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 12px;
+  }
+
+  .profile-name {
+    font-size: 15px;
+  }
+
+  .profile-roll {
+    font-size: 11px;
+  }
+
+  .nav-stats {
+    grid-template-columns: 1fr 1fr;
+
+    gap: 9px;
+  }
+
+  .nav-stat {
+    min-height: 48px;
+
+    font-size: 12px;
+
+    padding: 8px;
+  }
+
+  .nav-main {
+    padding: 30px 15px 100px;
+  }
+
+  .nav-section-title {
+    font-size: 19px;
+  }
+
+  .nav-grid {
+    grid-template-columns: repeat(5, 1fr);
+
+    gap: 8px;
+
+    margin-bottom: 32px;
+  }
+
+  .nav-q {
+    height: 50px;
+
+    border-radius: 9px;
+
+    font-size: 15px;
+  }
+
+  .nav-submit {
+    right: 12px;
+
+    bottom: 12px;
+
+    padding: 12px 18px;
+
+    font-size: 13px;
+  }
+
+  .nav-back {
+    left: 12px;
+
+    bottom: 12px;
+
+    padding: 11px 15px;
+
+    font-size: 12px;
+  }
+}
+</style>
+
+</head>
+<body>
+<header class="nav-header">
+
+  <div class="nav-top">
+
+  <div class="profile-card">
+ <div class="profile-avatar" id="profileAvatar">
+  --
+</div>
+
+<div class="profile-details">
+  <div class="profile-name" id="profileName">
+    Loading...
+  </div>
+
+  <div class="profile-roll" id="profileRoll">
+    Loading...
+  </div>
+</div>
+</div>
+
+  </div>
+
+
+  <div class="nav-stats">
+
+  <div class="nav-stat">
+    📋 &nbsp; Set No. <b id="setNumber">-</b>
+  </div>
+
+  <div class="nav-stat">
+    Solved: <b id="solvedCount">0</b>
+  </div>
+
+  <div class="nav-stat">
+    Unsolved: <b id="unsolvedCount">0</b>
+  </div>
+
+  <div class="nav-stat total">
+    Total Questions: <b id="totalCount">0</b>
+  </div>
+
+</div>
+
+</header>
+
+
+<main class="nav-main">
+ <h1 class="nav-section-title">
+  읽기&nbsp; (<span id="readingCount">0</span>문항)
+</h1>
+<div class="nav-grid" id="readingGrid"></div>
+
+<h1 class="nav-section-title">
+  듣기&nbsp; (<span id="listeningCount">0</span>문항)
+</h1>
+<div class="nav-grid" id="listeningGrid"></div>
+</main>
+
+<button class="nav-back" id="backBtn" >
+  ← Set Selection
+
+</button>
+
+<button class="nav-submit" id="submitBtn">
+  Submit Answer →
+</button>
+
+<script>
+  async function loadStudentProfile() {
+  try {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    const response = await fetch(window.API_BASE_URL + "/auth/profile", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to load student profile");
+    }
+
+    const student = await response.json();
+
+    const name = student.name || student.full_name || student.username || "Student";
+    const rollNo = student.roll_no || student.roll_number || "";
+
+    document.getElementById("profileName").textContent = name;
+
+    document.getElementById("profileRoll").textContent =
+      rollNo ? `Roll No. ${rollNo}` : "";
+
+    // Generate initials
+    const initials = name
+      .split(" ")
+      .filter(Boolean)
+      .map(word => word[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+
+    document.getElementById("profileAvatar").textContent = initials;
+
+  } catch (error) {
+    console.error("Profile loading error:", error);
+
+    document.getElementById("profileName").textContent = "Student";
+    document.getElementById("profileRoll").textContent = "";
+  }
+}
+
+function makeButton(n) {
+  const b = document.createElement("button");
+
+  b.className = "nav-q";
+  b.textContent = n;
+
+  b.onclick = () => {
+
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const examId =
+      params.get("exam");
+
+    const setId =
+      params.get("set");
+
+    if (!examId || !setId) {
+      console.error(
+        "Missing examId or setId:",
+        {
+          examId,
+          setId
+        }
+      );
+
+      alert(
+        "Exam information is missing. Please go back and select the test again."
+      );
+
+      return;
+    }
+
+    window.location.href =
+      `exam.html?exam=${encodeURIComponent(examId)}` +
+      `&set=${encodeURIComponent(setId)}` +
+      `&q=${encodeURIComponent(n)}`;
+  };
+
+  return b;
+}
+
+async function loadExamQuestions() {
+  const params = new URLSearchParams(window.location.search);
+
+  const examId = params.get("exam");
+  const setId = params.get("set");
+
+  if (!examId || !setId) {
+    console.error("Missing exam or set ID:", { examId, setId });
+    alert("Exam information is missing. Please select the exam again.");
+    return;
+  }
+
+  try {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const response = await fetch(
+    `${window.API_BASE_URL}/api/exam-sets/${encodeURIComponent(setId)}/questions`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to load questions: ${response.status}`);
+  }
+
+    const questions = await response.json();
+
+    console.log("Loaded questions:", questions);
+
+    const readingGrid = document.getElementById("readingGrid");
+    const listeningGrid = document.getElementById("listeningGrid");
+
+    readingGrid.innerHTML = "";
+    listeningGrid.innerHTML = "";
+
+    /*
+     * Get question type.
+     * The backend may use values such as:
+     * "reading" / "listening"
+     */
+    const readingQuestions = questions.filter(
+  q => String(q.question_type || "").toLowerCase() === "reading"
+);
+
+const listeningQuestions = questions.filter(
+  q => {
+    const type = String(q.question_type || "").toLowerCase();
+
+    return type === "image_audio" || type === "audio_option";
+  }
+);
+    /*
+     * If the backend doesn't provide question_type,
+     * fall back to displaying all questions in reading.
+     */
+    const hasQuestionTypes =
+      readingQuestions.length > 0 || listeningQuestions.length > 0;
+
+    const actualReadingQuestions = hasQuestionTypes
+      ? readingQuestions
+      : questions;
+
+    const actualListeningQuestions = hasQuestionTypes
+      ? listeningQuestions
+      : [];
+
+    // Update statistics
+    document.getElementById("totalCount").textContent = questions.length;
+    document.getElementById("solvedCount").textContent = 0;
+    document.getElementById("unsolvedCount").textContent = questions.length;
+
+    document.getElementById("readingCount").textContent =
+      actualReadingQuestions.length;
+
+    document.getElementById("listeningCount").textContent =
+      actualListeningQuestions.length;
+
+    // Generate Reading buttons
+    actualReadingQuestions.forEach((question, index) => {
+      const questionNumber = index + 1;
+
+      const button = makeButton(questionNumber);
+
+      // Keep the real database question ID
+      button.dataset.questionId = question.id;
+
+      readingGrid.appendChild(button);
+    });
+
+    // Generate Listening buttons
+    actualListeningQuestions.forEach((question, index) => {
+      const questionNumber =
+        actualReadingQuestions.length + index + 1;
+
+      const button = makeButton(questionNumber);
+
+      // Keep the real database question ID
+      button.dataset.questionId = question.id;
+
+      listeningGrid.appendChild(button);
+    });
+
+  } catch (error) {
+    console.error("Error loading exam questions:", error);
+
+    document.getElementById("totalCount").textContent = "0";
+    document.getElementById("unsolvedCount").textContent = "0";
+
+    alert("Unable to load questions. Please try again.");
+  }
+}
+
+async function loadSetInfo() {
+  const params = new URLSearchParams(window.location.search);
+
+  const examId = params.get("exam");
+  const setId = params.get("set");
+
+  if (!examId || !setId) return;
+
+  try {
+    const response = await fetch(
+      window.API_BASE_URL + "/api/quizzes/"
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to load quiz information: ${response.status}`);
+    }
+
+    const exams = await response.json();
+
+    const exam = exams.find(
+      e => String(e.id) === String(examId)
+    );
+
+    if (!exam) {
+      throw new Error("Exam not found");
+    }
+
+    const selectedSet = (exam.sets || []).find(
+      s => String(s.id) === String(setId)
+    );
+
+    if (!selectedSet) {
+      throw new Error("Set not found");
+    }
+
+    document.getElementById("setNumber").textContent =
+      String(selectedSet.set_number).padStart(2, "0");
+
+  } catch (error) {
+    console.error("Error loading set information:", error);
+  }
+}
+
+document.getElementById("backBtn").onclick=()=>window.location.href="../index.html";
+document.getElementById("submitBtn").onclick=()=>alert("Please select a question to start the exam.");
+const backBtn = document.getElementById("backBtn");
+
+if (backBtn) {
+  backBtn.addEventListener("click", function () {
+    window.location.href = "set.html";
+  });
+}
+
+loadStudentProfile();
+loadSetInfo();
+loadExamQuestions();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EPS TOPIK - Create Quiz</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+  <style>
+    .admin-option-input {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .admin-option-file {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 0.85rem;
+    }
+
+    .admin-option-file input[type="file"] {
+      width: 100%;
+    }
+
+    .admin-optional {
+      font-size: 0.78rem;
+      opacity: 0.75;
+    }
+
+   .admin-add-question-bottom {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  padding-bottom: 8px;
+}
+
+.admin-field select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #333333;
+  font-size: px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-field select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.admin-field select option {
+  color: #333333;
+  background-color: #ffffff;
+}
+
+  </style>
+</head>
+
+<body class="admin-panel-body">
+
+  <!-- =====================================================
+       SIDEBAR
+       ===================================================== -->
+
+  <aside class="sidebar">
+
+    <div class="sidebar-logo">
+
+      <div class="logo-icon">
+        E
+      </div>
+
+      <div>
+        <h2>EPS TOPIK</h2>
+        <span>Admin Panel</span>
+      </div>
+
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+  <p class="nav-title">MAIN</p>
+
+  <a href="admin.html#dashboard" class="nav-item">
+    <span class="nav-icon">▦</span>
+    Dashboard
+  </a>
+
+  <a href="admin.html#users" class="nav-item">
+    <span class="nav-icon">♙</span>
+    Users
+  </a>
+
+  <a href="admin.html#quizzes" class="nav-item active">
+    <span class="nav-icon">▤</span>
+    Quizzes
+  </a>
+
+  <a href="admin.html#results" class="nav-item">
+    <span class="nav-icon">◒</span>
+    Results
+  </a>
+
+  <a href="admin.html#payments" class="nav-item">
+    <span class="nav-icon">₹</span>
+    Payments
+  </a>
+
+  <p class="nav-title">SYSTEM</p>
+
+  <a href="admin.html#settings" class="nav-item">
+    <span class="nav-icon">⚙</span>
+    Settings
+  </a>
+
+</nav>
+
+
+    <div class="sidebar-bottom">
+
+      <div class="admin-mini-profile">
+
+        <div
+          class="profile-avatar"
+          id="sidebarAdminAvatar"
+        >
+          A
+        </div>
+
+        <div class="profile-info">
+
+          <strong id="sidebarAdminName">
+            Admin
+          </strong>
+
+          <span id="sidebarAdminRole">
+            Admin
+          </span>
+
+        </div>
+
+      </div>
+
+      <button
+        class="logout-btn"
+        id="logoutBtn"
+      >
+        <span>↪</span>
+        Logout
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- =====================================================
+       MAIN CONTENT
+       ===================================================== -->
+
+  <main class="main-content">
+
+    <header class="topbar">
+
+      <div class="page-heading">
+
+        <h1>Create New Quiz</h1>
+
+        <p>
+          Create and configure a new quiz
+        </p>
+
+      </div>
+
+
+      <div class="topbar-right">
+
+        <!-- Notifications -->
+
+        <button
+          class="notification-btn"
+          title="Notifications"
+        >
+          ♢
+          <span class="notification-dot"></span>
+        </button>
+
+
+        <!-- Admin Profile -->
+
+        <div class="top-profile">
+
+          <div
+            class="profile-avatar"
+            id="topAdminAvatar"
+          >
+            A
+          </div>
+
+          <div>
+
+            <strong id="topAdminName">
+              Admin
+            </strong>
+
+            <span id="topAdminRole">
+              Admin
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- Quiz Actions -->
+
+        <button
+          type="button"
+          class="admin-outline-btn"
+          onclick="saveQuizDraft()"
+        >
+          Save Draft
+        </button>
+
+
+        <button
+          type="button"
+          class="admin-primary-btn"
+          onclick="publishQuiz()"
+        >
+          Publish Quiz
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <div class="admin-create-container">
+
+      <!-- =================================================
+           BASIC QUIZ INFORMATION
+           ================================================= -->
+
+      <section class="admin-content-card">
+
+        <div class="admin-card-heading">
+
+          <div>
+
+            <span class="admin-section-number">
+              01
+            </span>
+
+            <div>
+
+              <h2>Quiz Information</h2>
+
+              <p>
+                Configure the basic settings for this test.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="admin-form-grid">
+
+          <!-- CHAPTER -->
+
+<div class="admin-field admin-field-wide">
+
+  <label for="quizTitle">
+    Chapter
+  </label>
+
+  <select
+    id="quizTitle"
+    required
+  >
+    <option value="" selected disabled>
+      Select a chapter
+    </option>
+
+    <option value="Korean Vowels & Consonants">
+      Korean Vowels & Consonants
+    </option>
+
+    <option value="Korean Numbers">
+      Korean Numbers
+    </option>
+
+    <option value="Counting Units">
+      Counting Units
+    </option>
+
+    <option value="Parts of Speech">
+      Parts of Speech
+    </option>
+
+    <option value="Tense">
+      Tense
+    </option>
+
+    <option value="Formal & Informal Language">
+      Formal & Informal Language
+    </option>
+
+    <option value="Indirect Speech">
+      Indirect Speech
+    </option>
+
+    <option value="EPS TOPIK TEXT BOOK">
+      EPS TOPIK TEXT BOOK
+    </option>
+
+  </select>
+
+</div>
+
+          <!-- SET NUMBER -->
+
+          <div class="admin-field">
+
+            <label for="quizSetNumber">
+              Set Number
+            </label>
+
+            <input
+              type="number"
+              id="quizSetNumber"
+              placeholder="1"
+              min="1"
+              required
+            >
+
+          </div>
+
+
+          <!-- DURATION -->
+
+          <div class="admin-field">
+
+            <label for="quizDuration">
+              Duration
+            </label>
+
+            <div class="admin-input-suffix">
+
+              <input
+                type="number"
+                id="quizDuration"
+                placeholder="50"
+                min="1"
+                required
+              >
+
+              <span>
+                minutes
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- TOTAL MARKS -->
+
+          <div class="admin-field">
+
+            <label for="quizTotalMarks">
+              Total Marks
+            </label>
+
+            <input
+              type="number"
+              id="quizTotalMarks"
+              placeholder="200"
+              min="1"
+            >
+
+          </div>
+
+
+          <!-- PASS MARKS -->
+
+          <div class="admin-field">
+
+            <label for="quizPassMarks">
+              Pass Marks
+            </label>
+
+            <input
+              type="number"
+              id="quizPassMarks"
+              placeholder="80"
+              min="0"
+            >
+
+          </div>
+
+
+          <!-- DESCRIPTION -->
+
+          <div class="admin-field admin-field-full">
+
+            <label for="quizDescription">
+              Description
+            </label>
+
+            <textarea
+              id="quizDescription"
+              rows="4"
+              placeholder="Enter a short description of this test..."
+            ></textarea>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           QUESTION MANAGEMENT
+           ================================================= -->
+
+      <section class="admin-content-card">
+
+        <div class="admin-card-heading admin-question-heading">
+
+          <div>
+
+            <span class="admin-section-number">
+              02
+            </span>
+
+            <div>
+
+              <h2>Questions</h2>
+
+              <p>
+                Add reading and listening questions.
+              </p>
+
+            </div>
+
+          </div>
+
+
+         
+
+        </div>
+
+
+        <!-- QUESTION COUNT -->
+
+        <div class="admin-question-summary">
+
+          <div>
+            <span>Total Questions</span>
+            <strong id="totalQuestionCount">0</strong>
+          </div>
+
+          <div>
+            <span>Reading</span>
+            <strong id="readingQuestionCount">0</strong>
+          </div>
+
+          <div>
+            <span>Listening</span>
+            <strong id="listeningQuestionCount">0</strong>
+          </div>
+
+        </div>
+
+        <!-- QUESTIONS INSERTED HERE -->
+
+       <div id="questionContainer">
+
+  <div
+    class="admin-empty-questions"
+    id="emptyQuestionMessage"
+  >
+
+    <div class="admin-empty-icon">
+      +
+    </div>
+
+    <h3>
+      No questions added yet
+    </h3>
+
+    <p>
+      Start building your quiz by adding
+      the first question.
+    </p>
+
+    <button
+      type="button"
+      class="admin-outline-btn"
+      onclick="addQuestion()"
+    >
+      + Add First Question
+    </button>
+
+  </div>
+
+  <div class="admin-add-question-bottom">
+    <button
+      type="button"
+      class="admin-primary-btn"
+      onclick="addQuestion()"
+    >
+      + Add Question
+    </button>
+  </div>
+
+</div>
+
+
+      </section>
+
+
+      <!-- =================================================
+           QUIZ SETTINGS
+           ================================================= -->
+
+      <section class="admin-content-card">
+
+        <div class="admin-card-heading">
+
+          <div>
+
+            <span class="admin-section-number">
+              03
+            </span>
+
+            <div>
+
+              <h2>Quiz Settings</h2>
+
+              <p>
+                Configure student access and test behaviour.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="admin-settings-list">
+
+          <label class="admin-setting-row">
+
+            <div>
+
+              <strong>
+                Show results immediately
+              </strong>
+
+              <span>
+                Students can see their result after submitting.
+              </span>
+
+            </div>
+
+            <input
+              type="checkbox"
+              id="showResults"
+              checked
+            >
+
+          </label>
+
+
+          <label class="admin-setting-row">
+
+            <div>
+
+              <strong>
+                Allow retake
+              </strong>
+
+              <span>
+                Students can attempt this test again.
+              </span>
+
+            </div>
+
+            <input
+              type="checkbox"
+              id="allowRetake"
+              checked
+            >
+
+          </label>
+
+
+          <label class="admin-setting-row">
+
+            <div>
+
+              <strong>
+                Subscription required
+              </strong>
+
+              <span>
+                Only subscribed students can access this test.
+              </span>
+
+            </div>
+
+            <input
+              type="checkbox"
+              id="subscriptionRequired"
+            >
+
+          </label>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           BOTTOM ACTIONS
+           ================================================= -->
+
+      <div class="admin-create-bottom">
+
+        <a
+          href="admin-tests.html"
+          class="admin-cancel-link"
+        >
+          Cancel
+        </a>
+
+
+        <div>
+
+          <button
+            type="button"
+            class="admin-outline-btn"
+            onclick="saveQuizDraft()"
+          >
+            Save as Draft
+          </button>
+
+          <button
+            type="button"
+            class="admin-primary-btn"
+            onclick="publishQuiz()"
+          >
+            Publish Quiz →
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+       ===================================================== -->
+
+  <script>
+
+    let questionCount = 0;
+
+
+    /* =========================================================
+       EDIT QUIZ MODE
+       ========================================================= */
+
+    const editParams =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const editQuizId =
+      editParams.get("edit");
+
+    let editingQuiz = null;
+
+
+    /* =========================================================
+       LOAD QUIZ FOR EDITING
+       ========================================================= */
+
+async function loadQuizForEditing() {
+
+  if (!editQuizId) {
+    return;
+  }
+
+  const token =
+    localStorage.getItem(
+      "admin_access_token"
+    );
+
+  if (!token) {
+
+    alert(
+      "Your admin session has expired. Please login again."
+    );
+
+    window.location.href =
+      "ad-login.html";
+
+    return;
+  }
+
+  const API_BASE_URL =
+    window.EPS_API?.baseUrl
+        ? window.EPS_API.baseUrl
+        : (
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1"
+        )
+            ? window.API_BASE_URL
+            : window.API_BASE_URL;
+
+  try {
+
+    const response =
+      await fetch(
+        `${API_BASE_URL}/admin/exams/${editQuizId}`,
+        {
+          method: "GET",
+
+          headers: {
+            "Authorization":
+              `Bearer ${token}`
+          }
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.detail ||
+        "Unable to load quiz."
+      );
+    }
+
+    editingQuiz =
+      data.exam || data;
+
+    if (!editingQuiz) {
+
+      throw new Error(
+        "Quiz was not returned by the backend."
+      );
+    }
+
+    /*
+     * Continue with the existing
+     * quiz-loading code below this point.
+     */
+
+    document.getElementById(
+      "quizTitle"
+    ).value =
+      editingQuiz.title || "";
+
+    document.getElementById(
+      "quizSetNumber"
+    ).value =
+      editingQuiz.set_number || "";
+
+    document.getElementById(
+      "quizDuration"
+    ).value =
+      editingQuiz.duration || "";
+
+    document.getElementById(
+      "quizTotalMarks"
+    ).value =
+      editingQuiz.total_marks || "";
+
+    document.getElementById(
+      "quizPassMarks"
+    ).value =
+      editingQuiz.pass_marks || "";
+
+    document.getElementById(
+      "quizDescription"
+    ).value =
+      editingQuiz.description || "";
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Load quiz error:",
+      error
+    );
+
+    alert(
+      error.message ||
+      "Unable to load quiz."
+    );
+
+  }
+
+}
+    
+
+
+    /* =========================================================
+       ADD QUESTION
+       ========================================================= */
+
+    function addQuestion() {
+
+      questionCount++;
+
+
+      const emptyMessage =
+        document.getElementById(
+          "emptyQuestionMessage"
+        );
+
+
+      if (emptyMessage) {
+
+        emptyMessage.style.display =
+          "none";
+
+      }
+
+
+      const container =
+        document.getElementById(
+          "questionContainer"
+        );
+
+
+      const question =
+        document.createElement("div");
+
+
+      question.className =
+        "admin-question-card";
+
+
+      question.dataset.questionId =
+        questionCount;
+
+
+      question.innerHTML = `
+
+        <div class="admin-question-card-header">
+
+          <div>
+
+            <span class="admin-question-number">
+              QUESTION ${questionCount}
+            </span>
+
+            <h3>
+              Question ${questionCount}
+            </h3>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="admin-delete-question"
+            onclick="removeQuestion(this)"
+          >
+            Delete
+          </button>
+
+        </div>
+
+
+        <div class="admin-form-grid">
+
+
+          <!-- QUESTION TYPE -->
+
+          <div class="admin-field">
+
+            <label>
+              Section
+            </label>
+
+            <select
+              class="question-section"
+              onchange="handleQuestionType(this)"
+            >
+
+              <option value="reading">
+                Reading
+              </option>
+
+              <option value="listening">
+                Listening
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- MARKS -->
+
+          <div class="admin-field">
+
+            <label>
+              Marks
+            </label>
+
+            <input
+              type="number"
+              class="question-marks"
+              value="5"
+              min="1"
+            >
+
+          </div>
+
+
+          <!-- QUESTION -->
+
+          <div class="admin-field admin-field-full">
+
+            <label>
+              Question
+            </label>
+
+            <textarea
+              class="question-text"
+              rows="3"
+              placeholder="Enter question..."
+              required
+            ></textarea>
+
+          </div>
+          
+          <!-- IMAGE -->
+
+          <div class="admin-field">
+
+            <label>
+              Question Image
+
+              <span class="admin-optional">
+                Optional
+              </span>
+
+            </label>
+
+            <input
+              type="file"
+              class="question-image"
+              accept="image/png,image/jpeg,image/webp"
+            >
+
+          </div>
+
+
+          <!-- AUDIO -->
+
+          <div
+            class="admin-field question-audio-field"
+            style="display:none;"
+          >
+
+            <label>
+              Listening Audio
+            </label>
+
+            <input
+              type="file"
+              class="question-audio"
+              accept="audio/*"
+            >
+
+          </div>
+
+
+          <!-- OPTIONS -->
+
+          <div class="admin-field admin-field-full">
+
+            <label>
+              Answer Options
+            </label>
+
+
+            <div class="admin-options-grid">
+
+
+              <!-- OPTION A -->
+
+              <div class="admin-option-input">
+
+                <span>A</span>
+
+                <input
+                  type="text"
+                  class="option-a"
+                  placeholder="Option A"
+                >
+
+                <label class="admin-option-file">
+
+                  Option A Image
+
+                  <span class="admin-optional">
+                    Optional
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-a-image"
+                    accept="image/png,image/jpeg,image/webp"
+                  >
+
+                </label>
+
+                <label
+                  class="admin-option-file option-a-audio-field option-audio-field"
+                  style="display:none;"
+                >
+
+                  Option A Audio
+
+                  <span class="admin-optional">
+                    Optional • Listening
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-a-audio"
+                    accept="audio/*"
+                  >
+
+                </label>
+
+              </div>
+
+
+              <!-- OPTION B -->
+
+              <div class="admin-option-input">
+
+                <span>B</span>
+
+                <input
+                  type="text"
+                  class="option-b"
+                  placeholder="Option B"
+                >
+
+                <label class="admin-option-file">
+
+                  Option B Image
+
+                  <span class="admin-optional">
+                    Optional
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-b-image"
+                    accept="image/png,image/jpeg,image/webp"
+                  >
+
+                </label>
+
+                <label
+                  class="admin-option-file option-b-audio-field option-audio-field"
+                  style="display:none;"
+                >
+
+                  Option B Audio
+
+                  <span class="admin-optional">
+                    Optional • Listening
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-b-audio"
+                    accept="audio/*"
+                  >
+
+                </label>
+
+              </div>
+
+
+              <!-- OPTION C -->
+
+              <div class="admin-option-input">
+
+                <span>C</span>
+
+                <input
+                  type="text"
+                  class="option-c"
+                  placeholder="Option C"
+                >
+
+                <label class="admin-option-file">
+
+                  Option C Image
+
+                  <span class="admin-optional">
+                    Optional
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-c-image"
+                    accept="image/png,image/jpeg,image/webp"
+                  >
+
+                </label>
+
+                <label
+                  class="admin-option-file option-c-audio-field option-audio-field"
+                  style="display:none;"
+                >
+
+                  Option C Audio
+
+                  <span class="admin-optional">
+                    Optional • Listening
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-c-audio"
+                    accept="audio/*"
+                  >
+
+                </label>
+
+              </div>
+
+
+              <!-- OPTION D -->
+
+              <div class="admin-option-input">
+
+                <span>D</span>
+
+                <input
+                  type="text"
+                  class="option-d"
+                  placeholder="Option D"
+                >
+
+                <label class="admin-option-file">
+
+                  Option D Image
+
+                  <span class="admin-optional">
+                    Optional
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-d-image"
+                    accept="image/png,image/jpeg,image/webp"
+                  >
+
+                </label>
+
+                <label
+                  class="admin-option-file option-d-audio-field option-audio-field"
+                  style="display:none;"
+                >
+
+                  Option D Audio
+
+                  <span class="admin-optional">
+                    Optional • Listening
+                  </span>
+
+                  <input
+                    type="file"
+                    class="option-d-audio"
+                    accept="audio/*"
+                  >
+
+                </label>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- CORRECT ANSWER -->
+
+          <div class="admin-field">
+
+            <label>
+              Correct Answer
+            </label>
+
+            <select class="correct-answer">
+
+              <option value="">
+                Select correct answer
+              </option>
+
+              <option value="A">
+                Option A
+              </option>
+
+              <option value="B">
+                Option B
+              </option>
+
+              <option value="C">
+                Option C
+              </option>
+
+              <option value="D">
+                Option D
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+      `;
+
+
+      const addButton =
+  container.querySelector(".admin-add-question-bottom");
+
+container.insertBefore(question, addButton);
+
+updateQuestionStats();
+
+question.scrollIntoView({
+  behavior: "smooth",
+  block: "start"
+});
+
+    }
+
+
+    /* =========================================================
+       REMOVE QUESTION
+       ========================================================= */
+
+    function removeQuestion(button) {
+
+      const confirmDelete =
+        confirm(
+          "Delete this question?"
+        );
+
+
+      if (!confirmDelete) {
+        return;
+      }
+
+
+      const questionCard =
+        button.closest(
+          ".admin-question-card"
+        );
+
+
+      questionCard.remove();
+
+
+      renumberQuestions();
+
+      updateQuestionStats();
+
+    }
+
+
+    /* =========================================================
+       RENUMBER QUESTIONS
+       ========================================================= */
+
+    function renumberQuestions() {
+
+      const questions =
+        document.querySelectorAll(
+          ".admin-question-card"
+        );
+
+
+      questions.forEach(
+        function (question, index) {
+
+          question.querySelector(
+            ".admin-question-number"
+          ).textContent =
+            `QUESTION ${index + 1}`;
+
+
+          question.querySelector(
+            "h3"
+          ).textContent =
+            `Question ${index + 1}`;
+
+        }
+      );
+
+
+      if (questions.length === 0) {
+
+        const emptyMessage =
+          document.getElementById(
+            "emptyQuestionMessage"
+          );
+
+
+        if (emptyMessage) {
+
+          emptyMessage.style.display =
+            "block";
+
+        }
+
+      }
+
+    }
+
+
+    /* =========================================================
+       READING / LISTENING
+       ========================================================= */
+
+    function handleQuestionType(select) {
+
+      const card =
+        select.closest(
+          ".admin-question-card"
+        );
+
+
+      const audioField =
+        card.querySelector(
+          ".question-audio-field"
+        );
+
+
+      const optionAudioFields =
+        card.querySelectorAll(
+          ".option-audio-field"
+        );
+
+
+      if (
+        select.value ===
+        "listening"
+      ) {
+
+        audioField.style.display =
+          "block";
+
+
+        optionAudioFields.forEach(
+          function (field) {
+
+            field.style.display =
+              "flex";
+
+          }
+        );
+
+      }
+
+      else {
+
+        audioField.style.display =
+          "none";
+
+
+        optionAudioFields.forEach(
+          function (field) {
+
+            field.style.display =
+              "none";
+
+          }
+        );
+
+      }
+
+
+      updateQuestionStats();
+
+    }
+
+
+    /* =========================================================
+       QUESTION COUNTERS
+       ========================================================= */
+
+    function updateQuestionStats() {
+
+      const questions =
+        document.querySelectorAll(
+          ".admin-question-card"
+        );
+
+
+      let reading = 0;
+
+      let listening = 0;
+
+
+      questions.forEach(
+        function (question) {
+
+          const section =
+            question.querySelector(
+              ".question-section"
+            ).value;
+
+
+          if (
+            section ===
+            "reading"
+          ) {
+
+            reading++;
+
+          }
+
+          else if (
+            section ===
+            "listening"
+          ) {
+
+            listening++;
+
+          }
+
+        }
+      );
+
+
+      document.getElementById(
+        "totalQuestionCount"
+      ).textContent =
+        questions.length;
+
+
+      document.getElementById(
+        "readingQuestionCount"
+      ).textContent =
+        reading;
+
+
+      document.getElementById(
+        "listeningQuestionCount"
+      ).textContent =
+        listening;
+
+    }
+
+
+    /* =========================================================
+       COLLECT QUIZ DATA
+       ========================================================= */
+
+    function collectQuizData() {
+
+      const questions =
+        [];
+
+
+      const questionCards =
+        document.querySelectorAll(
+          ".admin-question-card"
+        );
+
+
+      questionCards.forEach(
+        function (card, index) {
+
+          questions.push({
+
+            question_number:
+              index + 1,
+
+            section:
+              card.querySelector(
+                ".question-section"
+              ).value,
+
+            question:
+              card.querySelector(
+                ".question-text"
+              ).value.trim(),
+
+            marks:
+              Number(
+                card.querySelector(
+                  ".question-marks"
+                ).value
+              ),
+
+            options: {
+
+              A:
+                card.querySelector(
+                  ".option-a"
+                ).value.trim(),
+
+              B:
+                card.querySelector(
+                  ".option-b"
+                ).value.trim(),
+
+              C:
+                card.querySelector(
+                  ".option-c"
+                ).value.trim(),
+
+              D:
+                card.querySelector(
+                  ".option-d"
+                ).value.trim()
+
+            },
+
+            correct_answer:
+              card.querySelector(
+                ".correct-answer"
+              ).value
+
+          });
+
+        }
+      );
+
+
+      return {
+
+        title:
+          document.getElementById(
+            "quizTitle"
+          ).value.trim(),
+
+        set_number:
+          Number(
+            document.getElementById(
+              "quizSetNumber"
+            ).value
+          ),
+
+        duration:
+          Number(
+            document.getElementById(
+              "quizDuration"
+            ).value
+          ),
+
+        total_marks:
+          Number(
+            document.getElementById(
+              "quizTotalMarks"
+            ).value
+          ),
+
+        pass_marks:
+          Number(
+            document.getElementById(
+              "quizPassMarks"
+            ).value
+          ),
+
+        description:
+          document.getElementById(
+            "quizDescription"
+          ).value.trim(),
+
+        settings: {
+
+          show_results:
+            document.getElementById(
+              "showResults"
+            ).checked,
+
+          allow_retake:
+            document.getElementById(
+              "allowRetake"
+            ).checked,
+
+          subscription_required:
+            document.getElementById(
+              "subscriptionRequired"
+            ).checked
+
+        },
+
+        questions:
+          questions
+
+      };
+
+    }
+
+
+    /* =========================================================
+       VALIDATE QUIZ
+       ========================================================= */
+
+    function validateQuiz(quiz) {
+
+      if (!quiz.title) {
+
+  alert(
+    "Please select a chapter."
+  );
+
+  return false;
+}
+
+      if (!quiz.set_number) {
+
+        alert(
+          "Please enter the set number."
+        );
+
+        return false;
+
+      }
+
+
+      if (!quiz.duration) {
+
+        alert(
+          "Please enter the test duration."
+        );
+
+        return false;
+
+      }
+
+
+      if (
+        quiz.questions.length === 0
+      ) {
+
+        alert(
+          "Please add at least one question."
+        );
+
+        return false;
+
+      }
+
+
+      for (
+        let i = 0;
+        i < quiz.questions.length;
+        i++
+      ) {
+
+        const question =
+          quiz.questions[i];
+
+
+        if (!question.question) {
+
+          alert(
+            `Enter Question ${i + 1}.`
+          );
+
+          return false;
+
+        }
+
+
+        if (
+          !question.options.A ||
+          !question.options.B ||
+          !question.options.C ||
+          !question.options.D
+        ) {
+
+          alert(
+            `Complete all four options for Question ${i + 1}.`
+          );
+
+          return false;
+
+        }
+
+
+        if (
+          !question.correct_answer
+        ) {
+
+          alert(
+            `Select the correct answer for Question ${i + 1}.`
+          );
+
+          return false;
+
+        }
+
+      }
+
+
+      return true;
+
+    }
+
+
+    /* =========================================================
+       SAVE DRAFT
+       ========================================================= */
+
+
+    async function saveQuizDraft() {
+
+      const quiz =
+        collectQuizData();
+
+
+      if (!validateQuiz(quiz)) {
+
+        return;
+
+      }
+
+
+      const token =
+        localStorage.getItem(
+          "admin_access_token"
+        );
+
+
+      if (!token) {
+
+        alert(
+          "Your admin session has expired. Please login again."
+        );
+
+        window.location.href =
+          "ad-login.html";
+
+        return;
+
+      }
+
+
+      const API_BASE_URL =
+        (
+          window.location.hostname ===
+          "localhost" ||
+
+          window.location.hostname ===
+          "127.0.0.1"
+        )
+          ? window.API_BASE_URL
+          : window.API_BASE_URL;
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/admin/exams`,
+            {
+
+              method: "POST",
+
+              headers: {
+
+                "Content-Type":
+                  "application/json",
+
+                "Authorization":
+                  `Bearer ${token}`
+
+              },
+
+              body:
+                JSON.stringify({
+
+                  title:
+                    quiz.title,
+
+                  duration_minutes:
+                    quiz.duration,
+
+                  total_questions:
+                    quiz.questions.length,
+
+                  total_marks:
+                    quiz.total_marks,
+
+                  status:
+                    "DRAFT"
+
+                })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.detail ||
+            "Failed to save quiz."
+          );
+
+        }
+
+
+        const examId =
+        data.exam.id;
+
+
+// CREATE EXAM SET
+const setResponse =
+  await fetch(
+    `${API_BASE_URL}/admin/exams/${examId}/sets`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+
+      body: JSON.stringify({
+        set_number: quiz.set_number,
+        set_name: `Set ${quiz.set_number}`,
+        created_by: null
+      })
+    }
+  );
+
+
+const setData =
+  await setResponse.json();
+
+
+if (!setResponse.ok) {
+
+  throw new Error(
+    getReadableApiError(
+      setData.detail,
+      "Failed to create exam set."
+    )
+  );
+
+}
+
+
+const setId =
+  setData.exam_set.id;
+
+
+// SAVE QUESTIONS
+await saveQuestionsToBackend(
+  examId,
+  setId,
+  quiz
+);
+
+
+        quiz.id =
+          examId;
+
+        quiz.status =
+          "draft";
+
+        quiz.questions_count =
+          quiz.questions.length;
+
+
+        localStorage.setItem(
+          "admin_quiz_draft",
+          JSON.stringify(quiz)
+        );
+
+
+        alert(
+          "Quiz saved as draft successfully!"
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Save draft error:",
+          error
+        );
+
+
+        alert(
+          error.message ||
+          "Unable to save quiz draft."
+        );
+
+      }
+
+    }
+
+
+    /* =========================================================
+       API ERROR FORMATTER
+       ========================================================= */
+
+    function getReadableApiError(
+      detail,
+      fallbackMessage
+    ) {
+
+      if (
+        typeof detail ===
+        "string" &&
+        detail.trim()
+      ) {
+
+        return detail;
+
+      }
+
+
+      if (
+        Array.isArray(detail)
+      ) {
+
+        return detail
+          .map(
+            function(item) {
+
+              if (
+                typeof item ===
+                "string"
+              ) {
+                return item;
+              }
+
+
+              if (
+                item &&
+                typeof item ===
+                "object"
+              ) {
+
+                return (
+                  item.msg ||
+                  item.message ||
+                  JSON.stringify(item)
+                );
+
+              }
+
+
+              return String(item);
+
+            }
+          )
+          .join("\n");
+
+      }
+
+
+      if (
+        detail &&
+        typeof detail ===
+        "object"
+      ) {
+
+        return (
+          detail.message ||
+          detail.msg ||
+          JSON.stringify(detail)
+        );
+
+      }
+
+
+      return fallbackMessage;
+
+    }
+
+
+    /* =========================================================
+       SAVE QUESTIONS TO BACKEND
+       ========================================================= */
+
+    async function saveQuestionsToBackend(
+      examId,
+      setId,
+      quiz
+    ) {
+
+      const token =
+        localStorage.getItem(
+          "admin_access_token"
+        );
+
+
+      if (!token) {
+
+        throw new Error(
+          "Your admin session has expired. Please login again."
+        );
+
+      }
+
+
+      const API_BASE_URL =
+        (
+          window.location.hostname ===
+          "localhost" ||
+
+          window.location.hostname ===
+          "127.0.0.1"
+        )
+          ? window.API_BASE_URL
+          : window.API_BASE_URL;
+
+
+      for (
+        const question of
+        quiz.questions
+      ) {
+
+        const options =
+          [
+            "A",
+            "B",
+            "C",
+            "D"
+          ].map(
+            function(label) {
+
+              return {
+
+                option_label:
+                  label,
+
+                option_text:
+                  question.options[label] ||
+                  null,
+
+                image_url:
+                  null,
+
+                audio_url:
+                  null,
+
+                is_correct:
+                  question.correct_answer ===
+                  label,
+
+                image_id:
+                  null
+
+              };
+
+            }
+          );
+
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/admin/exams/${examId}/questions`,
+            {
+
+              method: "POST",
+
+              headers: {
+
+                "Content-Type":
+                  "application/json",
+
+                "Authorization":
+                  `Bearer ${token}`
+
+              },
+
+              body:
+                JSON.stringify({
+
+                  exam_id:
+                    examId,
+
+                  question_number:
+                    question.question_number,
+
+                  question_type:
+                    question.section ||
+                    "reading",
+
+                  question_text:
+                    question.question ||
+                    null,
+
+                  image_url:
+                    null,
+
+                  audio_url:
+                    null,
+
+                  marks:
+                    question.marks ||
+                    0,
+
+                  created_by:
+                    null,
+
+                  set_id:
+                    setId,
+
+                  status:
+                    "DRAFT",
+
+                  options:
+                    options
+
+                })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            getReadableApiError(
+              data.detail,
+              `Failed to save Question ${question.question_number}.`
+            )
+          );
+
+        }
+
+      }
+
+
+      return true;
+
+    }
+
+
+    /* =========================================================
+       PUBLISH / UPDATE QUIZ
+       ========================================================= */
+
+    async function publishQuiz() {
+
+      if (
+        window.isPublishingQuiz
+      ) {
+        return;
+      }
+
+
+      const quiz =
+        collectQuizData();
+
+
+      if (!validateQuiz(quiz)) {
+        return;
+      }
+
+
+      const token =
+        localStorage.getItem(
+          "admin_access_token"
+        );
+
+
+      if (!token) {
+
+        alert(
+          "Your admin session has expired. Please login again."
+        );
+
+        window.location.href =
+          "ad-login.html";
+
+        return;
+
+      }
+
+
+      const API_BASE_URL =
+        (
+          window.location.hostname ===
+          "localhost" ||
+
+          window.location.hostname ===
+          "127.0.0.1"
+        )
+          ? window.API_BASE_URL
+          : window.API_BASE_URL;
+
+
+      window.isPublishingQuiz =
+        true;
+
+
+      try {
+
+        let examId;
+
+
+        /* =====================================================
+           UPDATE EXISTING QUIZ
+           ===================================================== */
+
+       if (editQuizId) {
+
+          examId =
+            Number(editQuizId);
+
+
+          const response =
+            await fetch(
+              `${API_BASE_URL}/admin/exams/${examId}`,
+              {
+
+                method: "PUT",
+
+                headers: {
+
+                  "Content-Type":
+                    "application/json",
+
+                  "Authorization":
+                    `Bearer ${token}`
+
+                },
+
+                body:
+                  JSON.stringify({
+
+                    title:
+                      quiz.title,
+
+                    duration_minutes:
+                      Number(
+                        quiz.duration
+                      ) || 0,
+
+                    total_questions:
+                      quiz.questions.length,
+
+                    total_marks:
+                      Number(
+                        quiz.total_marks
+                      ) || 0,
+
+                    status:
+                      "PUBLISHED"
+
+                  })
+
+              }
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              getReadableApiError(
+                data.detail,
+                "Unable to publish the existing quiz."
+              )
+            );
+
+          }
+
+
+          quiz.id =
+            examId;
+
+          quiz.status =
+            "published";
+
+        }
+
+
+        /* =====================================================
+           CREATE NEW QUIZ
+           ===================================================== */
+
+        else {
+
+          const response =
+            await fetch(
+              `${API_BASE_URL}/admin/exams`,
+              {
+
+                method: "POST",
+
+                headers: {
+
+                  "Content-Type":
+                    "application/json",
+
+                  "Authorization":
+                    `Bearer ${token}`
+
+                },
+
+                body:
+                  JSON.stringify({
+
+                    title:
+                      quiz.title,
+
+                    duration_minutes:
+                      Number(
+                        quiz.duration
+                      ) || 0,
+
+                    total_questions:
+                      quiz.questions.length,
+
+                    total_marks:
+                      Number(
+                        quiz.total_marks
+                      ) || 0,
+
+                    status:
+                      "DRAFT"
+
+                  })
+
+              }
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (
+            !response.ok ||
+            !data.exam
+          ) {
+
+            throw new Error(
+              getReadableApiError(
+                data.detail,
+                "Unable to publish the quiz."
+              )
+            );
+
+          }
+
+examId =
+  data.exam.id;
+
+
+// =========================================
+// CREATE EXAM SET
+// =========================================
+
+const setResponse =
+  await fetch(
+    `${API_BASE_URL}/admin/exams/${examId}/sets`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+
+      body: JSON.stringify({
+        set_number: quiz.set_number,
+        set_name: `Set ${quiz.set_number}`,
+        created_by: null
+      })
+    }
+  );
+
+
+const setData =
+  await setResponse.json();
+
+
+if (!setResponse.ok) {
+
+  throw new Error(
+    getReadableApiError(
+      setData.detail,
+      "Unable to create the exam set."
+    )
+  );
+
+}
+
+
+const setId =
+  setData.exam_set.id;
+
+
+// =========================================
+// SAVE QUESTIONS AS DRAFT
+// =========================================
+
+await saveQuestionsToBackend(
+  examId,
+  setId,
+  quiz
+);
+
+
+// =========================================
+// PUBLISH EXAM
+// This also publishes all questions
+// =========================================
+
+const publishResponse =
+  await fetch(
+    `${API_BASE_URL}/admin/exams/${examId}`,
+    {
+      method: "PUT",
+
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+
+      body: JSON.stringify({
+        status: "PUBLISHED"
+      })
+    }
+  );
+
+
+const publishData =
+  await publishResponse.json();
+
+
+if (!publishResponse.ok) {
+
+  throw new Error(
+    getReadableApiError(
+      publishData.detail,
+      "Unable to publish the quiz."
+    )
+  );
+
+}
+
+
+quiz.id =
+  examId;
+
+
+quiz.status =
+  "published";
+
+        }
+
+
+        /* =====================================================
+           SAVE LOCAL QUIZ COPY
+           ===================================================== */
+
+        let existingQuizzes =
+          JSON.parse(
+            localStorage.getItem(
+              "admin_quizzes"
+            ) || "[]"
+          );
+
+
+        quiz.questions_count =
+          quiz.questions.length;
+
+
+        quiz.created_at =
+          quiz.created_at ||
+          new Date().toISOString();
+
+
+        const index =
+          existingQuizzes.findIndex(
+            function(item) {
+
+              return String(item.id) ===
+                     String(examId);
+
+            }
+          );
+
+
+        if (index >= 0) {
+
+          existingQuizzes[index] =
+            quiz;
+
+        }
+
+        else {
+
+          existingQuizzes.push(
+            quiz
+          );
+
+        }
+
+
+        localStorage.setItem(
+          "admin_quizzes",
+          JSON.stringify(
+            existingQuizzes
+          )
+        );
+
+
+        alert(
+          "Quiz published successfully and saved to the database!"
+        );
+
+
+        window.location.href =
+          "admin.html";
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Publish quiz error:",
+          error
+        );
+
+
+        alert(
+          error.message ||
+          "Unable to publish quiz."
+        );
+
+      }
+
+      finally {
+
+        window.isPublishingQuiz =
+          false;
+
+      }
+
+    }
+
+
+
+/* =========================================================
+   ADMIN SESSION / PROFILE
+   ========================================================= */
+
+async function loadAdminProfile() {
+
+    console.log("=== LOAD ADMIN PROFILE ===");
+
+    const token = localStorage.getItem("admin_access_token");
+
+    console.log("Admin token exists:", !!token);
+
+    if (!token) {
+        console.error("No admin_access_token found.");
+
+        window.location.href = "ad-login.html";
+        return false;
+    }
+
+    /* =================================================
+       API BASE URL
+       ================================================= */
+
+    const API_BASE_URL =
+        window.EPS_API?.baseUrl
+            ? window.EPS_API.baseUrl
+            : (
+                window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1"
+            )
+                ? window.API_BASE_URL
+                : window.API_BASE_URL;
+
+    console.log("API BASE URL:", API_BASE_URL);
+
+
+    /* =================================================
+       GET ELEMENTS
+       ================================================= */
+
+    const topName =
+        document.getElementById("topAdminName");
+
+    const topRole =
+        document.getElementById("topAdminRole");
+
+    const topAvatar =
+        document.getElementById("topAdminAvatar");
+
+    const sidebarName =
+        document.getElementById("sidebarAdminName");
+
+    const sidebarRole =
+        document.getElementById("sidebarAdminRole");
+
+    const sidebarAvatar =
+        document.getElementById("sidebarAdminAvatar");
+
+
+    /* =================================================
+       FIRST: LOAD SAVED ADMIN DATA
+       ================================================= */
+
+    let savedAdmin = {};
+
+    try {
+        savedAdmin =
+            JSON.parse(
+                localStorage.getItem("admin_user") || "{}"
+            );
+    } catch (error) {
+        console.error(
+            "Could not parse admin_user:",
+            error
+        );
+    }
+
+    console.log("Saved admin:", savedAdmin);
+
+
+    /* =================================================
+       TEMPORARY LOCAL DISPLAY
+       ================================================= */
+
+    let savedName =
+        savedAdmin.name ||
+        savedAdmin.full_name ||
+        savedAdmin.username ||
+        savedAdmin.email ||
+        "";
+
+    let savedRole =
+        savedAdmin.role ||
+        "ADMIN";
+
+
+    if (savedName) {
+
+        if (topName)
+            topName.textContent = savedName;
+
+        if (sidebarName)
+            sidebarName.textContent = savedName;
+    }
+
+    if (topRole)
+        topRole.textContent = savedRole;
+
+    if (sidebarRole)
+        sidebarRole.textContent = savedRole;
+
+
+    /* =================================================
+       LOAD PROFILE FROM BACKEND
+       ================================================= */
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/auth/profile`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`,
+
+                        "Content-Type":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        console.log(
+            "Profile response status:",
+            response.status
+        );
+
+
+        const data =
+            await response.json()
+                .catch(() => ({}));
+
+
+        console.log(
+            "Profile API response:",
+            data
+        );
+
+
+        /* =================================================
+           SESSION EXPIRED
+           ================================================= */
+
+        if (
+            response.status === 401 ||
+            response.status === 403
+        ) {
+
+            console.error(
+                "Admin token is invalid or expired."
+            );
+
+            localStorage.removeItem(
+                "admin_access_token"
+            );
+
+            localStorage.removeItem(
+                "admin_user"
+            );
+
+            window.location.href =
+                "ad-login.html";
+
+            return false;
+        }
+
+
+        /* =================================================
+           OTHER API ERROR
+           ================================================= */
+
+        if (!response.ok) {
+
+            console.error(
+                "Profile API error:",
+                data
+            );
+
+            throw new Error(
+                data.detail ||
+                data.message ||
+                "Unable to load admin profile."
+            );
+        }
+
+
+        /* =================================================
+           GET NAME
+           Supports different backend field names
+           ================================================= */
+
+        const adminName =
+            data.name ||
+            data.full_name ||
+            data.fullName ||
+            data.username ||
+            data.user_name ||
+            data.email ||
+            savedName ||
+            "Admin";
+
+
+        const adminRole =
+            String(
+                data.role ||
+                savedRole ||
+                "ADMIN"
+            ).toUpperCase();
+
+
+        const adminEmail =
+            data.email ||
+            savedAdmin.email ||
+            "";
+
+
+        /* =================================================
+           SAVE VERIFIED ADMIN
+           ================================================= */
+
+        const adminData = {
+
+            id:
+                data.id ||
+                savedAdmin.id ||
+                null,
+
+            name:
+                adminName,
+
+            email:
+                adminEmail,
+
+            role:
+                adminRole
+        };
+
+
+        localStorage.setItem(
+            "admin_user",
+            JSON.stringify(adminData)
+        );
+
+
+        console.log(
+            "FINAL ADMIN DATA:",
+            adminData
+        );
+
+
+        /* =================================================
+           AVATAR
+           ================================================= */
+
+        const avatarLetter =
+            adminName
+                .trim()
+                .charAt(0)
+                .toUpperCase() || "A";
+
+
+        const savedPicture =
+            localStorage.getItem(
+                "adminProfilePicture"
+            ) || "";
+
+
+        /* =================================================
+           TOP PROFILE
+           ================================================= */
+
+        if (topName)
+            topName.textContent =
+                adminName;
+
+        if (topRole)
+            topRole.textContent =
+                adminRole;
+
+
+        if (topAvatar) {
+
+            if (savedPicture) {
+
+                topAvatar.textContent = "";
+
+                topAvatar.style.backgroundImage =
+                    `url("${savedPicture}")`;
+
+                topAvatar.style.backgroundSize =
+                    "cover";
+
+                topAvatar.style.backgroundPosition =
+                    "center";
+
+                topAvatar.style.backgroundRepeat =
+                    "no-repeat";
+
+            } else {
+
+                topAvatar.style.backgroundImage =
+                    "none";
+
+                topAvatar.textContent =
+                    avatarLetter;
+            }
+        }
+
+
+        /* =================================================
+           SIDEBAR PROFILE
+           ================================================= */
+
+        if (sidebarName)
+            sidebarName.textContent =
+                adminName;
+
+        if (sidebarRole)
+            sidebarRole.textContent =
+                adminRole;
+
+
+        if (sidebarAvatar) {
+
+            if (savedPicture) {
+
+                sidebarAvatar.textContent = "";
+
+                sidebarAvatar.style.backgroundImage =
+                    `url("${savedPicture}")`;
+
+                sidebarAvatar.style.backgroundSize =
+                    "cover";
+
+                sidebarAvatar.style.backgroundPosition =
+                    "center";
+
+                sidebarAvatar.style.backgroundRepeat =
+                    "no-repeat";
+
+            } else {
+
+                sidebarAvatar.style.backgroundImage =
+                    "none";
+
+                sidebarAvatar.textContent =
+                    avatarLetter;
+            }
+        }
+
+
+        console.log(
+            "Admin profile loaded successfully:",
+            adminName
+        );
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Failed to fetch admin profile:",
+            error
+        );
+
+
+        /* =================================================
+           FALLBACK TO SAVED DATA
+           ================================================= */
+
+        const fallbackName =
+            savedAdmin.name ||
+            savedAdmin.full_name ||
+            savedAdmin.fullName ||
+            savedAdmin.username ||
+            savedAdmin.user_name ||
+            savedAdmin.email ||
+            "Admin";
+
+
+        const fallbackRole =
+            savedAdmin.role ||
+            "ADMIN";
+
+
+        const avatarLetter =
+            fallbackName
+                .trim()
+                .charAt(0)
+                .toUpperCase() || "A";
+
+
+        if (topName)
+            topName.textContent =
+                fallbackName;
+
+        if (topRole)
+            topRole.textContent =
+                fallbackRole;
+
+        if (sidebarName)
+            sidebarName.textContent =
+                fallbackName;
+
+        if (sidebarRole)
+            sidebarRole.textContent =
+                fallbackRole;
+
+
+        if (topAvatar) {
+
+            topAvatar.style.backgroundImage =
+                "none";
+
+            topAvatar.textContent =
+                avatarLetter;
+        }
+
+
+        if (sidebarAvatar) {
+
+            sidebarAvatar.style.backgroundImage =
+                "none";
+
+            sidebarAvatar.textContent =
+                avatarLetter;
+        }
+
+
+        console.log(
+            "Using saved admin profile:",
+            fallbackName
+        );
+
+        return true;
+    }
+}
+
+/* =========================================================
+   ADMIN LOGOUT
+   ========================================================= */
+
+const logoutBtn =
+    document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+
+    logoutBtn.addEventListener(
+        "click",
+        function () {
+
+            console.log("Admin logout clicked.");
+
+            /* Remove admin session */
+            localStorage.removeItem(
+                "admin_access_token"
+            );
+
+            /* Remove saved admin information */
+            localStorage.removeItem(
+                "admin_user"
+            );
+
+            /* Remove profile picture */
+            localStorage.removeItem(
+                "adminProfilePicture"
+            );
+
+            /* Redirect to admin login */
+            window.location.href =
+                "ad-login.html";
+        }
+    );
+}
+
+    /* =========================================================
+       INITIALIZE
+       ========================================================= */
+
+    loadAdminProfile();
+
+    loadQuizForEditing();
+
+  </script>
+
+</body>
+
+</html>

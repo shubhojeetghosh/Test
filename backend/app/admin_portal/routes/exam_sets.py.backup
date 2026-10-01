@@ -1,0 +1,239 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.database.database import get_db
+from app.models.exam import Exam
+from app.models.exam_set import ExamSet
+from app.schemas.exam_set import ExamSetCreate, ExamSetUpdate
+
+
+router = APIRouter(
+    prefix="/admin/exams",
+    tags=["Admin Exam Sets"],
+)
+
+
+# =========================
+# GET ALL SETS
+# =========================
+
+@router.get("/{exam_id}/sets")
+def get_exam_sets(
+    exam_id: int,
+    db: Session = Depends(get_db),
+):
+    exam = db.scalar(
+        select(Exam).where(Exam.id == exam_id)
+    )
+
+    if exam is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam not found",
+        )
+
+    sets = db.scalars(
+        select(ExamSet)
+        .where(ExamSet.exam_id == exam_id)
+        .order_by(ExamSet.set_number)
+    ).all()
+
+    return [
+        {
+            "id": exam_set.id,
+            "exam_id": exam_set.exam_id,
+            "set_number": exam_set.set_number,
+            "set_name": exam_set.set_name,
+            "created_by": exam_set.created_by,
+            "created_at": exam_set.created_at,
+        }
+        for exam_set in sets
+    ]
+
+
+# =========================
+# GET SINGLE SET
+# =========================
+
+@router.get("/{exam_id}/sets/{set_id}")
+def get_exam_set(
+    exam_id: int,
+    set_id: int,
+    db: Session = Depends(get_db),
+):
+    exam_set = db.scalar(
+        select(ExamSet).where(
+            ExamSet.id == set_id,
+            ExamSet.exam_id == exam_id,
+        )
+    )
+
+    if exam_set is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam set not found",
+        )
+
+    return {
+        "id": exam_set.id,
+        "exam_id": exam_set.exam_id,
+        "set_number": exam_set.set_number,
+        "set_name": exam_set.set_name,
+        "created_by": exam_set.created_by,
+        "created_at": exam_set.created_at,
+    }
+
+
+# =========================
+# CREATE SET
+# =========================
+
+@router.post(
+    "/{exam_id}/sets",
+    status_code=status.HTTP_201_CREATED,
+)
+def create_exam_set(
+    exam_id: int,
+    set_data: ExamSetCreate,
+    db: Session = Depends(get_db),
+):
+    exam = db.scalar(
+        select(Exam).where(Exam.id == exam_id)
+    )
+
+    if exam is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam not found",
+        )
+
+    existing_set = db.scalar(
+        select(ExamSet).where(
+            ExamSet.exam_id == exam_id,
+            ExamSet.set_number == set_data.set_number,
+        )
+    )
+
+    if existing_set is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Set number already exists for this exam",
+        )
+
+    exam_set = ExamSet(
+        exam_id=exam_id,
+        set_number=set_data.set_number,
+        set_name=set_data.set_name,
+        created_by=set_data.created_by,
+    )
+
+    db.add(exam_set)
+    db.commit()
+    db.refresh(exam_set)
+
+    return {
+        "message": "Exam set created successfully",
+        "exam_set": {
+            "id": exam_set.id,
+            "exam_id": exam_set.exam_id,
+            "set_number": exam_set.set_number,
+            "set_name": exam_set.set_name,
+            "created_by": exam_set.created_by,
+            "created_at": exam_set.created_at,
+        },
+    }
+
+
+# =========================
+# UPDATE SET
+# =========================
+
+@router.put("/{exam_id}/sets/{set_id}")
+def update_exam_set(
+    exam_id: int,
+    set_id: int,
+    set_data: ExamSetUpdate,
+    db: Session = Depends(get_db),
+):
+    exam_set = db.scalar(
+        select(ExamSet).where(
+            ExamSet.id == set_id,
+            ExamSet.exam_id == exam_id,
+        )
+    )
+
+    if exam_set is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam set not found",
+        )
+
+    update_data = set_data.model_dump(
+        exclude_unset=True
+    )
+
+    if "set_number" in update_data:
+        existing_set = db.scalar(
+            select(ExamSet).where(
+                ExamSet.exam_id == exam_id,
+                ExamSet.set_number == update_data["set_number"],
+                ExamSet.id != set_id,
+            )
+        )
+
+        if existing_set is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="Set number already exists for this exam",
+            )
+
+    for field, value in update_data.items():
+        setattr(exam_set, field, value)
+
+    db.commit()
+    db.refresh(exam_set)
+
+    return {
+        "message": "Exam set updated successfully",
+        "exam_set": {
+            "id": exam_set.id,
+            "exam_id": exam_set.exam_id,
+            "set_number": exam_set.set_number,
+            "set_name": exam_set.set_name,
+            "created_by": exam_set.created_by,
+            "created_at": exam_set.created_at,
+        },
+    }
+
+
+# =========================
+# DELETE SET
+# =========================
+
+@router.delete("/{exam_id}/sets/{set_id}")
+def delete_exam_set(
+    exam_id: int,
+    set_id: int,
+    db: Session = Depends(get_db),
+):
+    exam_set = db.scalar(
+        select(ExamSet).where(
+            ExamSet.id == set_id,
+            ExamSet.exam_id == exam_id,
+        )
+    )
+
+    if exam_set is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam set not found",
+        )
+
+    db.delete(exam_set)
+    db.commit()
+
+    return {
+        "message": "Exam set deleted successfully",
+        "set_id": set_id,
+    }

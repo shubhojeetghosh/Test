@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EPS TOPIK - Admin Verify OTP</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+</head>
+
+
+<body class="admin-login-body">
+
+
+<main class="admin-login-page">
+
+  <section class="admin-login-card">
+
+
+    <!-- ================= LOGO ================= -->
+
+    <a href="../index.html" class="admin-login-logo">
+
+      <div class="admin-logo-mark">
+        K
+      </div>
+
+      <div>
+
+        <h1>
+          EPS TOPIK
+        </h1>
+
+        <span>
+          ADMIN PORTAL
+        </span>
+
+      </div>
+
+    </a>
+
+
+    <!-- ================= HEADING ================= -->
+
+    <div class="admin-login-heading">
+
+      <p class="admin-eyebrow">
+        OTP VERIFICATION
+      </p>
+
+      <h2>
+        Verify OTP
+      </h2>
+
+      <p>
+        Enter the 6-digit verification code sent
+        to your registered administrator email.
+      </p>
+
+    </div>
+
+
+    <!-- ================= MESSAGE ================= -->
+
+    <div
+      id="adminOtpMessage"
+      class="message-box"
+    ></div>
+
+
+    <!-- ================= FORM ================= -->
+
+    <form id="adminVerifyOtpForm">
+
+
+      <div class="form-group">
+
+        <label for="adminOtp">
+          Verification Code
+        </label>
+
+        <input
+          type="text"
+          id="adminOtp"
+          class="otp-input"
+          placeholder="000000"
+          maxlength="6"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          required
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="adminVerifyOtpButton"
+        class="admin-login-submit"
+      >
+        Verify OTP
+      </button>
+    </form>
+
+
+    <!-- ================= RESEND ================= -->
+
+    <div class="admin-user-login">
+
+      <span>
+        Didn't receive the code?
+      </span>
+
+      <a href="ad-forgot-pass.html">
+        Send again
+      </a>
+
+    </div>
+
+
+    <!-- ================= BACK ================= -->
+
+    <a
+      href="ad-forgot-pass.html"
+      class="admin-back-home"
+    >
+      ← Change Email
+    </a>
+
+
+  </section>
+
+</main>
+
+
+<script>
+const API_BASE_URL=(location.hostname==="localhost"||location.hostname==="127.0.0.1")?window.API_BASE_URL:window.API_BASE_URL;
+const form=document.getElementById("adminVerifyOtpForm"),otp=document.getElementById("adminOtp"),button=document.getElementById("adminVerifyOtpButton"),message=document.getElementById("adminOtpMessage"),email=sessionStorage.getItem("admin_reset_email");
+function showMessage(t,type="error"){message.textContent=t;message.className="message-box "+type;}
+otp.addEventListener("input",()=>otp.value=otp.value.replace(/\D/g,"").slice(0,6));
+if(!email){showMessage("No password reset request was found. Please request a new OTP.");button.disabled=true;}
+form.addEventListener("submit",async e=>{e.preventDefault();showMessage("");if(!email){showMessage("Your password reset session is missing. Please request a new OTP.");return;}const code=otp.value.trim();if(!/^\d{6}$/.test(code)){showMessage("Please enter the complete 6-digit OTP.");otp.focus();return;}button.disabled=true;button.textContent="Verifying...";try{const r=await fetch(`${API_BASE_URL}/auth/admin/verify-forgot-otp`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,otp:code})});let d={};try{d=await r.json();}catch(_){}if(!r.ok)throw new Error(d.detail||"Invalid or expired OTP.");sessionStorage.setItem("admin_reset_otp_verified","true");showMessage(d.message||"Password reset code verified successfully.","success");setTimeout(()=>location.href="ad-reset-pass.html",500);}catch(err){console.error(err);showMessage(err.message||"Unable to verify the OTP. Please try again.");}finally{button.disabled=false;button.textContent="Verify OTP";}});
+</script>
+
+
+</body>
+
+</html>

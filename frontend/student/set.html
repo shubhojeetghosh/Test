@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>EPS TOPIK Test Sets</title>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    /* =========================================
+       PAGE
+       ========================================= */
+
+    .set-page {
+      min-height: 100vh;
+      background: #f7f6f2;
+    }
+
+    .set-header {
+      height: 52px;
+      background: #10254a;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    }
+
+    .set-container {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 35px 28px 55px;
+    }
+
+
+    /* =========================================
+       USER PROFILE
+       ========================================= */
+
+    .student-row {
+      display: flex;
+      justify-content: flex-end;
+      margin: -50px 70px 28px 0;
+    }
+
+    .profile-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      background: #ffffff;
+      padding: 8px 18px 8px 8px;
+
+      border: 1px solid #e1e4e8;
+      border-radius: 12px;
+
+      box-shadow: 0 4px 14px rgba(16, 37, 74, 0.10);
+
+      color: #111827;
+    }
+
+    .profile-avatar {
+      width: 50px;
+      height: 50px;
+
+      border-radius: 50%;
+
+      background: #eef4ff;
+      color: #3767b0;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .profile-details {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.3;
+    }
+
+    .profile-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .profile-roll {
+      margin-top: 2px;
+
+      font-size: 12px;
+      font-weight: 600;
+
+      color: #6b7280;
+    }
+
+
+    /* =========================================
+       MAIN LAYOUT
+       ========================================= */
+
+    .set-layout {
+      display: grid;
+
+      grid-template-columns:
+        minmax(290px, 360px)
+        minmax(0, 1fr);
+
+      gap: 45px;
+
+      align-items: start;
+    }
+
+
+    /* =========================================
+       LEFT CATEGORY LIST
+       ========================================= */
+
+    .category-panel {
+      padding-right: 30px;
+
+      border-right: 2px solid #d9d9d9;
+    }
+
+    .category-heading {
+      margin-bottom: 18px;
+    }
+
+    .category-heading span {
+      display: block;
+
+      margin-bottom: 4px;
+
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.9px;
+
+      color: #447da8;
+    }
+
+    .category-heading h2 {
+      margin: 0;
+
+      font-size: 21px;
+      color: #10254a;
+    }
+
+    .category-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .category-btn {
+      min-height: 70px;
+
+      border: 1px solid #cfd4da;
+      border-radius: 12px;
+
+      background: #ffffff;
+      color: #111111;
+
+      font-size: 17px;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+
+      gap: 12px;
+
+      padding: 10px 14px;
+
+      text-align: left;
+
+      box-shadow: 0 3px 9px rgba(0, 0, 0, 0.08);
+
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease;
+    }
+
+    .category-btn:hover {
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 7px 16px rgba(16, 37, 74, 0.13);
+    }
+
+    .category-btn.active {
+      background: #d9e8fa;
+      border-color: #9db9d9;
+
+      box-shadow:
+        0 7px 16px rgba(16, 37, 74, 0.15);
+    }
+
+    .category-icon {
+      width: 42px;
+      height: 42px;
+
+      flex-shrink: 0;
+
+      border-radius: 10px;
+
+      background: #eef0f5;
+      color: #172650;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .category-btn.active .category-icon {
+      background: #ffffff;
+    }
+
+
+    /* =========================================
+       RIGHT SET AREA
+       ========================================= */
+
+    .sets-panel {
+      min-width: 0;
+    }
+
+    .sets-heading {
+      display: flex;
+
+      justify-content: space-between;
+      align-items: flex-end;
+
+      gap: 20px;
+
+      margin-bottom: 18px;
+    }
+
+    .sets-heading-text span {
+      display: block;
+
+      margin-bottom: 4px;
+
+      font-size: 11px;
+      font-weight: 700;
+
+      letter-spacing: 0.9px;
+
+      color: #447da8;
+    }
+
+    .sets-heading-text h1 {
+      margin: 0;
+
+      font-size: 25px;
+
+      color: #10254a;
+    }
+
+    .sets-heading-text p {
+      margin: 5px 0 0;
+
+      font-size: 13px;
+
+      color: #687386;
+    }
+
+    .price-info {
+      white-space: nowrap;
+
+      padding: 8px 12px;
+
+      background: #eef4ff;
+
+      border: 1px solid #c6d8ef;
+      border-radius: 8px;
+
+      font-size: 12px;
+      font-weight: 700;
+
+      color: #10254a;
+    }
+
+
+    /* =========================================
+       SET GRID
+       ========================================= */
+
+    .sets {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(135px, 1fr));
+
+      gap: 14px 20px;
+    }
+
+    .set-btn {
+      height: 100px;
+
+      position: relative;
+
+      border: 1px solid #c8cdd3;
+      border-radius: 12px;
+
+      background: #ffffff;
+      color: #111111;
+
+      font-size: 21px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      box-shadow:
+        0 4px 10px rgba(0, 0, 0, 0.10);
+
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+    }
+
+    .set-btn:hover {
+      transform: translateY(-3px);
+
+      border-color: #9db9d9;
+
+      box-shadow:
+        0 8px 18px rgba(16, 37, 74, 0.15);
+    }
+
+
+    /* Status badge */
+
+    .set-status {
+      position: absolute;
+
+      top: 7px;
+      right: 8px;
+
+      padding: 4px 9px;
+
+      border-radius: 7px;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      white-space: nowrap;
+    }
+
+
+    /* =========================================
+       FREE SET
+       ========================================= */
+
+    .set-btn.free {
+      background: #d9e8fa;
+
+      border-color: #9db9d9;
+    }
+
+    .set-btn.free .set-status {
+      background: #10254a;
+
+      color: #ffffff;
+    }
+
+
+    /* =========================================
+       PAID SETS
+       ========================================= */
+
+    .set-btn.paid-set {
+      background: #ffffff;
+
+      color: #111111;
+    }
+
+    .set-btn.paid-set .set-status {
+      background: #eef4ff;
+
+      color: #10254a;
+
+      border: 1px solid #c6d8ef;
+    }
+
+    .set-btn.paid-set:hover .set-status {
+      background: #10254a;
+
+      color: #ffffff;
+
+      border-color: #10254a;
+    }
+
+
+    /* =========================================
+       FREE / PAYMENT NOTE
+       ========================================= */
+
+    .set-note {
+      min-height: 72px;
+
+      padding: 13px 20px;
+
+      background: #edf5ff;
+
+      border: 1px solid #9db9d9;
+      border-radius: 12px;
+
+      color: #14213d;
+
+      font-size: 12px;
+      font-weight: 600;
+
+      line-height: 1.5;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      text-align: center;
+
+      /*
+        This note occupies remaining 3 grid columns.
+      */
+      grid-column: span 3;
+    }
+
+
+
+    /* =========================================
+       MULTI-SET CART
+       ========================================= */
+
+    .cart-bar {
+      margin: 0 0 22px;
+      padding: 14px 16px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+
+      background: #ffffff;
+      border: 1px solid #cfd8e5;
+      border-radius: 12px;
+
+      box-shadow: 0 4px 12px rgba(16, 37, 74, 0.08);
+    }
+
+    .cart-summary {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .cart-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cart-stat span {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: #6b7280;
+    }
+
+    .cart-stat strong {
+      font-size: 17px;
+      color: #10254a;
+    }
+
+    .cart-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .clear-cart-btn,
+    .buy-cart-btn {
+      border-radius: 9px;
+      padding: 10px 15px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .clear-cart-btn {
+      border: 1px solid #cfd4da;
+      background: #ffffff;
+      color: #475569;
+    }
+
+    .clear-cart-btn:hover:not(:disabled) {
+      background: #f6f8fb;
+      border-color: #9db9d9;
+    }
+
+    .buy-cart-btn {
+      border: none;
+      background: #10254a;
+      color: #ffffff;
+      box-shadow: 0 5px 12px rgba(16, 37, 74, 0.18);
+    }
+
+    .buy-cart-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: #173564;
+    }
+
+    .clear-cart-btn:disabled,
+    .buy-cart-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .cart-help {
+      margin: -8px 0 18px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .set-btn.paid-set.selected {
+      background: #eaf3ff;
+      border: 2px solid #447da8;
+      box-shadow: 0 8px 18px rgba(16, 37, 74, 0.16);
+    }
+
+    .set-btn.paid-set.selected .set-status {
+      background: #10254a;
+      color: #ffffff;
+      border-color: #10254a;
+    }
+
+    .set-selected-mark {
+      position: absolute;
+      left: 9px;
+      top: 8px;
+
+      width: 22px;
+      height: 22px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 50%;
+      background: #447da8;
+      color: #ffffff;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    /* =========================================
+       RESPONSIVE
+       ========================================= */
+
+    @media (max-width: 1150px) {
+
+      .set-layout {
+        grid-template-columns: 290px 1fr;
+        gap: 28px;
+      }
+
+      .category-panel {
+        padding-right: 22px;
+      }
+
+      .sets {
+        grid-template-columns:
+          repeat(3, minmax(135px, 1fr));
+      }
+
+      .set-note {
+        grid-column: span 2;
+      }
+    }
+
+
+    @media (max-width: 900px) {
+
+      .student-row {
+        margin-right: 0;
+      }
+
+      .set-layout {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .category-panel {
+        padding-right: 0;
+        padding-bottom: 28px;
+
+        border-right: none;
+        border-bottom: 2px solid #d9d9d9;
+      }
+
+      .category-list {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      .sets {
+        grid-template-columns:
+          repeat(3, 1fr);
+      }
+
+      .set-note {
+        grid-column: span 2;
+      }
+    }
+
+
+    @media (max-width: 650px) {
+
+      .cart-bar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .cart-summary {
+        justify-content: space-between;
+      }
+
+      .cart-actions {
+        width: 100%;
+      }
+
+      .clear-cart-btn,
+      .buy-cart-btn {
+        flex: 1;
+      }
+
+      .set-container {
+        padding:
+          20px 15px
+          40px;
+      }
+
+      .student-row {
+        justify-content: center;
+
+        margin:
+          -35px 0
+          30px;
+      }
+
+      .profile-card {
+        width: 100%;
+
+        max-width: 350px;
+      }
+
+      .category-list {
+        grid-template-columns: 1fr;
+      }
+
+      .sets-heading {
+        align-items: flex-start;
+
+        flex-direction: column;
+      }
+
+      .sets {
+        grid-template-columns:
+          repeat(2, 1fr);
+
+        gap: 12px;
+      }
+
+      .set-btn {
+        height: 90px;
+
+        font-size: 18px;
+      }
+
+      .set-note {
+        grid-column: span 1;
+
+        min-height: 90px;
+      }
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+  <div class="set-page">
+
+
+    <!-- =========================================
+         TOP BAR
+         ========================================= -->
+
+    <div class="set-header"></div>
+
+
+    <div class="set-container">
+
+
+      <!-- =========================================
+           LOGGED-IN USER
+           ========================================= -->
+
+      <div class="student-row">
+
+        <div class="profile-card" id="profileCard">
+
+          <div
+            class="profile-avatar"
+            id="profileAvatar"
+          >
+            U
+          </div>
+
+
+          <div class="profile-details">
+
+            <div
+              class="profile-name"
+              id="profileName"
+            >
+              Loading...
+            </div>
+
+            <div
+              class="profile-roll"
+              id="profileRoll"
+            ></div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- =========================================
+           PAGE LAYOUT
+           ========================================= -->
+
+      <div class="set-layout">
+
+
+        <!-- =========================================
+             LEFT — CATEGORIES
+             ========================================= -->
+
+        <aside class="category-panel">
+
+          <div class="category-heading">
+
+            <span>
+              PRACTICE CATEGORY
+            </span>
+
+            <h2>
+              Choose a Chapter
+            </h2>
+
+          </div>
+
+
+          <div
+  class="category-list"
+  id="categoryList"
+>
+  <!-- Categories will be loaded dynamically -->
+</div>
+
+        </aside>
+
+
+
+        <!-- =========================================
+             RIGHT — TEST SETS
+             ========================================= -->
+
+        <main class="sets-panel">
+
+
+          <div class="sets-heading">
+
+
+            <div class="sets-heading-text">
+
+              <span>
+                TEST SETS
+              </span>
+
+              <h1 id="selectedCategoryTitle">
+  Select a category
+</h1>
+
+              <p>
+                Choose a test set to begin your EPS TOPIK practice.
+              </p>
+
+            </div>
+
+
+           <div
+  class="price-info"
+  id="priceInfo"
+>
+  Loading pricing...
+</div>
+
+
+          </div>
+
+
+          <!-- ================= CART SUMMARY ================= -->
+
+          <div class="cart-bar">
+
+            <div class="cart-summary">
+
+              <div class="cart-stat">
+                <span>SELECTED SETS</span>
+                <strong id="cartCount">0</strong>
+              </div>
+
+              <div class="cart-stat">
+                <span>TOTAL</span>
+                <strong id="cartTotal">NPR 0</strong>
+              </div>
+
+            </div>
+
+            <div class="cart-actions">
+
+              <button
+                type="button"
+                class="clear-cart-btn"
+                id="clearCartButton"
+                disabled
+              >
+                Clear
+              </button>
+
+              <button
+                type="button"
+                class="buy-cart-btn"
+                id="buyCartButton"
+                disabled
+              >
+                Buy Selected Sets →
+              </button>
+
+            </div>
+
+          </div>
+
+          <p
+  class="cart-help"
+  id="cartHelp"
+>
+  Select sets to continue.
+</p>
+
+
+          <div
+            class="sets"
+            id="setsContainer"
+          ></div>
+
+
+        </main>
+
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <script>
+
+    /* =========================================
+       CONFIG
+       ========================================= */
+
+      const SET_PRICE = 50;
+      const API_URL = window.API_BASE_URL + "/api/quizzes/";
+      const STUDENT_ACCESS_URL = window.API_BASE_URL + "/api/student/access";
+
+      let categories = [];
+      let setsByCategory = {};
+      let currentSets = [];
+
+// Sets unlocked by the admin for the logged-in student
+let unlockedSetIds = new Set();
+
+async function loadStudentAccess() {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+        unlockedSetIds = new Set();
+        return;
+    }
+
+    try {
+        const response = await fetch(STUDENT_ACCESS_URL, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            console.error(
+                "Failed to load student access:",
+                response.status
+            );
+
+            unlockedSetIds = new Set();
+            return;
+        }
+
+        const data = await response.json();
+
+        unlockedSetIds = new Set(
+            (data.unlocked_set_ids || []).map(Number)
+        );
+
+        console.log(
+            "Unlocked exam sets:",
+            [...unlockedSetIds]
+        );
+
+    } catch (error) {
+        console.error(
+            "Error loading student access:",
+            error
+        );
+
+        unlockedSetIds = new Set();
+    }
+}
+
+async function loadQuizData() {
+    try {
+        const response = await fetch(API_URL);
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const exams = await response.json();
+
+        categories = [];
+        setsByCategory = {};
+
+        /*
+         * Group exams by chapter name.
+         *
+         * Since the Admin Create Quiz page now uses
+         * the selected chapter as quiz.title, exams
+         * with the same title belong to the same chapter.
+         */
+        const groupedChapters = {};
+
+        exams.forEach((exam) => {
+
+            const chapterName =
+                String(exam.title || "").trim();
+
+            if (!chapterName) {
+                return;
+            }
+
+            /*
+             * Create a safe ID for the chapter.
+             */
+            const categoryId =
+                chapterName
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
+
+            /*
+             * Create chapter if it doesn't exist.
+             */
+            if (!groupedChapters[categoryId]) {
+
+                groupedChapters[categoryId] = {
+                    id: categoryId,
+                    name: chapterName,
+                    title: chapterName
+                };
+
+                setsByCategory[categoryId] = [];
+            }
+
+            /*
+             * Add every set belonging to this exam
+             * into the chapter.
+             */
+            (exam.sets || []).forEach((set) => {
+
+                setsByCategory[categoryId].push({
+                    id: String(set.id),
+
+                    exam_id:
+                        String(
+                            set.exam_id ?? exam.id
+                        ),
+
+                    set_number:
+                        Number(
+                            set.set_number
+                        ),
+
+                    set_name:
+                        set.set_name ||
+                        `Set ${set.set_number}`
+                });
+
+            });
+        });
+
+        /*
+         * Convert grouped chapters into the
+         * categories array used by the UI.
+         */
+        categories =
+            Object.values(groupedChapters);
+
+        /*
+         * Sort sets numerically.
+         */
+        Object.keys(setsByCategory).forEach(
+            (categoryId) => {
+
+                setsByCategory[categoryId].sort(
+                    (a, b) =>
+                        a.set_number -
+                        b.set_number
+                );
+
+            }
+        );
+
+        console.log(
+            "Loaded chapters:",
+            categories
+        );
+
+        console.log(
+            "Sets grouped by chapter:",
+            setsByCategory
+        );
+
+        renderCategories();
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load quizzes:",
+            error
+        );
+
+        const categoryContainer =
+            document.getElementById("categoryList") ||
+            document.getElementById("categories");
+
+        if (categoryContainer) {
+
+            categoryContainer.innerHTML = `
+                <p style="color: red;">
+                    Unable to load quizzes.
+                    Please check whether the backend is running.
+                </p>
+            `;
+        }
+    }
+}
+    /* =========================================================
+   LOGIN PROTECTION
+   ========================================================= */
+
+function isLoggedIn() {
+  const token = localStorage.getItem("access_token");
+
+  return Boolean(token);
+}
+
+
+function requireLogin(returnUrl) {
+  if (isLoggedIn()) {
+    return true;
+  }
+
+  const loginUrl =
+    `login.html?next=${encodeURIComponent(returnUrl)}`;
+
+  window.location.href = loginUrl;
+  return false;
+}
+
+    const setsContainer =
+      document.getElementById("setsContainer");
+
+    const selectedCategoryTitle =
+      document.getElementById(
+        "selectedCategoryTitle"
+      );
+
+
+   let currentCategory = null;
+let currentCategoryName = "";
+
+    const cartCount =
+      document.getElementById("cartCount");
+
+    const cartTotal =
+      document.getElementById("cartTotal");
+
+    const clearCartButton =
+      document.getElementById("clearCartButton");
+
+    const buyCartButton =
+      document.getElementById("buyCartButton");
+
+
+    /*
+      Cart items are kept only as frontend selection state.
+      The backend must still validate every set and its price
+      before creating the real payment transaction.
+    */
+
+    const selectedSets = new Map();
+    function getCartKey(category, setId) {
+      return `${category}:${setId}`;
+    }
+
+
+    function updateCartUI() {
+
+      const itemCount =
+        selectedSets.size;
+
+      const total =
+  Array.from(selectedSets.values())
+    .reduce((sum, item) => {
+      return sum + Number(item.price || 0);
+    }, 0);
+
+      cartCount.textContent =
+        itemCount;
+
+      cartTotal.textContent =
+        `NPR ${total}`;
+
+
+      const hasItems =
+        itemCount > 0;
+
+      clearCartButton.disabled =
+        !hasItems;
+
+      buyCartButton.disabled =
+        !hasItems;
+
+    }
+
+
+   function togglePaidSet(
+  category,
+  categoryName,
+  setId,
+  set
+) {
+
+      const key =
+        getCartKey(category, setId);
+
+
+      if (selectedSets.has(key)) {
+
+        selectedSets.delete(key);
+
+      }
+
+      else {
+
+        selectedSets.set(
+          key,
+          {
+            category,
+            categoryName,
+            set: setId,
+            price: SET_PRICE
+          }
+        );
+
+      }
+
+
+      updateCartUI();
+
+     renderSets();
+
+    }
+
+
+    clearCartButton.addEventListener(
+      "click",
+      () => {
+
+        selectedSets.clear();
+
+        updateCartUI();
+
+       renderSets();
+      }
+    );
+
+
+    buyCartButton.addEventListener(
+  "click",
+  () => {
+
+    if (selectedSets.size === 0) {
+      return;
+    }
+
+    const target = "payment.html?mode=cart";
+
+    if (!requireLogin(target)) {
+      return;
+    }
+
+    const cartItems =
+      Array.from(
+        selectedSets.values()
+      );
+
+
+        const checkoutData = {
+          items: cartItems,
+         total: cartItems.reduce((sum, item) => {
+  return sum + Number(item.price || 0);
+}, 0)
+        };
+
+
+        /*
+          sessionStorage is used only to pass the user's
+          current cart selection to payment.html.
+
+          It must NOT be trusted as proof of price,
+          ownership, or successful payment.
+        */
+
+        sessionStorage.setItem(
+          "epsTopikCart",
+          JSON.stringify(checkoutData)
+        );
+
+
+        window.location.href =
+          "payment.html?mode=cart";
+
+      }
+    );
+
+
+
+    /* =========================================
+       CATEGORY SELECTION
+       ========================================= */
+
+    const categoryList =
+  document.getElementById("categoryList");
+
+const priceInfo =
+  document.getElementById("priceInfo");
+
+const cartHelp =
+  document.getElementById("cartHelp");
+
+
+function renderCategories() {
+  categoryList.innerHTML = "";
+
+  if (categories.length === 0) {
+    categoryList.innerHTML = `
+      <p>
+        No categories available.
+      </p>
+    `;
+
+    selectedCategoryTitle.textContent =
+      "No categories available";
+
+    setsContainer.innerHTML = "";
+
+    return;
+  }
+
+  categories.forEach((category, index) => {
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+    button.className = "category-btn";
+
+    button.dataset.category =
+      category.id;
+
+    button.dataset.name =
+      category.name;
+
+    button.innerHTML = `
+      <span class="category-icon">
+        ${category.icon || "📚"}
+      </span>
+
+      <span>
+        ${category.name}
+      </span>
+    `;
+
+    button.addEventListener("click", () => {
+      document
+        .querySelectorAll(".category-btn")
+        .forEach(item => {
+          item.classList.remove("active");
+        });
+
+      button.classList.add("active");
+
+      currentCategory =
+        category.id;
+
+      currentCategoryName =
+        category.name;
+
+      currentSets =
+        setsByCategory[currentCategory] || [];
+
+      renderSets();
+    });
+
+    categoryList.appendChild(button);
+
+    if (index === 0) {
+      button.click();
+    }
+  });
+}
+
+
+function renderSets() {
+  setsContainer.innerHTML = "";
+
+  selectedCategoryTitle.textContent =
+    currentCategoryName || "Select a category";
+
+  if (currentSets.length === 0) {
+    setsContainer.innerHTML = `
+      <p>
+        No sets available in this category.
+      </p>
+    `;
+
+    return;
+  }
+
+  currentSets.forEach(set => {
+    const button =
+      document.createElement("button");
+
+    const setId =
+      set.id;
+
+  const setNumber = Number(
+  set.set_number ?? set.number ?? set.id
+);
+
+const setName =
+  set.name ||
+  set.set_name ||
+  `Set ${String(setNumber).padStart(2, "0")}`;
+
+  const isFree = setNumber === 1;
+
+// Admin-unlocked paid set
+const isUnlocked =
+    isFree || unlockedSetIds.has(Number(setId));
+
+const key =
+    getCartKey(currentCategory, setId);
+
+const isSelected =
+    selectedSets.has(key);
+
+    button.type = "button";
+
+    button.className =
+    isFree
+        ? "set-btn free"
+        : isUnlocked
+            ? "set-btn paid-set unlocked"
+            : isSelected
+                ? "set-btn paid-set selected"
+                : "set-btn paid-set";
+
+    button.innerHTML = `
+      ${
+        isSelected
+          ? '<span class="set-selected-mark">✓</span>'
+          : ""
+      }
+
+      <span class="set-status">
+        ${isFree
+    ? "FREE"
+    : isUnlocked
+        ? "UNLOCKED"
+        : isSelected
+            ? "SELECTED"
+            : `NPR ${SET_PRICE}`
+        }
+      </span>
+
+      <span>
+        ${setName}
+      </span>
+    `;
+
+  button.addEventListener("click", () => {
+
+    // Free Set 1 OR admin-unlocked paid set
+    if (isFree || isUnlocked) {
+
+        const examId =
+            set.exam_id || currentCategory;
+
+        const target =
+            `exam-instructions.html?exam=${encodeURIComponent(examId)}` +
+            `&set=${encodeURIComponent(setId)}`;
+
+        console.log(
+            "Opening exam instructions:",
+            {
+                examId: examId,
+                setId: setId,
+                unlocked: isUnlocked
+            }
+        );
+
+        if (!requireLogin(target)) {
+            return;
+        }
+
+        window.location.href = target;
+        return;
+    }
+
+    // Locked paid set → add/remove from cart
+    togglePaidSet(
+        currentCategory,
+        currentCategoryName,
+        setId,
+        set
+    );
+});
+
+    setsContainer.appendChild(button);
+  });
+}
+
+
+    /* =========================================
+       USER PROFILE
+       ========================================= */
+
+    function getInitials(name) {
+
+      if (!name) {
+        return "U";
+      }
+
+
+      return name
+        .trim()
+        .split(/\s+/)
+        .map(word => word.charAt(0))
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
+
+    }
+
+
+
+    function decodeJwtPayload(token) {
+
+      try {
+
+        const parts =
+          token.split(".");
+
+
+        if (parts.length !== 3) {
+          return null;
+        }
+
+
+        let payload =
+          parts[1]
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+
+        while (
+          payload.length % 4
+        ) {
+
+          payload += "=";
+
+        }
+
+
+        return JSON.parse(
+          decodeURIComponent(
+            atob(payload)
+              .split("")
+              .map(character => {
+
+                return (
+                  "%" +
+                  (
+                    "00" +
+                    character
+                      .charCodeAt(0)
+                      .toString(16)
+                  ).slice(-2)
+                );
+
+              })
+              .join("")
+          )
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Could not read login token:",
+          error
+        );
+
+        return null;
+
+      }
+
+    }
+
+
+
+    function loadLoggedInUser() {
+
+     const token = localStorage.getItem("access_token");
+
+if (!token) {
+  document.getElementById("profileName").textContent = "Guest User";
+  document.getElementById("profileAvatar").textContent = "GU";
+  document.getElementById("profileRoll").style.display = "none";
+
+  return;
+}
+
+
+      let user = null;
+
+
+      /*
+        First try user object saved
+        by login/profile code.
+      */
+
+      const storedUser =
+        localStorage.getItem("user");
+
+
+      if (storedUser) {
+
+        try {
+
+          user =
+            JSON.parse(storedUser);
+
+        }
+
+        catch (error) {
+
+          console.warn(
+            "Invalid stored user object."
+          );
+
+        }
+
+      }
+
+
+
+      /*
+        If no user object exists,
+        try reading display information
+        from JWT claims.
+      */
+
+      if (!user) {
+
+        user =
+          decodeJwtPayload(token) || {};
+
+      }
+
+
+
+      const name =
+        user.name ||
+        user.full_name ||
+        user.username ||
+        user.email ||
+        "Logged In User";
+
+
+      const roll =
+        user.roll_no ||
+        user.roll_number ||
+        user.student_id ||
+        user.roll ||
+        "";
+
+
+      const profileName =
+        document.getElementById(
+          "profileName"
+        );
+
+
+      const profileRoll =
+        document.getElementById(
+          "profileRoll"
+        );
+
+
+      const profileAvatar =
+        document.getElementById(
+          "profileAvatar"
+        );
+
+
+      profileName.textContent =
+        name;
+
+
+      profileAvatar.textContent =
+        getInitials(name);
+
+
+      if (roll) {
+
+        profileRoll.textContent =
+          `Roll No. ${roll}`;
+
+        profileRoll.style.display =
+          "block";
+
+      }
+
+      else {
+
+        profileRoll.textContent = "";
+
+        profileRoll.style.display =
+          "none";
+
+      }
+
+    }
+
+
+
+    /* =========================================
+       INITIAL LOAD
+       ========================================= */
+
+       loadLoggedInUser();
+updateCartUI();
+
+priceInfo.textContent =
+    "Set 01 is FREE • Other sets NPR 50";
+
+(async () => {
+    await loadStudentAccess();
+    await loadQuizData();
+})();
+
+  </script>
+
+
+</body>
+
+</html>
+

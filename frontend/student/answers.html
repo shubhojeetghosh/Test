@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EPS TOPIK - Exam Result</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+
+<body class="dashboard-page">
+
+
+<!-- =====================================================
+     NAVBAR
+     ===================================================== -->
+
+<header class="dashboard-navbar">
+
+  <a
+    href="dashboard.html"
+    class="dashboard-brand"
+  >
+
+    <div class="dashboard-logo">
+      K
+    </div>
+
+    <div>
+
+      <h1>
+        EPS TOPIK
+      </h1>
+
+      <span>
+        EXAM PLATFORM
+      </span>
+
+    </div>
+
+  </a>
+
+
+  <nav class="dashboard-nav">
+
+    <a href="dashboard.html">
+      Dashboard
+    </a>
+
+    <a href="dashboard.html#tests">
+      Tests
+    </a>
+
+    <a href="dashboard.html#results">
+      Results
+    </a>
+
+  </nav>
+
+
+  <div class="user-menu">
+
+    <button
+      type="button"
+      class="logout-btn"
+      onclick="logout()"
+    >
+      Logout
+    </button>
+
+  </div>
+
+</header>
+
+
+
+<!-- =====================================================
+     RESULT PAGE
+     ===================================================== -->
+
+<main class="exam-result-container">
+
+
+  <!-- ===================================================
+       RESULT HEADER
+       =================================================== -->
+
+  <section class="result-hero">
+
+
+    <div class="result-complete-icon">
+      ✓
+    </div>
+
+
+  <span class="dashboard-eyebrow" id="resultHeaderLabel">
+  EXAM COMPLETED
+</span>
+
+<h1 id="resultHeaderTitle">
+  Exam Result
+</h1>
+
+<p id="resultHeaderMessage">
+  Your examination result is shown below.
+</p>
+
+  </section>
+
+
+
+  <!-- ===================================================
+       MAIN RESULT CARD
+       =================================================== -->
+
+  <section class="result-summary-card">
+
+
+    <!-- LEFT SCORE -->
+
+    <div class="result-score-area">
+
+
+      <div class="result-score-circle">
+
+        <div>
+
+          <strong id="resultPercentage"></strong>
+
+          <span>
+            Your Score
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <span
+  class="result-status"
+  id="resultStatus"
+></span>
+
+
+      <p id="resultMessage"></p>
+
+
+    </div>
+
+
+
+    <!-- RIGHT DETAILS -->
+
+    <div class="result-details-area">
+
+
+      <div class="result-test-heading">
+
+        <span class="small-heading">
+          TEST RESULT
+        </span>
+
+        <h2 id="resultTestName"></h2>
+
+        <p id="resultExamType"></p>
+
+      </div>
+
+
+
+      <div class="result-main-stats">
+
+
+        <!-- Score -->
+
+        <article>
+
+          <span>
+            Total Score
+          </span>
+
+          <strong id="resultScore"></strong>
+
+        </article>
+
+
+
+        <!-- Correct -->
+
+        <article>
+
+          <span>
+            Correct
+          </span>
+
+          <strong class="correct-text" id="correctAnswers"></strong>
+
+        </article>
+
+
+
+        <!-- Wrong -->
+
+        <article>
+
+          <span>
+            Incorrect
+          </span>
+
+          <strong class="wrong-text" id="wrongAnswers"></strong>
+
+        </article>
+
+
+
+        <!-- Unanswered -->
+
+        <article>
+
+          <span>
+            Unanswered
+          </span>
+
+          <strong id="unansweredAnswers"></strong>
+
+        </article>
+
+
+      </div>
+
+
+    </div>
+
+
+  </section>
+
+
+
+  <!-- ===================================================
+       PERFORMANCE BREAKDOWN
+       =================================================== -->
+
+  <section class="performance-card">
+
+
+    <div class="card-header">
+
+      <div>
+
+        <span class="small-heading">
+          PERFORMANCE ANALYSIS
+        </span>
+
+        <h3>
+          Section Performance
+        </h3>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="section-performance-grid">
+
+
+      <!-- ================= READING ================= -->
+
+      <article class="performance-section">
+
+
+        <div class="performance-section-top">
+
+          <div>
+
+            <span>
+              READING
+            </span>
+
+            <h3>
+              Reading Section
+            </h3>
+
+          </div>
+
+
+          <strong id="readingPercentage"></strong>
+
+        </div>
+
+
+
+       <div class="performance-bar">
+
+  <div
+    class="performance-bar-fill"
+    id="readingBar"
+  ></div>
+
+</div>
+
+<div class="performance-details">
+
+  <span id="readingCorrect"></span>
+
+  <strong id="readingScore"></strong>
+
+</div>
+
+
+      </article>
+
+
+
+      <!-- ================= LISTENING ================= -->
+
+      <article class="performance-section">
+
+
+        <div class="performance-section-top">
+
+          <div>
+
+            <span>
+              LISTENING
+            </span>
+
+            <h3>
+              Listening Section
+            </h3>
+
+          </div>
+
+
+          <strong id="listeningPercentage"></strong>
+
+        </div>
+
+
+
+        <div class="performance-bar">
+
+  
+        <div
+        class="performance-bar-fill"
+        id="listeningBar"
+        ></div>
+
+</div>
+
+<div class="performance-details">
+
+  <span id="listeningCorrect"></span>
+
+  <strong id="listeningScore"></strong>
+
+</div>
+
+
+      </article>
+
+
+    </div>
+
+
+  </section>
+
+
+
+  <!-- ===================================================
+       QUESTION SUMMARY
+       =================================================== -->
+
+  <section class="question-summary-card">
+
+
+    <div class="card-header">
+
+      <div>
+
+        <span class="small-heading">
+          ANSWER SUMMARY
+        </span>
+
+        <h3>
+          Question Overview
+        </h3>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="review-answers-btn"
+        onclick="reviewAnswers()"
+      >
+        Review All Answers →
+      </button>
+
+    </div>
+
+
+
+    <div class="question-status-legend">
+
+      <span class="legend-correct">
+        <b></b>
+        Correct
+      </span>
+
+      <span class="legend-wrong">
+        <b></b>
+        Incorrect
+      </span>
+
+      <span class="legend-unanswered">
+        <b></b>
+        Unanswered
+      </span>
+
+    </div>
+
+
+
+    <!-- QUESTION BUTTONS -->
+
+   <div
+  class="question-result-grid"
+  id="questionResultGrid"
+></div>
+
+
+  </section>
+
+
+
+  <!-- ===================================================
+       ACTIONS
+       =================================================== -->
+
+  <section class="result-actions-card">
+
+
+    <div>
+
+      <span class="small-heading">
+        WHAT'S NEXT?
+      </span>
+
+      <h3>
+        Continue your preparation
+      </h3>
+
+     <p id="resultActionMessage"></p>
+
+    </div>
+
+
+
+    <div class="result-action-buttons">
+
+
+      <!-- Review -->
+
+      <button
+        type="button"
+        class="result-secondary-button"
+        onclick="reviewAnswers()"
+      >
+        Review Answers
+      </button>
+
+
+
+      <!-- Download -->
+
+      <button
+        type="button"
+        class="result-secondary-button"
+        onclick="downloadResult()"
+      >
+        ↓ Download Result
+      </button>
+
+
+
+      <!-- Retake -->
+
+      <button
+        type="button"
+        class="result-secondary-button"
+        onclick="retakeTest()"
+      >
+        ↻ Retake Test
+      </button>
+
+
+
+      <!-- Dashboard -->
+
+      <button
+        type="button"
+        class="result-primary-button"
+        onclick="goToDashboard()"
+      >
+        Back to Dashboard →
+      </button>
+
+
+    </div>
+
+
+  </section>
+
+
+</main>
+
+
+
+<!-- =====================================================
+     FOOTER
+     ===================================================== -->
+
+<footer class="dashboard-footer">
+
+ <p id="footerCopyright"></p>
+
+
+  <div>
+
+    <a href="#">
+      Help
+    </a>
+
+    <a href="#">
+      Privacy
+    </a>
+
+    <a href="#">
+      Terms
+    </a>
+
+  </div>
+
+</footer>
+
+
+
+<script src="script.js"></script>
+<script src="answers.js"></script>
+
+</body>
+
+</html>

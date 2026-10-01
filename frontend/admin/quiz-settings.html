@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>EPS TOPIK - Quiz Settings</title>
+
+    <link
+        rel="stylesheet"
+        href="admin.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="admin-layout">
+
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+
+            <div class="logo-icon">
+                E
+            </div>
+
+            <div>
+
+                <h2>EPS TOPIK</h2>
+
+                <span>
+                    Admin Panel
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <p class="nav-title">
+                MAIN
+            </p>
+
+
+            <a
+                href="admin.html"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▦
+                </span>
+
+                Dashboard
+
+            </a>
+
+
+            <a
+                href="admin.html#users"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ♙
+                </span>
+
+                Users
+
+            </a>
+
+
+            <a
+                href="admin.html#quizzes"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▤
+                </span>
+
+                Quizzes
+
+            </a>
+
+
+            <a
+                href="admin.html#results"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ◒
+                </span>
+
+                Results
+
+            </a>
+
+
+            <a
+                href="admin.html#payments"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ₹
+                </span>
+
+                Payments
+
+            </a>
+
+
+            <p class="nav-title">
+                SYSTEM
+            </p>
+
+
+            <a
+                href="admin.html#settings"
+                class="nav-item active"
+            >
+
+                <span class="nav-icon">
+                    ⚙
+                </span>
+
+                Settings
+
+            </a>
+
+        </nav>
+
+
+        <!-- SIDEBAR PROFILE -->
+
+        <div class="sidebar-bottom">
+
+            <div class="admin-mini-profile">
+
+                <div
+                    class="profile-avatar"
+                    id="sidebarAdminAvatar"
+                >
+                    A
+                </div>
+
+
+                <div class="profile-info">
+
+                    <strong id="sidebarAdminName">
+                        Administrator
+                    </strong>
+
+                    <span id="sidebarAdminRole">
+                        Admin
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="logout-btn"
+                onclick="window.location.href='admin-login.html'"
+            >
+
+                ↪ Logout
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+
+            <div class="page-heading">
+
+                <h1>
+                    Quiz Settings
+                </h1>
+
+                <p>
+                    Manage default quiz configuration
+                </p>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+
+                <button
+                    type="button"
+                    class="notification-btn"
+                    title="Notifications"
+                >
+
+                    ♢
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+
+                <div class="top-profile">
+
+                    <div
+                        class="profile-avatar"
+                        id="topAdminAvatar"
+                    >
+                        A
+                    </div>
+
+
+                    <div>
+
+                        <strong id="topAdminName">
+                            Administrator
+                        </strong>
+
+                        <span id="topAdminRole">
+                            Admin
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =====================================================
+             QUIZ SETTINGS
+             ===================================================== -->
+
+        <section class="content-section active">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <h2>
+                        Quiz Settings
+                    </h2>
+
+                    <p>
+                        Configure the default behavior of quizzes
+                        across the platform.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- BACK -->
+
+            <a
+                href="admin.html#settings"
+                class="settings-back-btn"
+            >
+
+                ← Back to Settings
+
+            </a>
+
+
+
+            <!-- =================================================
+                 QUIZ CONFIGURATION
+                 ================================================= -->
+
+            <div class="settings-card quiz-settings-card">
+
+
+                <div class="settings-card-header">
+
+
+                    <div class="settings-card-icon">
+                        ▤
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            Quiz Configuration
+                        </h3>
+
+                        <p>
+                            Default settings applied when creating
+                            or starting a quiz.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <form id="quizSettingsForm">
+
+
+                    <!-- TIME LIMIT -->
+
+                    <div class="settings-field">
+
+                        <label for="quizTimeLimit">
+                            Quiz Time Limit
+                        </label>
+
+
+                        <div class="settings-input-with-unit">
+
+                            <input
+                                type="number"
+                                id="quizTimeLimit"
+                                name="timeLimit"
+                                min="1"
+                                placeholder="60"
+                            >
+
+                            <span>
+                                minutes
+                            </span>
+
+                        </div>
+
+
+                        <small class="settings-field-help">
+                            Default amount of time allowed for a quiz.
+                        </small>
+
+                    </div>
+
+
+
+                    <!-- QUESTIONS -->
+
+                    <div class="settings-field">
+
+                        <label for="questionsPerQuiz">
+                            Questions Per Quiz
+                        </label>
+
+
+                        <input
+                            type="number"
+                            id="questionsPerQuiz"
+                            name="questionsPerQuiz"
+                            min="1"
+                            placeholder="20"
+                        >
+
+
+                        <small class="settings-field-help">
+                            Default number of questions presented
+                            to students.
+                        </small>
+
+                    </div>
+
+
+
+                    <!-- PASSING PERCENTAGE -->
+
+                    <div class="settings-field">
+
+                        <label for="passingPercentage">
+                            Passing Percentage
+                        </label>
+
+
+                        <div class="settings-input-with-unit">
+
+                            <input
+                                type="number"
+                                id="passingPercentage"
+                                name="passingPercentage"
+                                min="0"
+                                max="100"
+                                placeholder="60"
+                            >
+
+                            <span>
+                                %
+                            </span>
+
+                        </div>
+
+
+                        <small class="settings-field-help">
+                            Minimum score required to pass a quiz.
+                        </small>
+
+                    </div>
+
+
+
+                    <div class="quiz-settings-divider"></div>
+
+
+
+                    <!-- RETAKES -->
+
+                    <div class="settings-toggle-row">
+
+                        <div>
+
+                            <strong>
+                                Allow Quiz Retakes
+                            </strong>
+
+                            <span>
+                                Allow students to attempt the same
+                                quiz more than once.
+                            </span>
+
+                        </div>
+
+
+                        <label class="switch">
+
+                            <input
+                                type="checkbox"
+                                id="allowRetakes"
+                                name="allowRetakes"
+                            >
+
+                            <span class="slider"></span>
+
+                        </label>
+
+                    </div>
+
+
+
+                    <!-- RESULTS -->
+
+                    <div class="settings-toggle-row">
+
+                        <div>
+
+                            <strong>
+                                Show Results After Submission
+                            </strong>
+
+                            <span>
+                                Allow students to see their result
+                                immediately after completing a quiz.
+                            </span>
+
+                        </div>
+
+
+                        <label class="switch">
+
+                            <input
+                                type="checkbox"
+                                id="showResults"
+                                name="showResults"
+                            >
+
+                            <span class="slider"></span>
+
+                        </label>
+
+                    </div>
+
+
+
+                    <!-- RANDOM QUESTIONS -->
+
+                    <div class="settings-toggle-row">
+
+                        <div>
+
+                            <strong>
+                                Randomize Questions
+                            </strong>
+
+                            <span>
+                                Display quiz questions in a different
+                                order for each attempt.
+                            </span>
+
+                        </div>
+
+
+                        <label class="switch">
+
+                            <input
+                                type="checkbox"
+                                id="randomizeQuestions"
+                                name="randomizeQuestions"
+                            >
+
+                            <span class="slider"></span>
+
+                        </label>
+
+                    </div>
+
+
+
+                    <!-- RANDOM OPTIONS -->
+
+                    <div class="settings-toggle-row">
+
+                        <div>
+
+                            <strong>
+                                Randomize Answer Options
+                            </strong>
+
+                            <span>
+                                Display answer choices in a different
+                                order for each attempt.
+                            </span>
+
+                        </div>
+
+
+                        <label class="switch">
+
+                            <input
+                                type="checkbox"
+                                id="randomizeOptions"
+                                name="randomizeOptions"
+                            >
+
+                            <span class="slider"></span>
+
+                        </label>
+
+                    </div>
+
+
+
+                    <!-- ACTIONS -->
+
+                    <div class="profile-form-actions">
+
+                        <button
+                            type="submit"
+                            class="primary-btn"
+                            id="saveQuizSettings"
+                        >
+                            Save Settings
+                        </button>
+
+
+                        <a
+                            href="admin.html#settings"
+                            class="secondary-btn"
+                        >
+                            Cancel
+                        </a>
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+
+
+            <!-- =================================================
+                 NOTICE
+                 ================================================= -->
+
+            <div class="settings-notice">
+
+
+                <div class="settings-notice-icon">
+                    i
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        Configuration Notice
+                    </strong>
+
+
+                    <p>
+                        Quiz configuration will be connected to the
+                        backend settings service. Until that integration
+                        is completed, these controls do not modify
+                        production quiz behavior.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+</div>
+
+
+
+<script src="admin.js"></script>
+
+</body>
+
+</html>

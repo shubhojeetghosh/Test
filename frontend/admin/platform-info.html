@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>EPS TOPIK - Platform Information</title>
+
+    <link
+        rel="stylesheet"
+        href="admin.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="admin-layout">
+
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+
+            <div class="logo-icon">
+                E
+            </div>
+
+            <div>
+
+                <h2>EPS TOPIK</h2>
+
+                <span>
+                    Admin Panel
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <p class="nav-title">
+                MAIN
+            </p>
+
+
+            <a
+                href="admin.html"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▦
+                </span>
+
+                Dashboard
+
+            </a>
+
+
+            <a
+                href="admin.html#users"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ♙
+                </span>
+
+                Users
+
+            </a>
+
+
+            <a
+                href="admin.html#quizzes"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▤
+                </span>
+
+                Quizzes
+
+            </a>
+
+
+            <a
+                href="admin.html#results"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ◒
+                </span>
+
+                Results
+
+            </a>
+
+
+            <a
+                href="admin.html#payments"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ₹
+                </span>
+
+                Payments
+
+            </a>
+
+
+            <p class="nav-title">
+                SYSTEM
+            </p>
+
+
+            <a
+                href="admin.html#settings"
+                class="nav-item active"
+            >
+
+                <span class="nav-icon">
+                    ⚙
+                </span>
+
+                Settings
+
+            </a>
+
+        </nav>
+
+
+        <!-- SIDEBAR PROFILE -->
+
+        <div class="sidebar-bottom">
+
+            <div class="admin-mini-profile">
+
+                <div
+                    class="profile-avatar"
+                    id="sidebarAdminAvatar"
+                >
+                    A
+                </div>
+
+
+                <div class="profile-info">
+
+                    <strong id="sidebarAdminName">
+                        Administrator
+                    </strong>
+
+                    <span id="sidebarAdminRole">
+                        Admin
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="logout-btn"
+                onclick="window.location.href='admin-login.html'"
+            >
+
+                ↪ Logout
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+
+            <div class="page-heading">
+
+                <h1>
+                    Platform Information
+                </h1>
+
+                <p>
+                    View information about the EPS TOPIK platform
+                </p>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+
+                <button
+                    type="button"
+                    class="notification-btn"
+                    title="Notifications"
+                >
+
+                    ♢
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+
+                <div class="top-profile">
+
+                    <div
+                        class="profile-avatar"
+                        id="topAdminAvatar"
+                    >
+                        A
+                    </div>
+
+
+                    <div>
+
+                        <strong id="topAdminName">
+                            Administrator
+                        </strong>
+
+                        <span id="topAdminRole">
+                            Admin
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =====================================================
+             PLATFORM INFORMATION
+             ===================================================== -->
+
+        <section class="content-section active">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <h2>
+                        Platform Information
+                    </h2>
+
+                    <p>
+                        View platform details and system status.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- BACK -->
+
+            <a
+                href="admin.html#settings"
+                class="settings-back-btn"
+            >
+
+                ← Back to Settings
+
+            </a>
+
+
+
+            <!-- =================================================
+                 PLATFORM OVERVIEW
+                 ================================================= -->
+
+            <div class="settings-card platform-info-card">
+
+
+                <div class="settings-card-header">
+
+
+                    <div class="settings-card-icon">
+                        E
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            Platform Overview
+                        </h3>
+
+                        <p>
+                            General information about the platform.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="platform-overview-content">
+
+
+                    <div class="platform-info-item">
+
+                        <span class="platform-info-label">
+                            Platform Name
+                        </span>
+
+                        <strong>
+                            EPS TOPIK Quiz Platform
+                        </strong>
+
+                    </div>
+
+
+                    <div class="platform-info-item">
+
+                        <span class="platform-info-label">
+                            Platform Type
+                        </span>
+
+                        <strong>
+                            Online Quiz & Learning Platform
+                        </strong>
+
+                    </div>
+
+
+                    <div class="platform-info-item">
+
+                        <span class="platform-info-label">
+                            Purpose
+                        </span>
+
+                        <strong>
+                            EPS-TOPIK exam preparation through
+                            online quizzes and learning resources.
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 SYSTEM INFORMATION
+                 ================================================= -->
+
+            <div class="settings-card platform-info-card">
+
+
+                <div class="settings-card-header">
+
+
+                    <div class="settings-card-icon">
+                        ⚙
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            System Information
+                        </h3>
+
+                        <p>
+                            Technical information and current
+                            platform status.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="platform-system-grid">
+
+
+                    <!-- VERSION -->
+
+                    <div class="platform-status-item">
+
+                        <span>
+                            Platform Version
+                        </span>
+
+                        <strong id="platformVersion">
+                            1.0.0
+                        </strong>
+
+                    </div>
+
+
+                    <!-- ENVIRONMENT -->
+
+                    <div class="platform-status-item">
+
+                        <span>
+                            Environment
+                        </span>
+
+                        <strong id="platformEnvironment">
+                            Development
+                        </strong>
+
+                    </div>
+
+
+                    <!-- BACKEND -->
+
+                    <div class="platform-status-item">
+
+                        <span>
+                            Backend Status
+                        </span>
+
+                        <strong
+                            id="backendStatus"
+                            class="status-pending"
+                        >
+                            Checking...
+                        </strong>
+
+                    </div>
+
+
+                    <!-- DATABASE -->
+
+                    <div class="platform-status-item">
+
+                        <span>
+                            Database Status
+                        </span>
+
+                        <strong
+                            id="databaseStatus"
+                            class="status-pending"
+                        >
+                            Checking...
+                        </strong>
+
+                    </div>
+
+
+                    <!-- HEALTH CHECK -->
+
+                    <div class="platform-status-item">
+
+                        <span>
+                            Last Health Check
+                        </span>
+
+                        <strong id="lastHealthCheck">
+                            Not checked
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 INFORMATION NOTICE
+                 ================================================= -->
+
+            <div class="settings-notice">
+
+
+                <div class="settings-notice-icon">
+                    i
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        System Information
+                    </strong>
+
+
+                    <p>
+                        Backend and database status will be checked
+                        directly against the platform API. Technical
+                        information shown here is read-only.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+</div>
+
+
+
+<script src="admin.js"></script>
+
+</body>
+
+</html>

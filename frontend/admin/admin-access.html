@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>EPS TOPIK - Admin Access Management</title>
+
+    <link
+        rel="stylesheet"
+        href="admin.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="admin-layout">
+
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+
+            <div class="logo-icon">
+                E
+            </div>
+
+            <div>
+
+                <h2>EPS TOPIK</h2>
+
+                <span>
+                    Admin Panel
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <p class="nav-title">
+                MAIN
+            </p>
+
+
+            <a
+                href="admin.html"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▦
+                </span>
+
+                Dashboard
+
+            </a>
+
+
+            <a
+                href="admin.html#users"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ♙
+                </span>
+
+                Users
+
+            </a>
+
+
+            <a
+                href="admin.html#quizzes"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▤
+                </span>
+
+                Quizzes
+
+            </a>
+
+
+            <a
+                href="admin.html#results"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ◒
+                </span>
+
+                Results
+
+            </a>
+
+
+            <a
+                href="admin.html#payments"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ₹
+                </span>
+
+                Payments
+
+            </a>
+
+
+            <p class="nav-title">
+                SYSTEM
+            </p>
+
+
+            <a
+                href="admin.html#settings"
+                class="nav-item active"
+            >
+
+                <span class="nav-icon">
+                    ⚙
+                </span>
+
+                Settings
+
+            </a>
+
+        </nav>
+
+
+        <!-- SIDEBAR PROFILE -->
+
+        <div class="sidebar-bottom">
+
+            <div class="admin-mini-profile">
+
+                <div
+                    class="profile-avatar"
+                    id="sidebarAdminAvatar"
+                >
+                    A
+                </div>
+
+
+                <div class="profile-info">
+
+                    <strong id="sidebarAdminName">
+                        Administrator
+                    </strong>
+
+                    <span id="sidebarAdminRole">
+                        Admin
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="logout-btn"
+                onclick="window.location.href='admin-login.html'"
+            >
+
+                ↪ Logout
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+
+            <div class="page-heading">
+
+                <h1>
+                    Admin Access Management
+                </h1>
+
+                <p>
+                    Manage administrator access to the platform
+                </p>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+
+                <!-- Notifications -->
+
+                <button
+                    type="button"
+                    class="notification-btn"
+                    title="Notifications"
+                >
+
+                    ♢
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+
+                <!-- Admin Profile -->
+
+                <div class="top-profile">
+
+                    <div
+                        class="profile-avatar"
+                        id="topAdminAvatar"
+                    >
+                        A
+                    </div>
+
+
+                    <div>
+
+                        <strong id="topAdminName">
+                            Administrator
+                        </strong>
+
+                        <span id="topAdminRole">
+                            Admin
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =====================================================
+             ADMIN ACCESS SECTION
+             ===================================================== -->
+
+        <section class="content-section active">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <h2>
+                        Admin Access Management
+                    </h2>
+
+                    <p>
+                        Verify another person's Gmail and grant
+                        administrator access to the platform.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- BACK TO SETTINGS -->
+
+            <a
+                href="admin.html#settings"
+                class="settings-back-btn"
+            >
+
+                ← Back to Settings
+
+            </a>
+
+
+
+            <!-- =================================================
+                 ADD NEW ADMINISTRATOR
+                 ================================================= -->
+
+            <div class="settings-card admin-access-card">
+
+
+                <div class="settings-card-header">
+
+
+                    <div class="settings-card-icon">
+                        👤
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            Add New Administrator
+                        </h3>
+
+                        <p>
+                            Verify the person's email before
+                            creating administrator access.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <form id="adminAccessForm">
+
+
+                    <!-- EMAIL -->
+
+                    <div class="settings-field">
+
+                        <label for="newAdminEmail">
+                            Gmail / Email Address
+                        </label>
+
+
+                        <div class="admin-email-row">
+
+                            <input
+                                type="email"
+                                id="newAdminEmail"
+                                name="email"
+                                placeholder="Enter administrator Gmail"
+                                autocomplete="email"
+                                required
+                            >
+
+
+                            <button
+                                type="button"
+                                class="secondary-btn"
+                                id="sendAdminOtpBtn"
+                            >
+                                Send OTP
+                            </button>
+
+                        </div>
+
+
+                        <small class="settings-field-help">
+                            A verification OTP will be sent to
+                            this email address.
+                        </small>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                         OTP SECTION
+                         ================================================= -->
+
+                    <div
+                        class="settings-field"
+                        id="adminOtpSection"
+                        hidden
+                    >
+
+                        <label for="adminOtp">
+                            Verification OTP
+                        </label>
+
+
+                        <div class="admin-email-row">
+
+                            <input
+                                type="text"
+                                id="adminOtp"
+                                name="otp"
+                                placeholder="Enter 6-digit OTP"
+                                inputmode="numeric"
+                                maxlength="6"
+                                autocomplete="one-time-code"
+                            >
+
+
+                            <button
+                                type="button"
+                                class="secondary-btn"
+                                id="verifyAdminOtpBtn"
+                            >
+                                Verify OTP
+                            </button>
+
+                        </div>
+
+
+                        <small class="settings-field-help">
+                            Enter the OTP sent to the administrator's
+                            email address.
+                        </small>
+
+                    </div>
+
+
+
+                    <!-- =================================================
+                         ADMINISTRATOR DETAILS
+                         ================================================= -->
+
+                    <div
+                        id="adminDetailsSection"
+                        hidden
+                    >
+
+
+                        <div class="admin-section-divider"></div>
+
+
+                        <div class="settings-section-title">
+                            Administrator Details
+                        </div>
+
+
+
+                        <!-- NAME -->
+
+                        <div class="settings-field">
+
+                            <label for="newAdminName">
+                                Administrator Name
+                            </label>
+
+
+                            <input
+                                type="text"
+                                id="newAdminName"
+                                name="name"
+                                placeholder="Enter administrator name"
+                                autocomplete="name"
+                            >
+
+                        </div>
+
+
+
+                        <!-- PASSWORD -->
+
+                        <div class="settings-field">
+
+                            <label for="newAdminPassword">
+                                Password
+                            </label>
+
+
+                            <input
+                                type="password"
+                                id="newAdminPassword"
+                                name="password"
+                                placeholder="Create a password"
+                                autocomplete="new-password"
+                            >
+
+                        </div>
+
+
+
+                        <!-- CONFIRM PASSWORD -->
+
+                        <div class="settings-field">
+
+                            <label for="confirmAdminPassword">
+                                Confirm Password
+                            </label>
+
+
+                            <input
+                                type="password"
+                                id="confirmAdminPassword"
+                                name="confirmPassword"
+                                placeholder="Confirm password"
+                                autocomplete="new-password"
+                            >
+
+                        </div>
+
+
+
+                        <!-- =================================================
+                             PERMISSIONS
+                             ================================================= -->
+
+                        <div class="settings-field">
+
+                            <label>
+                                Administrator Permissions
+                            </label>
+
+
+                            <div class="permission-box">
+
+
+                                <div class="permission-item">
+
+
+                                    <div>
+
+                                        <strong>
+                                            Full Administrator Access
+                                        </strong>
+
+                                        <span>
+                                            Manage users, quizzes,
+                                            results, payments and
+                                            platform settings.
+                                        </span>
+
+                                    </div>
+
+
+                                    <span class="permission-status">
+                                        Enabled
+                                    </span>
+
+
+                                </div>
+
+
+                            </div>
+
+
+                            <small class="settings-field-help">
+                                New administrators will initially
+                                receive the same permissions as the
+                                current administrator.
+                            </small>
+
+                        </div>
+
+
+
+                        <!-- =================================================
+                             ACTION BUTTONS
+                             ================================================= -->
+
+                        <div class="profile-form-actions">
+
+
+                            <button
+                                type="submit"
+                                class="primary-btn"
+                                id="createAdminBtn"
+                            >
+                                Create Administrator
+                            </button>
+
+
+                            <a
+                                href="admin.html#settings"
+                                class="secondary-btn"
+                            >
+                                Cancel
+                            </a>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 CURRENT ADMINISTRATORS
+                 ===================================================== -->
+
+            <div class="settings-card admin-list-card">
+
+
+                <div class="settings-card-header">
+
+
+                    <div class="settings-card-icon">
+                        👥
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            Current Administrators
+                        </h3>
+
+                        <p>
+                            Administrators currently authorized
+                            to access the admin portal.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="admin-list">
+
+
+                    <!-- Backend data will be loaded here later -->
+
+                    <div
+                        class="admin-list-empty"
+                        id="adminListEmpty"
+                    >
+
+
+                        <div class="admin-list-empty-icon">
+                            👤
+                        </div>
+
+
+                        <strong>
+                            Administrator information will
+                            appear here.
+                        </strong>
+
+
+                        <span>
+                            This list will be loaded from the
+                            authenticated backend account once
+                            backend integration is connected.
+                        </span>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 SECURITY NOTICE
+                 ===================================================== -->
+
+            <div class="settings-notice admin-access-notice">
+
+
+                <div class="settings-notice-icon">
+                    i
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        Security Notice
+                    </strong>
+
+
+                    <p>
+                        Administrator access is verified through
+                        the backend. Email OTPs, passwords and
+                        administrator permissions will be processed
+                        securely by the server. No password or OTP
+                        information is stored in the browser.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+</div>
+
+
+
+<script src="admin.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>EPS TOPIK - Dashboard</title>
+
+  <!-- Shared CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+
+<body class="dashboard-page">
+
+
+  <!-- =====================================================
+       NAVBAR
+       ===================================================== -->
+
+  <header class="dashboard-navbar">
+
+    <!-- Brand -->
+    <a href="dashboard.html" class="dashboard-brand">
+
+      <div class="dashboard-logo">
+        K
+      </div>
+
+      <div>
+        <h1>EPS TOPIK</h1>
+        <span>EXAM PLATFORM</span>
+      </div>
+
+    </a>
+
+
+    
+
+    <!-- User -->
+    <div class="user-menu">
+
+      <div
+        class="user-avatar"
+        id="navUserAvatar"
+      >
+      --
+      </div>
+
+
+      <div class="user-info">
+
+        <strong id="navUserName"></strong>
+        
+        <span id="navStudentId"></span>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="logout-btn"
+        onclick="logout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- =====================================================
+       DASHBOARD
+       ===================================================== -->
+
+  <main
+    class="dashboard-container"
+    id="dashboard"
+  >
+
+
+    <!-- =====================================================
+         WELCOME
+         ===================================================== -->
+
+    <section class="dashboard-welcome">
+
+      <div>
+
+        <span class="dashboard-eyebrow">
+          STUDENT DASHBOARD
+        </span>
+
+        <h2>
+          Welcome back,
+          <span id="dashboardUserName">
+          
+          </span>
+        </h2>
+
+        <p>
+          Continue your EPS TOPIK preparation and improve
+          your Korean language skills.
+        </p>
+
+      </div>
+
+
+      <a
+        href="set.html"
+        class="dashboard-primary-btn"
+      >
+        Book / Start Test →
+      </a>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         STAT CARDS
+         ===================================================== -->
+
+    <section class="dashboard-stats">
+
+
+      <!-- Tests Completed -->
+
+      <article class="dashboard-stat-card">
+
+        <div class="stat-icon blue-icon">
+          ✓
+        </div>
+
+        <div>
+
+          <span>
+            Tests Completed
+          </span>
+
+         <strong id="testsCompleted">
+    --
+</strong>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- Average Score -->
+
+      <article class="dashboard-stat-card">
+
+        <div class="stat-icon green-icon">
+          %
+        </div>
+
+        <div>
+
+          <span>
+            Average Score
+          </span>
+
+          <strong id="averageScore">
+    --
+</strong>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- Best Score -->
+
+      <article class="dashboard-stat-card">
+
+        <div class="stat-icon orange-icon">
+          ★
+        </div>
+
+        <div>
+
+          <span>
+            Best Score
+          </span>
+
+         <strong id="bestScore">
+    --
+</strong>
+
+        </div>
+
+      </article>
+
+
+
+      <!-- Tests Available -->
+
+      <article class="dashboard-stat-card">
+
+        <div class="stat-icon purple-icon">
+          →
+        </div>
+
+        <div>
+
+          <span>
+            Tests Available
+          </span>
+
+         <strong id="testsAvailable">
+    --
+</strong>
+
+        </div>
+
+      </article>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         MAIN GRID
+         ===================================================== -->
+
+    <section class="dashboard-grid">
+
+    <!-- LEFT SIDE - AVAILABLE TESTS -->
+    <div
+        class="dashboard-main-card"
+        id="tests"
+    >
+
+        <!-- Header -->
+        <div class="card-header">
+
+            <div>
+
+                <span class="small-heading">
+                    PRACTICE TESTS
+                </span>
+
+                <h3>
+                    Available Tests
+                </h3>
+
+            </div>
+
+            <a
+                href="#tests"
+                class="view-all"
+            >
+                View All →
+            </a>
+
+        </div>
+
+
+        <!-- Dynamic tests -->
+        <div id="availableTestsList">
+
+            <p style="text-align:center; padding:30px;">
+                Loading tests...
+            </p>
+
+        </div>
+
+    </div>
+    
+
+
+      <!-- ===================================================
+           RIGHT SIDEBAR
+           =================================================== -->
+
+      <aside class="dashboard-sidebar">
+
+
+        <!-- ================= PROFILE ================= -->
+
+        <div class="profile-card">
+
+          <div class="profile-top">
+
+            <div
+              class="large-avatar"
+              id="profileAvatar"
+            >
+              --
+            </div>
+
+
+            <div>
+
+              <span class="small-heading">
+                STUDENT PROFILE
+              </span>
+
+              <h3 id="sidebarUserName">
+              
+              </h3>
+
+              <p id="sidebarStudentId">
+              
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="profile-button"
+            onclick="editProfile()"
+          >
+            Edit Profile
+          </button>
+
+        </div>
+
+
+
+        <!-- =================================================
+             PROGRESS CARD
+             ================================================= -->
+
+        <div class="progress-card">
+
+
+          <div class="card-header">
+
+            <div>
+
+              <span class="small-heading">
+                YOUR PROGRESS
+              </span>
+
+              <h3>
+                Overall Progress
+              </h3>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- Progress Circle -->
+
+          <div class="progress-circle">
+
+            <div>
+
+             <strong id="progressPercentage">
+  0%
+</strong>
+
+              <span>
+                Completed
+              </span>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- Progress Numbers -->
+
+          <div class="progress-info">
+
+            <div>
+
+              <span>
+                Tests completed
+              </span>
+
+              <strong id="progressTestsCompleted">
+  0 / 0
+</strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Average score
+              </span>
+
+              <strong id="progressAverageScore">
+  0%
+</strong>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- =================================================
+               MINI PERFORMANCE GRAPH
+               ================================================= -->
+
+          <div class="mini-chart-section">
+
+
+            <div class="mini-chart-header">
+
+              <div>
+
+                <span class="mini-chart-label">
+                  SCORE TREND
+                </span>
+
+                <strong>
+                  Recent Performance
+                </strong>
+
+              </div>
+
+
+             <span class="chart-growth" id="chartGrowth">
+  ↑ 0%
+</span>
+
+            </div>
+
+
+
+            <!-- Graph -->
+
+            <div class="mini-chart">
+
+              <svg
+                viewBox="0 0 300 120"
+                role="img"
+                aria-label="Recent EPS TOPIK test score trend"
+              >
+
+
+                <!-- Horizontal Grid Lines -->
+
+                <line
+                  x1="15"
+                  y1="20"
+                  x2="285"
+                  y2="20"
+                  class="chart-grid-line"
+                />
+
+                <line
+                  x1="15"
+                  y1="55"
+                  x2="285"
+                  y2="55"
+                  class="chart-grid-line"
+                />
+
+                <line
+                  x1="15"
+                  y1="90"
+                  x2="285"
+                  y2="90"
+                  class="chart-grid-line"
+                />
+
+
+
+                <!-- Area below graph -->
+
+                <path
+                  class="chart-area"
+                  d="
+                    M20 88
+                    L85 72
+                    L150 60
+                    L215 68
+                    L280 34
+                    L280 100
+                    L20 100
+                    Z
+                  "
+                />
+
+
+
+                <!-- Main Score Line -->
+
+                <polyline
+                  class="chart-line"
+                  points="
+                    20,88
+                    85,72
+                    150,60
+                    215,68
+                    280,34
+                  "
+                />
+
+
+
+                <!-- Points -->
+
+                <circle
+                  cx="20"
+                  cy="88"
+                  r="4"
+                  class="chart-dot"
+                />
+
+                <circle
+                  cx="85"
+                  cy="72"
+                  r="4"
+                  class="chart-dot"
+                />
+
+                <circle
+                  cx="150"
+                  cy="60"
+                  r="4"
+                  class="chart-dot"
+                />
+
+                <circle
+                  cx="215"
+                  cy="68"
+                  r="4"
+                  class="chart-dot"
+                />
+
+                <circle
+                  cx="280"
+                  cy="34"
+                  r="4"
+                  class="chart-dot"
+                />
+
+
+              </svg>
+
+            </div>
+
+
+
+            <!-- Test Labels -->
+
+            <div class="chart-labels">
+
+              <span>
+                T1
+              </span>
+
+              <span>
+                T2
+              </span>
+
+              <span>
+                T3
+              </span>
+
+              <span>
+                T4
+              </span>
+
+              <span>
+                T5
+              </span>
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+
+
+      </aside>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         RECENT TEST RESULTS
+         ===================================================== -->
+
+    <section
+      class="dashboard-section"
+      id="results"
+    >
+
+
+      <div class="card-header">
+
+        <div>
+
+          <span class="small-heading">
+            RECENT ACTIVITY
+          </span>
+
+          <h3>
+            Recent Test Results
+          </h3>
+
+        </div>
+
+
+        <a
+          href="#results"
+          class="view-all"
+        >
+          View All →
+        </a>
+
+      </div>
+
+
+
+     <div class="results-table">
+
+  <div class="result-row result-header">
+    <span>Test</span>
+    <span>Date</span>
+    <span>Score</span>
+    <span>Result</span>
+  </div>
+
+  <div id="recentResultsBody">
+    <div class="result-row">
+      <span>Loading...</span>
+      <span></span>
+      <strong></strong>
+      <span></span>
+    </div>
+  </div>
+
+</div>
+
+
+      
+  <!-- =====================================================
+       FOOTER
+       ===================================================== -->
+
+  <footer class="dashboard-footer">
+
+    <p>
+      © 2026 EPS TOPIK Exam Platform
+    </p>
+
+
+    <div>
+
+      <a href="#">
+        Help
+      </a>
+
+      <a href="#">
+        Privacy
+      </a>
+
+      <a href="#">
+        Terms
+      </a>
+
+    </div>
+
+  </footer>
+
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+       ===================================================== -->
+
+  <script src="script.js"></script>
+
+
+</body>
+
+</html>

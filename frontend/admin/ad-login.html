@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="../api-config.js"></script>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EPS TOPIK - Admin Login</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+</head>
+
+
+<body class="admin-login-body">
+
+
+<main class="admin-login-page">
+
+
+  <section class="admin-login-card">
+
+
+    <!-- ================= BRAND ================= -->
+
+    <a href="../index.html" class="admin-login-logo">
+
+      <div class="admin-logo-mark">
+        K
+      </div>
+
+      <div>
+
+        <h1>
+          EPS TOPIK
+        </h1>
+
+        <span>
+          ADMIN PORTAL
+        </span>
+
+      </div>
+
+    </a>
+
+
+    <!-- ================= HEADING ================= -->
+
+    <div class="admin-login-heading">
+
+      <p class="admin-eyebrow">
+        ADMINISTRATION
+      </p>
+
+      <h2>
+        Welcome back
+      </h2>
+
+      <p>
+        Sign in with your administrator credentials
+        to manage the EPS TOPIK exam platform.
+      </p>
+
+    </div>
+
+
+    <!-- ================= MESSAGE ================= -->
+
+    <div
+      id="adminMessageBox"
+      class="message-box"
+      role="alert"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- ================= LOGIN FORM ================= -->
+
+    <form id="adminLoginForm">
+
+
+      <!-- EMAIL -->
+
+      <div class="form-group">
+
+        <label for="adminEmail">
+          Admin Email
+        </label>
+
+        <input
+          type="email"
+          id="adminEmail"
+          placeholder="Enter administrator email"
+          autocomplete="email"
+          required
+        >
+
+      </div>
+
+
+      <!-- PASSWORD -->
+
+      <div class="form-group">
+
+        <label for="adminPassword">
+          Password
+        </label>
+
+
+        <div class="password-box">
+
+          <input
+            type="password"
+            id="adminPassword"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          >
+
+
+          <button
+            type="button"
+            class="show-password"
+            id="adminPasswordToggle"
+            aria-label="Show password"
+          >
+            Show
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- OPTIONS -->
+
+      <div class="admin-login-options">
+
+        <label class="admin-remember">
+
+          <input
+            type="checkbox"
+            id="adminRemember"
+          >
+
+          <span>
+            Remember me
+          </span>
+
+        </label>
+
+
+        <a href="ad-forgot-pass.html">
+          Forgot password?
+        </a>
+
+      </div>
+
+
+      <!-- LOGIN BUTTON -->
+
+      <button
+        type="submit"
+        id="adminLoginButton"
+        class="admin-login-submit"
+      >
+        Sign in to Admin Portal
+      </button>
+
+
+    </form>
+
+
+    <!-- ================= SECURITY MESSAGE ================= -->
+
+    <div class="admin-security-note">
+
+      <div class="admin-security-icon">
+        🔒
+      </div>
+
+      <div>
+
+        <strong>
+          Restricted Access
+        </strong>
+
+        <p>
+          This portal is for authorized
+          administrators only.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================= HOME ================= -->
+
+    <a
+      href="../index.html"
+      class="admin-back-home"
+    >
+      ← Back to website
+    </a>
+
+
+  </section>
+
+
+</main>
+
+
+<script>
+
+  /* =====================================================
+     ELEMENTS
+     ===================================================== */
+
+  const adminPassword =
+    document.getElementById("adminPassword");
+
+  const adminPasswordToggle =
+    document.getElementById("adminPasswordToggle");
+
+  const adminLoginForm =
+    document.getElementById("adminLoginForm");
+
+  const adminLoginButton =
+    document.getElementById("adminLoginButton");
+
+  const adminMessageBox =
+    document.getElementById("adminMessageBox");
+
+
+  /* =====================================================
+     BACKEND API
+     ===================================================== */
+
+  /*
+     When frontend and backend are running on the
+     same computer:
+
+        the local backend URL
+
+     When another computer on the LAN opens the frontend:
+
+        the shared backend URL
+  */
+
+  const API_BASE_URL =
+    (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    )
+      ? window.API_BASE_URL
+      : window.API_BASE_URL;
+
+
+  /* =====================================================
+     SHOW / HIDE PASSWORD
+     ===================================================== */
+
+  if (adminPasswordToggle) {
+
+    adminPasswordToggle.addEventListener(
+      "click",
+      function () {
+
+        if (adminPassword.type === "password") {
+
+          adminPassword.type = "text";
+
+          adminPasswordToggle.textContent =
+            "Hide";
+
+          adminPasswordToggle.setAttribute(
+            "aria-label",
+            "Hide password"
+          );
+
+        } else {
+
+          adminPassword.type = "password";
+
+          adminPasswordToggle.textContent =
+            "Show";
+
+          adminPasswordToggle.setAttribute(
+            "aria-label",
+            "Show password"
+          );
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* =====================================================
+     MESSAGE FUNCTIONS
+     ===================================================== */
+
+  function showMessage(
+    message,
+    type = "error"
+  ) {
+
+    if (!adminMessageBox) {
+
+      alert(message);
+
+      return;
+
+    }
+
+    adminMessageBox.textContent =
+      message;
+
+    adminMessageBox.className =
+      "message-box " + type;
+
+  }
+
+
+  function clearMessage() {
+
+    if (!adminMessageBox) {
+      return;
+    }
+
+    adminMessageBox.textContent =
+      "";
+
+    adminMessageBox.className =
+      "message-box";
+
+  }
+
+
+  /* =====================================================
+     ADMIN LOGIN
+     ===================================================== */
+
+  if (adminLoginForm) {
+
+    adminLoginForm.addEventListener(
+      "submit",
+      async function (event) {
+
+        event.preventDefault();
+
+        clearMessage();
+
+
+        /* ===============================================
+           GET FORM VALUES
+           =============================================== */
+
+        const email =
+          document
+            .getElementById("adminEmail")
+            .value
+            .trim()
+            .toLowerCase();
+
+
+        const password =
+          adminPassword.value;
+
+
+        /* ===============================================
+           BASIC VALIDATION
+           =============================================== */
+
+        if (!email || !password) {
+
+          showMessage(
+            "Please enter your admin email and password."
+          );
+
+          return;
+
+        }
+
+
+        /* ===============================================
+   CLEAR OLD ADMIN LOGIN SESSION
+   =============================================== */
+
+localStorage.removeItem(
+  "admin_access_token"
+);
+
+localStorage.removeItem(
+  "admin_user"
+);
+
+
+/*
+ * Remove old admin key names from previous versions.
+ */
+
+localStorage.removeItem(
+  "adminToken"
+);
+
+localStorage.removeItem(
+  "adminName"
+);
+
+localStorage.removeItem(
+  "adminEmail"
+);
+
+localStorage.removeItem(
+  "adminRole"
+);
+    
+        /* ===============================================
+           LOADING STATE
+           =============================================== */
+
+        adminLoginButton.disabled =
+          true;
+
+        adminLoginButton.textContent =
+          "Signing in...";
+
+
+        try {
+
+          /* =============================================
+             SEND LOGIN REQUEST TO FASTAPI
+             ============================================= */
+
+          const response =
+            await fetch(
+              `${API_BASE_URL}/auth/admin/login`,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body: JSON.stringify({
+                  email: email,
+                  password: password
+                })
+              }
+            );
+
+
+          /* =============================================
+             READ RESPONSE
+             ============================================= */
+
+          let data = {};
+
+          try {
+
+            data =
+              await response.json();
+
+          } catch (jsonError) {
+
+            data = {};
+
+          }
+
+
+          /* =============================================
+             IMPORTANT:
+             WRONG CREDENTIALS STOP HERE
+             ============================================= */
+
+          if (!response.ok) {
+
+            throw new Error(
+              data.detail ||
+              "Invalid admin email or password."
+            );
+
+          }
+
+
+          /* =============================================
+             VERIFY ADMIN ROLE
+             ============================================= */
+
+          if (
+            !data.role ||
+            String(data.role).toUpperCase() !==
+              "ADMIN"
+          ) {
+
+            throw new Error(
+              "This account is not authorized to access the Admin Portal."
+            );
+
+          }
+
+
+          /* =============================================
+             VERIFY ACCESS TOKEN
+             ============================================= */
+
+          if (
+            !data.access_token ||
+            typeof data.access_token !== "string"
+          ) {
+
+            throw new Error(
+              "Authentication failed. No access token was received."
+            );
+
+          }
+
+
+          /* =============================================
+             VERIFY USER ID
+             ============================================= */
+
+          if (
+            data.user_id === undefined ||
+            data.user_id === null
+          ) {
+
+            throw new Error(
+              "Authentication failed. No user ID was received."
+            );
+
+          }
+
+
+          /* =============================================
+   SAVE ADMIN AUTHENTICATION DATA
+   ============================================= */
+
+/*
+ * IMPORTANT:
+ * Admin authentication uses separate localStorage
+ * keys from the student authentication.
+ */
+
+localStorage.setItem(
+  "admin_access_token",
+  data.access_token
+);
+
+
+/*
+ * Store complete admin profile information.
+ */
+
+localStorage.setItem(
+  "admin_user",
+  JSON.stringify({
+
+    user_id:
+      data.user_id,
+
+    name:
+      data.name || "Admin",
+
+    email:
+      data.email || email,
+
+    role:
+      data.role || "ADMIN"
+
+  })
+);
+
+          /* =============================================
+             SUCCESS MESSAGE
+             ============================================= */
+
+          showMessage(
+            "Login successful. Redirecting...",
+            "success"
+          );
+
+
+          /* =============================================
+             REDIRECT ONLY AFTER SUCCESS
+             ============================================= */
+
+          setTimeout(
+            function () {
+
+              window.location.replace(
+                "admin.html"
+              );
+
+            },
+            500
+          );
+
+        }
+
+
+        /* ===============================================
+           LOGIN FAILURE
+           =============================================== */
+
+        catch (error) {
+
+          console.error(
+            "Admin login error:",
+            error
+          );
+
+
+          /*
+             Make absolutely sure no stale
+             authentication data remains after
+             a failed login.
+          */
+  localStorage.removeItem(
+            "adminToken"
+          );
+
+          localStorage.removeItem(
+            "adminName"
+          );
+
+          localStorage.removeItem(
+            "adminEmail"
+          );
+
+          localStorage.removeItem(
+            "adminRole"
+          );
+
+
+          /* =============================================
+             STAY ON LOGIN PAGE
+             ============================================= */
+
+          showMessage(
+            error.message ||
+            "Unable to connect to the backend."
+          );
+
+        }
+
+
+        /* ===============================================
+           RESTORE BUTTON
+           =============================================== */
+
+        finally {
+
+          adminLoginButton.disabled =
+            false;
+
+          adminLoginButton.textContent =
+            "Sign in to Admin Portal";
+
+        }
+
+      }
+    );
+
+  }
+
+</script>
+
+
+</body>
+
+</html>
