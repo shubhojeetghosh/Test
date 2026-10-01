@@ -2,7 +2,7 @@
 (function () {
   // Set this to the deployed FastAPI URL after the backend is deployed.
   // Leave it empty when frontend and backend share the same origin.
-  const PRODUCTION_API_URL = "";
+  const PRODUCTION_API_URL = "https://test-pink-six-77.vercel.app";
   const isLocalDevelopment =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";
