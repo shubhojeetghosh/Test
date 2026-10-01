@@ -245,7 +245,7 @@ I would like to purchase the following test sets:
 Total Sets: ${items.length}
 Total Amount: NPR ${total}
 
-Please provide the payment details and help me activate these test sets after payment.
+Please send me the official payment instructions for these exam sets. I understand that this chat is with the Quiz Platform administrator to arrange my purchase. I will not send passwords, one-time codes (OTPs), card PINs, or full card details in chat.
 
 Thank you.`;
 
