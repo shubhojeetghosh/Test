@@ -58,7 +58,16 @@ def create_app() -> FastAPI:
         origin.strip().rstrip("/")
         for origin in configured_origins.split(",")
         if origin.strip()
-    ] or ["http://127.0.0.1:5500", "http://localhost:5500"]
+    ]
+    # Keep the deployed frontend working even if CORS_ORIGINS was not added
+    # to the existing Vercel backend project's environment variables.
+    production_frontend_origin = "https://test-frontend-eta-ecru.vercel.app"
+    allowed_origins.append(production_frontend_origin)
+    if not configured_origins.strip():
+        allowed_origins.extend(
+            ["http://127.0.0.1:5500", "http://localhost:5500"]
+        )
+    allowed_origins = list(dict.fromkeys(allowed_origins))
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
