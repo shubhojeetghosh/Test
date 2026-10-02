@@ -1,11 +1,10 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.core.database import get_db
+from app.core.security import decode_access_token
 from app.models import User
 from app.admin_portal.models.exam_set import ExamSet
 from app.admin_portal.models.student_exam_access import StudentExamAccess
@@ -27,26 +26,23 @@ def get_current_user(
     )
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
-
+        payload = decode_access_token(token)
         user_id = payload.get("sub")
-
         if user_id is None:
             raise credentials_exception
-
-    except JWTError:
+        user_id = int(user_id)
+    except Exception:
         raise credentials_exception
 
-    user = db.query(User).filter(
-        User.id == int(user_id)
-    ).first()
+    user = db.scalar(select(User).where(User.id == user_id))
 
     if user is None:
         raise credentials_exception
+    if str(user.role).strip().lower() != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student account required",
+        )
 
     return user
 

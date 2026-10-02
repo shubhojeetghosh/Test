@@ -21,6 +21,7 @@ from sqlalchemy import delete, select, func
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.core.rate_limit import enforce_rate_limit
 
 from app.admin_portal.models.user import User
 from app.admin_portal.models.email_otp import EmailOTP
@@ -318,6 +319,10 @@ def admin_login(
     email = _normalize_email(
         login_data.email
     )
+    enforce_rate_limit(
+        db, scope="admin-login", subject=email,
+        limit=8, window_seconds=900,
+    )
 
     user = db.scalar(
         select(User).where(
@@ -543,6 +548,10 @@ def create_admin(
     email = _normalize_email(
         request.email
     )
+    enforce_rate_limit(
+        db, scope="admin-create-otp", subject=email,
+        limit=3, window_seconds=3600,
+    )
 
     # -----------------------------------------------------
     # Validate email
@@ -678,6 +687,10 @@ def verify_create_admin_otp(
 
     email = _normalize_email(
         request.email
+    )
+    enforce_rate_limit(
+        db, scope="admin-create-otp-verify", subject=email,
+        limit=8, window_seconds=900,
     )
 
     # -----------------------------------------------------
@@ -1061,6 +1074,10 @@ def admin_forgot_password(
     """
 
     email = _normalize_email(request.email)
+    enforce_rate_limit(
+        db, scope="admin-password-reset-start", subject=email,
+        limit=3, window_seconds=3600,
+    )
 
     if not email:
         raise HTTPException(
@@ -1158,6 +1175,10 @@ def admin_verify_forgot_otp(
     """
 
     email = _normalize_email(request.email)
+    enforce_rate_limit(
+        db, scope="admin-password-reset-verify", subject=email,
+        limit=8, window_seconds=900,
+    )
     otp = str(request.otp).strip()
 
     if not email:
@@ -1248,6 +1269,10 @@ def admin_reset_password(
     """
 
     email = _normalize_email(request.email)
+    enforce_rate_limit(
+        db, scope="admin-password-reset-complete", subject=email,
+        limit=6, window_seconds=900,
+    )
 
     if not email:
         raise HTTPException(

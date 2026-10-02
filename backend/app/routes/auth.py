@@ -7,12 +7,15 @@
 from datetime import datetime, timedelta
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.rate_limit import enforce_rate_limit
 
 from app.core.security import (
     hash_password,
@@ -31,6 +34,7 @@ security = HTTPBearer()
 
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
 ) -> int:
     token = credentials.credentials
 
@@ -45,7 +49,7 @@ def get_current_user_id(
                 detail="Invalid authentication token",
             )
 
-        return int(user_id)
+        user_id = int(user_id)
 
     except HTTPException:
         raise
@@ -55,6 +59,19 @@ def get_current_user_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
         )
+
+    user = db.scalar(select(User).where(User.id == user_id))
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+        )
+    if str(user.role).strip().lower() != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student account required",
+        )
+    return user_id
 
 # ============================================================
 # ROUTER
@@ -118,13 +135,23 @@ class ResetPasswordRequest(BaseModel):
 @router.post("/register")
 def register(
     data: RegisterRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+
+    normalized_email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-register",
+        subject=normalized_email,
+        limit=3,
+        window_seconds=3600,
+    )
 
     # 1. Check whether email already exists
     existing_user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email == normalized_email)
         .first()
     )
 
@@ -140,7 +167,7 @@ def register(
     # 3. Create user
     new_user = User(
         name=data.name,
-        email=data.email,
+        email=normalized_email,
         password_hash=hashed_password
     )
 
@@ -150,18 +177,18 @@ def register(
         db.commit()
         db.refresh(new_user)
 
-    except Exception as e:
+    except IntegrityError as exc:
         db.rollback()
-
-        print("========================================")
-        print("REGISTER ERROR:", repr(e))
-        print("REGISTER ERROR TYPE:", type(e).__name__)
-        print("========================================")
-
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create user: {str(e)}"
-        )
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        ) from exc
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create the account. Please try again.",
+        ) from exc
 
     # 5. Return response
     return {
@@ -178,6 +205,7 @@ def register(
 @router.post("/login")
 def login(
     data: LoginRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
 
@@ -185,9 +213,17 @@ def login(
     # 1. Find user
     # --------------------------------------------------------
 
+    normalized_email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-login",
+        subject=normalized_email,
+        limit=10,
+        window_seconds=900,
+    )
     user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email == normalized_email)
         .first()
     )
 
@@ -196,6 +232,12 @@ def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
+        )
+
+    if str(user.role).strip().lower() != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Use the Admin portal to sign in to this account.",
         )
 
     # --------------------------------------------------------
@@ -244,50 +286,21 @@ def login(
 
 @router.get("/profile")
 def get_profile(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
 ):
-
-    token = credentials.credentials
-
-    try:
-        payload = decode_access_token(token)
-
-        user_id = payload.get("sub")
-
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token"
-            )
-
-        user = (
-            db.query(User)
-            .filter(User.id == int(user_id))
-            .first()
-        )
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-
-        return {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "role": user.role
-        }
-
-    except HTTPException:
-        raise
-
-    
+    user = db.scalar(select(User).where(User.id == current_user_id))
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token"
+            detail="Invalid authentication token",
         )
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+    }
 
 # ============================================================
 # FORGOT PASSWORD
@@ -296,6 +309,7 @@ def get_profile(
 @router.post("/forgot-password")
 def forgot_password(
     data: ForgotPasswordRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
 
@@ -303,13 +317,21 @@ def forgot_password(
     # 1. Find user
     # --------------------------------------------------------
 
+    normalized_email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-password-reset-start",
+        subject=normalized_email,
+        limit=3,
+        window_seconds=3600,
+    )
     user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email == normalized_email)
         .first()
     )
 
-    if not user:
+    if not user or str(user.role).strip().lower() != "student":
 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -410,6 +432,7 @@ def forgot_password(
 @router.post("/verify-otp")
 def verify_otp_endpoint(
     data: VerifyOTPRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
 
@@ -417,13 +440,21 @@ def verify_otp_endpoint(
     # 1. Find user
     # --------------------------------------------------------
 
+    normalized_email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-otp-verify",
+        subject=normalized_email,
+        limit=8,
+        window_seconds=900,
+    )
     user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email == normalized_email)
         .first()
     )
 
-    if not user:
+    if not user or str(user.role).strip().lower() != "student":
 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -529,6 +560,7 @@ def verify_otp_endpoint(
 @router.post("/reset-password")
 def reset_password(
     data: ResetPasswordRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
 
@@ -536,13 +568,21 @@ def reset_password(
     # 1. Find user
     # --------------------------------------------------------
 
+    normalized_email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-password-reset-complete",
+        subject=normalized_email,
+        limit=6,
+        window_seconds=900,
+    )
     user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email == normalized_email)
         .first()
     )
 
-    if not user:
+    if not user or str(user.role).strip().lower() != "student":
 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

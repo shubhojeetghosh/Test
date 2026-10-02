@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.core.rate_limit import enforce_rate_limit
 
 from app.admin_portal.models.user import User
 from app.admin_portal.models.email_otp import EmailOTP
@@ -52,6 +53,10 @@ def admin_start(
     db: Session = Depends(get_db),
 ):
     email = str(request.email).lower().strip()
+    enforce_rate_limit(
+        db, scope="admin-onboarding-otp", subject=email,
+        limit=3, window_seconds=3600,
+    )
 
     # -----------------------------------------------------
     # CHECK EXISTING ACCOUNT
@@ -108,6 +113,10 @@ def admin_verify_personal_otp(
     db: Session = Depends(get_db),
 ):
     email = str(request.email).lower().strip()
+    enforce_rate_limit(
+        db, scope="admin-onboarding-personal-verify", subject=email,
+        limit=8, window_seconds=900,
+    )
 
     # -----------------------------------------------------
     # VERIFY OTP #1
@@ -167,6 +176,10 @@ def admin_verify_main_otp(
     db: Session = Depends(get_db),
 ):
     email = str(request.email).lower().strip()
+    enforce_rate_limit(
+        db, scope="admin-onboarding-approval-verify", subject=email,
+        limit=8, window_seconds=900,
+    )
 
     # -----------------------------------------------------
     # VERIFY OTP #2
@@ -208,6 +221,10 @@ def admin_set_password(
     db: Session = Depends(get_db),
 ):
     email = str(request.email).lower().strip()
+    enforce_rate_limit(
+        db, scope="admin-onboarding-set-password", subject=email,
+        limit=5, window_seconds=900,
+    )
 
     # =====================================================
     # CHECK PERSONAL EMAIL VERIFICATION

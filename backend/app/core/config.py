@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     SUPABASE_MEDIA_BUCKET: str = "exam-media"
 
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parents[2] / ".env",
+        env_file=(
+            Path(__file__).resolve().parents[2] / ".env",
+            Path(__file__).resolve().parents[3] / ".env",
+        ),
         extra="ignore"
     )
 

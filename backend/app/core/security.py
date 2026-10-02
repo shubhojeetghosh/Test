@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 
@@ -56,6 +58,11 @@ def create_access_token(data: dict) -> str:
     """
 
     to_encode = data.copy()
+    to_encode.setdefault(
+        "exp",
+        datetime.now(timezone.utc)
+        + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
 
     encoded_jwt = jwt.encode(
         to_encode,
@@ -77,6 +84,11 @@ def decode_access_token(token: str) -> dict:
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
+
+        # Student tokens created before expiry was added must not remain valid
+        # forever. Ask the user to sign in again to receive a time-limited JWT.
+        if "exp" not in payload:
+            raise JWTError("Token expiry is required")
 
         return payload
 

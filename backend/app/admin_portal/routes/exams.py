@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, update, text
 from sqlalchemy.orm import Session
@@ -15,6 +17,8 @@ router = APIRouter(
     prefix="/admin/exams",
     tags=["Admin Exams"],
 )
+
+logger = logging.getLogger(__name__)
 
 
 # =========================
@@ -357,16 +361,12 @@ def delete_exam(
             "exam_id": exam_id,
         }
 
-    except Exception as error:
+    except Exception:
 
         db.rollback()
-
-        print(
-            f"ERROR deleting exam {exam_id}:",
-            error
-        )
+        logger.exception("Failed to delete exam %s", exam_id)
 
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to delete exam: {str(error)}"
+            detail="Failed to delete exam. Please try again.",
         )

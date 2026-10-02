@@ -1,3 +1,4 @@
+import logging
 import os
 import smtplib
 
@@ -5,6 +6,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -39,26 +42,17 @@ def send_otp_email(
     otp: str
 ) -> bool:
 
-    print("========================================")
-    print("OTP EMAIL FUNCTION STARTED")
-    print("========================================")
-
     if not SMTP_USERNAME:
-        print("ERROR: SMTP_USERNAME is missing")
+        logger.error("Student password reset email is not configured: SMTP_USERNAME missing")
         return False
 
     if not SMTP_PASSWORD:
-        print("ERROR: SMTP_PASSWORD is missing")
+        logger.error("Student password reset email is not configured: SMTP_PASSWORD missing")
         return False
 
     if not MAIL_FROM:
-        print("ERROR: MAIL_FROM is missing")
+        logger.error("Student password reset email is not configured: MAIL_FROM missing")
         return False
-
-    print("SMTP Host:", SMTP_HOST)
-    print("SMTP Port:", SMTP_PORT)
-    print("Sender:", SMTP_USERNAME)
-    print("Receiver:", to_email)
 
     subject = "Quiz Platform - Password Reset OTP"
 
@@ -94,26 +88,19 @@ Quiz Platform Team
 
     try:
 
-        print("Connecting to Gmail...")
-
         with smtplib.SMTP(
             SMTP_HOST,
             SMTP_PORT,
             timeout=30
         ) as server:
 
-            print("Starting TLS...")
-
             server.starttls()
-
-            print("Logging into Gmail...")
 
             server.login(
                 SMTP_USERNAME,
                 SMTP_PASSWORD
             )
 
-            print("Sending OTP email...")
 
             server.sendmail(
                 MAIL_FROM,
@@ -121,37 +108,24 @@ Quiz Platform Team
                 message.as_string()
             )
 
-        print("========================================")
-        print("EMAIL SENT SUCCESSFULLY")
-        print("========================================")
+        logger.info("Student password reset email sent")
 
         return True
 
     except smtplib.SMTPAuthenticationError as e:
 
-        print("========================================")
-        print("GMAIL LOGIN FAILED")
-        print("Check your Gmail App Password.")
-        print("========================================")
-        print(e)
+        logger.error("Student password reset email authentication failed")
 
         return False
 
     except smtplib.SMTPException as e:
 
-        print("========================================")
-        print("SMTP ERROR")
-        print("========================================")
-        print(e)
+        logger.error("Student password reset email failed (%s)", type(e).__name__)
 
         return False
 
     except Exception as e:
 
-        print("========================================")
-        print("EMAIL ERROR")
-        print("========================================")
-        print(type(e).__name__)
-        print(e)
+        logger.exception("Student password reset email failed")
 
         return False

@@ -42,6 +42,10 @@ class Settings(BaseSettings):
 
     SMTP_FROM_NAME: str = "EPS-TOPIK"
 
+    # Recipients for the two-person approval step in admin onboarding.
+    ADMIN_EMAIL: str = ""
+    DEVELOPER_EMAIL: str = ""
+
 
     # =========================================================
     # ADMIN PASSWORD RESET
@@ -63,7 +67,10 @@ class Settings(BaseSettings):
     # =========================================================
 
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parents[3] / ".env",
+        env_file=(
+            Path(__file__).resolve().parents[3] / ".env",
+            Path(__file__).resolve().parents[4] / ".env",
+        ),
         extra="ignore",
     )
 

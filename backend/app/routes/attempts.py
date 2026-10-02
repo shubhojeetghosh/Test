@@ -13,6 +13,7 @@ from app.services.timer import QuizTimer
 from app.services.scoring import QuizScorer
 from app.core.database import get_db
 from app.core.dependencies import ensure_exam_set_access
+from app.core.rate_limit import enforce_rate_limit
 from app.models.orm import ExamSessionModel, OptionModel, QuestionModel, StudentAnswerModel
 from app.models.orm import ResultModel
 from app.services.media_storage import resolve_media_urls
@@ -350,96 +351,76 @@ def submit_answers_batch(
 def submit_answer(
     attempt_id: str,
     answer_data: SubmitAnswerRequest,
-    request: Request,
+    db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
-
-    attempt_repo = request.app.state.attempt_repo
-
-    attempt = attempt_repo.get(attempt_id)
-
-    if attempt is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Attempt not found.",
-        )
-
-    # --------------------------------------------------------
-    # OWNERSHIP CHECK
-    # --------------------------------------------------------
-
-    if str(attempt.student_id) != str(current_user_id):
-
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to modify this attempt.",
-        )
-
-    # --------------------------------------------------------
-    # SAVE ANSWER
-    # --------------------------------------------------------
-
+    prefix, separator, raw_id = attempt_id.partition("_")
+    if prefix != "attempt" or not separator or not raw_id.isdecimal():
+        raise HTTPException(status_code=404, detail="Attempt not found.")
     try:
+        question_id = int(answer_data.question_id)
+        option_id = int(answer_data.selected_option_id)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid question or option ID.")
 
-        attempt.save_answer(
-            question_id=answer_data.question_id,
-            option_id=answer_data.selected_option_id,
-        )
-
-    except ValueError as exc:
-
-        if attempt.is_expired():
-
-            attempt.status = AttemptStatus.EXPIRED
-            attempt_repo.save(attempt)
-
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Attempt has expired.",
-            )
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-
-    # --------------------------------------------------------
-    # SAVE ATTEMPT
-    # --------------------------------------------------------
-
-    try:
-        attempt_repo.save(attempt)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
-
-    # --------------------------------------------------------
-    # GET THE SAVED ANSWER
-    # --------------------------------------------------------
-
-    saved_answer = attempt.answers.get(
-        answer_data.question_id
+    # Serialize saves with submit requests by locking the same session row.
+    session = db.scalar(
+        select(ExamSessionModel)
+        .where(ExamSessionModel.id == int(raw_id))
+        .with_for_update()
     )
+    if session is None:
+        raise HTTPException(status_code=404, detail="Attempt not found.")
+    if session.user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="You are not allowed to modify this attempt.")
+    if session.status != "IN_PROGRESS":
+        raise HTTPException(status_code=409, detail="Attempt is no longer active.")
 
-    if saved_answer is None:
+    now = datetime.now(timezone.utc)
+    started_at = session.started_at
+    if started_at and started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=timezone.utc)
+    if started_at and started_at.timestamp() + int(session.exam.duration_minutes) * 60 <= now.timestamp():
+        session.status = "AUTO_SUBMITTED"
+        session.submitted_at = now.replace(tzinfo=None)
+        db.commit()
+        raise HTTPException(status_code=400, detail="Attempt has expired.")
 
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Answer was not saved correctly.",
+    valid_pair = db.execute(
+        select(QuestionModel.id, OptionModel.id)
+        .join(OptionModel, OptionModel.question_id == QuestionModel.id)
+        .where(
+            QuestionModel.id == question_id,
+            QuestionModel.exam_id == session.exam_id,
+            QuestionModel.status == "PUBLISHED",
+            OptionModel.id == option_id,
+            *([QuestionModel.set_id == session.set_id] if session.set_id is not None else []),
         )
+    ).first()
+    if valid_pair is None:
+        raise HTTPException(status_code=400, detail="Answer does not belong to this exam set.")
 
-    # --------------------------------------------------------
-    # RETURN ANSWER
-    #
-    # SubmitAnswerResponse requires answered_at.
-    # --------------------------------------------------------
-
+    answered_at = now.replace(tzinfo=None)
+    statement = pg_insert(StudentAnswerModel).values(
+        attempt_id=session.id,
+        question_id=question_id,
+        selected_option_id=option_id,
+        answered_at=answered_at,
+    )
+    db.execute(
+        statement.on_conflict_do_update(
+            index_elements=[StudentAnswerModel.attempt_id, StudentAnswerModel.question_id],
+            set_={
+                "selected_option_id": statement.excluded.selected_option_id,
+                "answered_at": statement.excluded.answered_at,
+            },
+        )
+    )
+    db.commit()
     return SubmitAnswerResponse(
-        question_id=saved_answer.question_id,
-        selected_option_id=saved_answer.selected_option_id,
-        answered_at=saved_answer.answered_at,
+        question_id=answer_data.question_id,
+        selected_option_id=answer_data.selected_option_id,
+        answered_at=now,
     )
 
 
@@ -538,120 +519,74 @@ def submit_attempt(
     db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
-
-    attempt_repo = request.app.state.attempt_repo
-    exam_repo = request.app.state.exam_repo
-
-    # --------------------------------------------------------
-    # GET ATTEMPT
-    # --------------------------------------------------------
-
-    attempt = attempt_repo.get(attempt_id)
-
-    if attempt is None:
+    enforce_rate_limit(
+        db,
+        scope="student-exam-submit",
+        subject=str(current_user_id),
+        limit=30,
+        window_seconds=3600,
+    )
+    prefix, separator, raw_id = attempt_id.partition("_")
+    if prefix != "attempt" or not separator or not raw_id.isdecimal():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Attempt not found.",
         )
 
-    # --------------------------------------------------------
-    # OWNERSHIP CHECK
-    # --------------------------------------------------------
-
-    if str(attempt.student_id) != str(current_user_id):
-
+    # Lock this attempt row so answer saves and duplicate submit requests are
+    # serialized across all serverless instances, not just within one worker.
+    session = db.scalar(
+        select(ExamSessionModel)
+        .where(ExamSessionModel.id == int(raw_id))
+        .with_for_update()
+    )
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attempt not found.",
+        )
+    if session.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not allowed to submit this attempt.",
         )
 
-    # --------------------------------------------------------
-    # CHECK STATUS
-    # --------------------------------------------------------
-
-    if attempt.status in (AttemptStatus.SUBMITTED, AttemptStatus.EXPIRED):
+    submitted_at = session.submitted_at or session.started_at
+    if session.status in ("SUBMITTED", "AUTO_SUBMITTED"):
+        # Idempotent response for retries and double-clicks.
         return SubmitAttemptResponse(
-            attempt_id=attempt.id,
-            status=attempt.status.value,
-            submitted_at=attempt.started_at or datetime.now(timezone.utc),
+            attempt_id=attempt_id,
+            status=(
+                AttemptStatus.SUBMITTED.value
+                if session.status == "SUBMITTED"
+                else AttemptStatus.EXPIRED.value
+            ),
+            submitted_at=submitted_at,
         )
-
-    if attempt.status != AttemptStatus.IN_PROGRESS:
-
+    if session.status != "IN_PROGRESS":
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Only an active attempt can be submitted.",
         )
 
-    # --------------------------------------------------------
-    # CHECK EXPIRATION
-    # --------------------------------------------------------
-
-    if attempt.is_expired():
-
-        attempt.status = AttemptStatus.EXPIRED
-        attempt_repo.save(attempt)
-        return SubmitAttemptResponse(
-            attempt_id=attempt.id,
-            status=attempt.status.value,
-            submitted_at=datetime.now(timezone.utc),
-        )
-
-    # --------------------------------------------------------
-    # GET EXAM
-    # --------------------------------------------------------
-
-    exam = exam_repo.get(attempt.exam_id, attempt.set_id)
-
-    if exam is None:
-
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Exam not found.",
-        )
-
-    # --------------------------------------------------------
-    # SUBMIT ATTEMPT
-    # --------------------------------------------------------
-
-    try:
-
-        engine = QuizEngine(exam)
-
-        engine.submit_attempt(attempt)
-
-    except ValueError as exc:
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-
-    # --------------------------------------------------------
-    # SAVE SUBMITTED ATTEMPT
-    # --------------------------------------------------------
-
-    attempt_repo.save(attempt)
-
-    # --------------------------------------------------------
-    # DO NOT INSERT ResultModel HERE
-    #
-    # The current database has a foreign-key mismatch:
-    #
-    # results.attempt_id -> exam_attempts.id
-    #
-    # while the application stores attempts in:
-    #
-    # exam_sessions.id
-    #
-    # Therefore we calculate the result directly from the
-    # submitted Attempt in the result endpoint below.
-    # --------------------------------------------------------
+    now = datetime.now(timezone.utc)
+    started_at = session.started_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=timezone.utc)
+    expires_at = started_at.timestamp() + int(session.exam.duration_minutes) * 60
+    if now.timestamp() >= expires_at:
+        session.status = "AUTO_SUBMITTED"
+        response_status = AttemptStatus.EXPIRED.value
+    else:
+        session.status = "SUBMITTED"
+        response_status = AttemptStatus.SUBMITTED.value
+    session.submitted_at = now.replace(tzinfo=None)
+    db.commit()
 
     return SubmitAttemptResponse(
-        attempt_id=attempt.id,
-        status=attempt.status.value,
-        submitted_at=datetime.now(timezone.utc),
+        attempt_id=attempt_id,
+        status=response_status,
+        submitted_at=now,
     )
 
 
