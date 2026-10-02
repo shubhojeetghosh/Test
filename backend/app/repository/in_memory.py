@@ -51,7 +51,7 @@ class InMemoryAttemptRepository:
             None,
         )
 
-    def start_or_resume(self, attempt: Attempt) -> Attempt:
+    def start_or_resume(self, attempt: Attempt, db=None) -> Attempt:
         """In-memory equivalent of the atomic PostgreSQL start operation."""
         existing = self.get_by_exam_and_student(
             attempt.exam_id,

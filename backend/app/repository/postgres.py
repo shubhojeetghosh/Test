@@ -172,6 +172,64 @@ class PostgresExamRepository:
         finally:
             db.close()
 
+    def get_with_session(
+        self, db: Session, exam_id: str, set_id: Optional[str] = None
+    ) -> Optional[Exam]:
+        """Load one exam using a caller-owned session/connection."""
+        try:
+            db_exam_id = int(exam_id)
+        except (TypeError, ValueError):
+            return None
+
+        row = db.query(ExamModel).filter(ExamModel.id == db_exam_id).first()
+        if row is None:
+            return None
+
+        question_query = (
+            db.query(QuestionModel)
+            .options(selectinload(QuestionModel.options))
+            .filter(
+                QuestionModel.exam_id == db_exam_id,
+                QuestionModel.status == "PUBLISHED",
+            )
+        )
+        if set_id is not None:
+            question_query = question_query.filter(
+                QuestionModel.set_id == int(set_id)
+            )
+        questions = question_query.order_by(QuestionModel.question_number).all()
+
+        exam = Exam(
+            id=str(row.id),
+            title=row.title,
+            duration_minutes=row.duration_minutes,
+            total_questions=len(questions),
+            marks_per_question=(
+                float(row.total_marks) / len(questions) if questions else 0.0
+            ),
+        )
+        for question_row in questions:
+            options = [
+                _build_option(option_row)
+                for option_row in sorted(
+                    question_row.options,
+                    key=lambda option: option.option_label,
+                )
+            ]
+            exam.add_question(
+                Question(
+                    id=str(question_row.id),
+                    question_number=question_row.question_number,
+                    question_type=_qtype(question_row.question_type),
+                    text=question_row.question_text or "",
+                    marks=float(question_row.marks),
+                    image_url=question_row.image_url,
+                    audio_url=question_row.audio_url,
+                    options=options,
+                )
+            )
+        return exam
+
     def list_all(self) -> list[Exam]:
         db: Session = SessionLocal()
         try:
@@ -409,7 +467,9 @@ class PostgresAttemptRepository:
         finally:
             db.close()
 
-    def start_or_resume(self, attempt: Attempt) -> Attempt:
+    def start_or_resume(
+        self, attempt: Attempt, db: Optional[Session] = None
+    ) -> Attempt:
         """Atomically resume or create an attempt across all app instances."""
         try:
             exam_id = int(attempt.exam_id)
@@ -417,7 +477,9 @@ class PostgresAttemptRepository:
         except (TypeError, ValueError) as exc:
             raise ValueError("Attempt must reference persisted user and exam IDs.") from exc
 
-        db: Session = SessionLocal()
+        owns_session = db is None
+        if db is None:
+            db = SessionLocal()
         try:
             # Transaction-scoped lock serializes simultaneous starts for this
             # user/exam pair, including requests sent to different instances.
@@ -490,7 +552,8 @@ class PostgresAttemptRepository:
             db.rollback()
             raise
         finally:
-            db.close()
+            if owns_session:
+                db.close()
 
     def list_by_student(self, student_id: str) -> list[Attempt]:
         try:

@@ -90,7 +90,14 @@ def start_attempt(
             detail="This exam set has no published questions yet.",
         )
 
-    exam = exam_repo.get(exam_id, str(set_id))
+    # Reuse the request's DB connection. Opening repository-owned sessions here
+    # can exhaust the deliberately small per-instance pool (pool_size=1).
+    session_loader = getattr(exam_repo, "get_with_session", None)
+    exam = (
+        session_loader(db, exam_id, str(set_id))
+        if session_loader is not None
+        else exam_repo.get(exam_id, str(set_id))
+    )
 
     if exam is None:
         raise HTTPException(
@@ -132,7 +139,7 @@ def start_attempt(
 
     # The production repository serializes simultaneous starts in PostgreSQL
     # and returns a database-backed ID that works on any Vercel instance.
-    attempt = attempt_repo.start_or_resume(attempt)
+    attempt = attempt_repo.start_or_resume(attempt, db=db)
 
     if attempt.status == AttemptStatus.SUBMITTED:
         raise HTTPException(
