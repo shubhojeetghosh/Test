@@ -481,6 +481,47 @@ button {
   border: 1px solid #e1e7ef;
 }
 
+.audio-placeholder audio {
+  display: none;
+}
+
+.exam-option-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.exam-option .option-image {
+  display: block;
+  width: auto;
+  max-width: min(220px, 45%);
+  max-height: 110px;
+  object-fit: contain;
+  margin: 4px 12px 4px 0;
+}
+
+.exam-option-audio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.exam-option-audio button {
+  border: 1px solid #cbd9eb;
+  border-radius: 7px;
+  background: #fff;
+  padding: 7px 10px;
+  color: var(--navy);
+  cursor: pointer;
+}
+
+.exam-audio-source {
+  display: none;
+}
+
 
 /* =====================================================
    MEDIA TEXT

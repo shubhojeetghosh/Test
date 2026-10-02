@@ -42,6 +42,7 @@ class QuizDetailResponse(BaseModel):
 class OptionResponse(BaseModel):
     id: str
     text: str
+    image_url: Optional[str] = None
     audio_url: Optional[str] = None
 
 

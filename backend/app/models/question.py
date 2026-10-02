@@ -16,6 +16,7 @@ class Option:
     text: str
     is_correct: bool = False
     audio_url: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 @dataclass

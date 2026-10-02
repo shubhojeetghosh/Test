@@ -548,9 +548,40 @@ document.addEventListener("DOMContentLoaded", async function () {
             text
         );
 
+        if (option.image_url) {
+            const image = document.createElement("img");
+            image.className = "review-option-image";
+            image.alt = `Option ${String.fromCharCode(65 + index)} image`;
+            image.src = resolveReviewMediaUrl(option.image_url);
+            image.onerror = () => image.remove();
+            optionElement.appendChild(image);
+        }
+
+        if (option.audio_url) {
+            const audio = document.createElement("audio");
+            audio.controls = true;
+            audio.preload = "none";
+            audio.src = resolveReviewMediaUrl(option.audio_url);
+            audio.addEventListener("click", (event) => event.stopPropagation());
+            optionElement.appendChild(audio);
+        }
+
 
         return optionElement;
 
+    }
+
+    function resolveReviewMediaUrl(value) {
+        const source = String(value || "").trim();
+        if (!source) return "";
+        if (/^(?:data:|blob:|https?:\/\/)/i.test(source)) return source;
+        const base = window.API_BASE_URL || window.location.origin;
+        try {
+            return new URL(source, `${base.replace(/\/+$/, "")}/`).href;
+        } catch (error) {
+            console.warn("Could not resolve review media URL:", error);
+            return source;
+        }
     }
 
 
@@ -677,7 +708,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 
             image.src =
-                question.image_url;
+                resolveReviewMediaUrl(question.image_url);
+            image.onerror = () => image.remove();
 
 
             image.alt =
@@ -696,6 +728,14 @@ document.addEventListener("DOMContentLoaded", async function () {
                 image
             );
 
+        }
+
+        if (question.audio_url) {
+            const audio = document.createElement("audio");
+            audio.controls = true;
+            audio.preload = "none";
+            audio.src = resolveReviewMediaUrl(question.audio_url);
+            card.appendChild(audio);
         }
 
 

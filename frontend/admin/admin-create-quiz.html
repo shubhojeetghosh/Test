@@ -17,7 +17,31 @@
     .admin-option-input {
       display: flex;
       flex-direction: column;
+      align-items: stretch;
       gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border, #dfe3e8);
+      border-radius: 9px;
+    }
+
+    .admin-option-input > span { align-self: flex-start; }
+
+    .admin-option-text-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+      font-size: 0.85rem;
+    }
+
+    .admin-option-text-field input[type="text"] {
+      width: 100%;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      box-sizing: border-box;
+      font: inherit;
     }
 
     .admin-option-file {
@@ -1029,11 +1053,10 @@ async function loadQuizForEditing() {
 
                 <span>A</span>
 
-                <input
-                  type="text"
-                  class="option-a"
-                  placeholder="Option A"
-                >
+                <label class="admin-option-text-field">
+                  Option A Text
+                  <input type="text" class="option-a" placeholder="Enter answer text">
+                </label>
 
                 <label class="admin-option-file">
 
@@ -1079,11 +1102,10 @@ async function loadQuizForEditing() {
 
                 <span>B</span>
 
-                <input
-                  type="text"
-                  class="option-b"
-                  placeholder="Option B"
-                >
+                <label class="admin-option-text-field">
+                  Option B Text
+                  <input type="text" class="option-b" placeholder="Enter answer text">
+                </label>
 
                 <label class="admin-option-file">
 
@@ -1129,11 +1151,10 @@ async function loadQuizForEditing() {
 
                 <span>C</span>
 
-                <input
-                  type="text"
-                  class="option-c"
-                  placeholder="Option C"
-                >
+                <label class="admin-option-text-field">
+                  Option C Text
+                  <input type="text" class="option-c" placeholder="Enter answer text">
+                </label>
 
                 <label class="admin-option-file">
 
@@ -1179,11 +1200,10 @@ async function loadQuizForEditing() {
 
                 <span>D</span>
 
-                <input
-                  type="text"
-                  class="option-d"
-                  placeholder="Option D"
-                >
+                <label class="admin-option-text-field">
+                  Option D Text
+                  <input type="text" class="option-d" placeholder="Enter answer text">
+                </label>
 
                 <label class="admin-option-file">
 
@@ -1503,6 +1523,71 @@ question.scrollIntoView({
        COLLECT QUIZ DATA
        ========================================================= */
 
+    function readMediaFileAsDataUrl(file) {
+      return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+        reader.onload = function () { resolve(reader.result); };
+        reader.onerror = function () { reject(new Error(`Could not read ${file.name}.`)); };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function prepareQuestionMedia(question) {
+      const mediaFiles = [
+        question.image_file,
+        question.audio_file,
+        ...Object.values(question.option_media || {}).flatMap(function (media) {
+          return [media.image_file, media.audio_file];
+        })
+      ].filter(Boolean);
+
+      const totalBytes = mediaFiles.reduce(function (total, file) {
+        return total + file.size;
+      }, 0);
+
+      // Base64 adds roughly 33%; keep each JSON request under common serverless limits.
+      if (totalBytes > 3 * 1024 * 1024) {
+        throw new Error(`Question ${question.question_number} has over 3 MB of media. Reduce the file sizes and try again.`);
+      }
+
+      const validateFile = function (file, expectedType, label) {
+        if (file && !file.type.startsWith(expectedType)) {
+          throw new Error(`${label} must be a valid ${expectedType === "image/" ? "image" : "audio"} file.`);
+        }
+      };
+
+      validateFile(question.image_file, "image/", "Question image");
+      validateFile(question.audio_file, "audio/", "Question audio");
+
+      const media = {
+        image_url: question.image_file ? await readMediaFileAsDataUrl(question.image_file) : null,
+        audio_url: question.audio_file ? await readMediaFileAsDataUrl(question.audio_file) : null,
+        options: {}
+      };
+
+      for (const label of ["A", "B", "C", "D"]) {
+        const optionMedia = question.option_media?.[label] || {};
+        validateFile(optionMedia.image_file, "image/", `Option ${label} image`);
+        validateFile(optionMedia.audio_file, "audio/", `Option ${label} audio`);
+        media.options[label] = {
+          image_url: optionMedia.image_file ? await readMediaFileAsDataUrl(optionMedia.image_file) : null,
+          audio_url: optionMedia.audio_file ? await readMediaFileAsDataUrl(optionMedia.audio_file) : null
+        };
+      }
+
+      return media;
+    }
+
+    function quizWithoutFileObjects(quiz) {
+      return {
+        ...quiz,
+        questions: quiz.questions.map(function (question) {
+          const { image_file, audio_file, option_media, ...textData } = question;
+          return textData;
+        })
+      };
+    }
+
     function collectQuizData() {
 
       const questions =
@@ -1533,6 +1618,12 @@ question.scrollIntoView({
                 ".question-text"
               ).value.trim(),
 
+            image_file:
+              card.querySelector(".question-image")?.files?.[0] || null,
+
+            audio_file:
+              card.querySelector(".question-audio")?.files?.[0] || null,
+
             marks:
               Number(
                 card.querySelector(
@@ -1562,6 +1653,25 @@ question.scrollIntoView({
                   ".option-d"
                 ).value.trim()
 
+            },
+
+            option_media: {
+              A: {
+                image_file: card.querySelector(".option-a-image")?.files?.[0] || null,
+                audio_file: card.querySelector(".option-a-audio")?.files?.[0] || null
+              },
+              B: {
+                image_file: card.querySelector(".option-b-image")?.files?.[0] || null,
+                audio_file: card.querySelector(".option-b-audio")?.files?.[0] || null
+              },
+              C: {
+                image_file: card.querySelector(".option-c-image")?.files?.[0] || null,
+                audio_file: card.querySelector(".option-c-audio")?.files?.[0] || null
+              },
+              D: {
+                image_file: card.querySelector(".option-d-image")?.files?.[0] || null,
+                audio_file: card.querySelector(".option-d-audio")?.files?.[0] || null
+              }
             },
 
             correct_answer:
@@ -1713,12 +1823,14 @@ question.scrollIntoView({
         }
 
 
-        if (
-          !question.options.A ||
-          !question.options.B ||
-          !question.options.C ||
-          !question.options.D
-        ) {
+        const hasAnyOptionMedia = function (label) {
+          const media = question.option_media?.[label];
+          return Boolean(media?.image_file || media?.audio_file);
+        };
+
+        if (["A", "B", "C", "D"].some(function (label) {
+          return !question.options[label] && !hasAnyOptionMedia(label);
+        })) {
 
           alert(
             `Complete all four options for Question ${i + 1}.`
@@ -1921,7 +2033,7 @@ await saveQuestionsToBackend(
 
         localStorage.setItem(
           "admin_quiz_draft",
-          JSON.stringify(quiz)
+          JSON.stringify(quizWithoutFileObjects(quiz))
         );
 
 
@@ -2071,6 +2183,8 @@ await saveQuestionsToBackend(
         quiz.questions
       ) {
 
+        const media = await prepareQuestionMedia(question);
+
         const options =
           [
             "A",
@@ -2090,10 +2204,10 @@ await saveQuestionsToBackend(
                   null,
 
                 image_url:
-                  null,
+                  media.options[label].image_url,
 
                 audio_url:
-                  null,
+                  media.options[label].audio_url,
 
                 is_correct:
                   question.correct_answer ===
@@ -2143,10 +2257,10 @@ await saveQuestionsToBackend(
                     null,
 
                   image_url:
-                    null,
+                    media.image_url,
 
                   audio_url:
-                    null,
+                    media.audio_url,
 
                   marks:
                     question.marks ||
@@ -2533,6 +2647,8 @@ quiz.status =
           quiz.created_at ||
           new Date().toISOString();
 
+        const localQuizCopy = quizWithoutFileObjects(quiz);
+
 
         const index =
           existingQuizzes.findIndex(
@@ -2548,14 +2664,14 @@ quiz.status =
         if (index >= 0) {
 
           existingQuizzes[index] =
-            quiz;
+            localQuizCopy;
 
         }
 
         else {
 
           existingQuizzes.push(
-            quiz
+            localQuizCopy
           );
 
         }

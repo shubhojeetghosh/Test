@@ -158,6 +158,7 @@ def get_attempt_questions(
                 OptionResponse(
                     id=str(option.id),
                     text=option.text or "",
+                    image_url=option.image_url,
                     audio_url=option.audio_url,
                 )
             )
@@ -642,6 +643,7 @@ def get_attempt_result(
                 {
                     "id": str(option.id),
                     "text": option.text or "",
+                    "image_url": option.image_url,
                     "audio_url": option.audio_url,
                 }
             )

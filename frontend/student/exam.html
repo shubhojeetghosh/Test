@@ -50,9 +50,10 @@
             <img id="mediaImage" class="hidden" alt="Question visual" > 
             
             <!-- Question Audio --> 
-             <div class="audio-placeholder hidden" id="audioPlaceholder" > 
-              <button id="audioButton">▶</button> 
-              <span>Listen to the question</span> 
+             <div class="audio-placeholder hidden" id="audioPlaceholder" >
+              <button id="audioButton" type="button" aria-label="Play question audio">▶</button>
+              <span id="audioStatus">Listen to the question</span>
+              <audio id="questionAudio" class="exam-audio-source" preload="none"></audio>
             </div> 
           
           </div> 

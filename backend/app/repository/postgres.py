@@ -37,6 +37,7 @@ def _build_option(row: OptionModel) -> Option:
         id=str(row.id),
         text=row.option_text or "",
         is_correct=row.is_correct,
+        image_url=row.image_url,
         audio_url=row.audio_url,
     )
 

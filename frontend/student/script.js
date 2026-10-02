@@ -931,13 +931,9 @@ if (registerForm) {
       );
 
 
-      // Go to login page
-      setTimeout(function () {
-
-        window.location.href =
-          "login.html";
-
-      }, 1000);
+      // Make the successful registration unmistakable before continuing.
+      window.alert("Registration successful! You can now log in.");
+      window.location.href = "login.html";
 
 
     } catch (error) {
@@ -3527,6 +3523,97 @@ if (Number.isFinite(questionCount)) {
    RENDER CURRENT QUESTION
    ========================================================= */
 
+function resolveStudentMediaUrl(value) {
+    const source = String(value || "").trim();
+    if (!source) return "";
+    if (/^(?:data:|blob:|https?:\/\/)/i.test(source)) return source;
+
+    const apiBase = window.EPS_API?.baseUrl || window.API_BASE_URL || window.location.origin;
+    try {
+        return new URL(source, `${apiBase.replace(/\/+$/, "")}/`).href;
+    } catch (error) {
+        console.warn("Could not resolve exam media URL:", error);
+        return source;
+    }
+}
+
+let activeExamAudioElement = null;
+let activeExamAudioQuestionId = null;
+
+async function playExamAudio(questionId, audioElement, button, statusElement) {
+    if (!audioElement?.src) return;
+
+    if (activeExamAudioElement === audioElement && !audioElement.paused) {
+        audioElement.pause();
+        button.textContent = "▶";
+        if (statusElement) statusElement.textContent = "Audio paused";
+        return;
+    }
+
+    // Pausing and resuming the same clip counts as one play; replaying a finished clip counts again.
+    if (audioElement._authorizedPlayback && audioElement.paused && !audioElement.ended) {
+        try {
+            await audioElement.play();
+            button.textContent = "⏸";
+            if (statusElement) statusElement.textContent = "Playing audio";
+        } catch (error) {
+            if (statusElement) statusElement.textContent = "Tap play to start the audio.";
+        }
+        return;
+    }
+
+    const attemptId = studentAttemptId;
+    const token = localStorage.getItem("access_token");
+    if (!attemptId || !token) {
+        if (statusElement) statusElement.textContent = "Your exam session is unavailable. Reload the exam.";
+        return;
+    }
+
+    button.disabled = true;
+    if (statusElement) statusElement.textContent = "Checking audio access…";
+
+    try {
+        const response = await fetch(
+            `${window.API_BASE_URL}/api/attempts/${encodeURIComponent(attemptId)}/audio-play`,
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question_id: String(questionId) })
+            }
+        );
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.allowed === false) {
+            throw new Error(data.detail || "The allowed audio plays for this question have been used.");
+        }
+
+        if (activeExamAudioElement && activeExamAudioElement !== audioElement) {
+            activeExamAudioElement.pause();
+        }
+        activeExamAudioElement = audioElement;
+        activeExamAudioQuestionId = String(questionId);
+        audioElement._authorizedPlayback = true;
+        audioElement.onended = function () {
+            audioElement._authorizedPlayback = false;
+            button.textContent = "▶";
+            if (statusElement) statusElement.textContent = "Audio finished";
+        };
+        await audioElement.play();
+        button.textContent = "⏸";
+        if (statusElement) {
+            statusElement.textContent = `${data.plays_remaining} replay${data.plays_remaining === 1 ? "" : "s"} remaining`;
+        }
+    } catch (error) {
+        audioElement._authorizedPlayback = false;
+        button.textContent = "▶";
+        if (statusElement) statusElement.textContent = error.message || "Unable to play this audio.";
+    } finally {
+        button.disabled = false;
+    }
+}
+
 function renderStudentExamQuestion() {
 
     const question =
@@ -3536,6 +3623,12 @@ function renderStudentExamQuestion() {
 
     if (!question) {
         return;
+    }
+
+    if (activeExamAudioElement && activeExamAudioQuestionId !== String(question.id)) {
+        activeExamAudioElement.pause();
+        activeExamAudioElement = null;
+        activeExamAudioQuestionId = null;
     }
 
 
@@ -3593,8 +3686,11 @@ function renderStudentExamQuestion() {
 
         if (question.image_url) {
 
-            image.src =
-                question.image_url;
+            image.onerror = function () {
+                image.classList.add("hidden");
+                image.removeAttribute("src");
+            };
+            image.src = resolveStudentMediaUrl(question.image_url);
 
             image.classList.remove(
                 "hidden"
@@ -3633,6 +3729,20 @@ function renderStudentExamQuestion() {
             audioPlaceholder.classList.add(
                 "hidden"
             );
+        }
+    }
+
+    const questionAudio = document.getElementById("questionAudio");
+    if (questionAudio) {
+        const audioUrl = question.audio_url
+            ? resolveStudentMediaUrl(question.audio_url)
+            : "";
+        if (questionAudio._examSource !== audioUrl) {
+            questionAudio.pause();
+            questionAudio._examSource = audioUrl;
+            questionAudio.src = audioUrl;
+            if (audioUrl) questionAudio.load();
+            else questionAudio.removeAttribute("src");
         }
     }
 
@@ -3779,10 +3889,9 @@ function renderStudentExamOptions(question) {
     question.options.forEach(
         function (option) {
 
-            const optionButton =
-                document.createElement(
-                    "button"
-                );
+            const optionItem = document.createElement("div");
+            optionItem.className = "exam-option-item";
+            const optionButton = document.createElement("button");
 
             optionButton.type =
                 "button";
@@ -3805,17 +3914,26 @@ function renderStudentExamOptions(question) {
                 );
             }
 
-           optionButton.innerHTML = `
+            const label = document.createElement("span");
+            label.className = "option-label";
+            label.textContent = option.option_label || "";
+            optionButton.appendChild(label);
 
-    <span class="option-label">
-        ${option.option_label || ""}
-    </span>
+            if (option.image_url) {
+                const optionImage = document.createElement("img");
+                optionImage.className = "option-image";
+                optionImage.alt = `Option ${option.option_label || ""} image`;
+                optionImage.src = resolveStudentMediaUrl(option.image_url);
+                optionImage.onerror = () => optionImage.remove();
+                optionButton.appendChild(optionImage);
+            }
 
-    <span class="option-text">
-        ${option.text || ""}
-    </span>
-
-`;
+            if (option.text) {
+                const optionText = document.createElement("span");
+                optionText.className = "option-text";
+                optionText.textContent = option.text;
+                optionButton.appendChild(optionText);
+            }
 
             optionButton.addEventListener(
                 "click",
@@ -3829,9 +3947,28 @@ function renderStudentExamOptions(question) {
                 }
             );
 
-            container.appendChild(
-                optionButton
-            );
+            optionItem.appendChild(optionButton);
+
+            if (option.audio_url) {
+                const audioControls = document.createElement("div");
+                audioControls.className = "exam-option-audio";
+                const audioButton = document.createElement("button");
+                audioButton.type = "button";
+                audioButton.textContent = "▶ Play audio";
+                const audioStatus = document.createElement("span");
+                const optionAudio = document.createElement("audio");
+                optionAudio.className = "exam-audio-source";
+                optionAudio.preload = "none";
+                optionAudio.src = resolveStudentMediaUrl(option.audio_url);
+                audioButton.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    playExamAudio(question.id, optionAudio, audioButton, audioStatus);
+                });
+                audioControls.append(audioButton, audioStatus, optionAudio);
+                optionItem.appendChild(audioControls);
+            }
+
+            container.appendChild(optionItem);
         }
     );
 }
@@ -4155,6 +4292,10 @@ await Promise.all(answerRequests);
             "last_exam_result",
             JSON.stringify(resultData)
         );
+        localStorage.setItem(
+            "last_attempt_id",
+            String(resultData.attempt_id || studentAttemptId)
+        );
 
 
         /* =====================================================
@@ -4170,8 +4311,7 @@ await Promise.all(answerRequests);
            OPEN RESULT / REVIEW PAGE
            ===================================================== */
 
-        window.location.href =
-            "review-answer.html";
+        window.location.href = "answers.html";
 
 
         /* =====================================================
@@ -4286,7 +4426,7 @@ document.addEventListener(
         const allBtn =
     document.getElementById("allBtn");
 
-const closeAllQuestionsBtn =
+        const closeAllQuestionsBtn =
     document.getElementById(
         "closeAllQuestions"
     );
@@ -4303,6 +4443,19 @@ if (closeAllQuestionsBtn) {
         "click",
         closeAllQuestions
     );
+}
+
+const audioButton = document.getElementById("audioButton");
+if (audioButton) {
+    audioButton.addEventListener("click", function () {
+        const question = studentExamQuestions[currentExamQuestionIndex];
+        playExamAudio(
+            question?.id,
+            document.getElementById("questionAudio"),
+            audioButton,
+            document.getElementById("audioStatus")
+        );
+    });
 }
 
 const allQuestionsModal =

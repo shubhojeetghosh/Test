@@ -79,6 +79,7 @@ class DatabaseExamRepository:
                     id=str(db_option.id),
                     text=db_option.option_text or "",
                     is_correct=db_option.is_correct,
+                    image_url=db_option.image_url,
                     audio_url=db_option.audio_url,
                 )
                 for db_option in db_options

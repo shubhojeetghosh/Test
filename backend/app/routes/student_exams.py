@@ -101,6 +101,7 @@ def get_set_questions(
                     OptionResponse(
                         id=str(option.id),
                         text=option.option_text or "",
+                        image_url=option.image_url,
                         audio_url=option.audio_url,
                     )
                     for option in options
