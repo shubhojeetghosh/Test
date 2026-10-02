@@ -42,7 +42,7 @@ class Result(Base):
     )
 
     score: Mapped[Decimal] = mapped_column(
-        Numeric(5, 2),
+        Numeric(10, 2),
         nullable=False,
     )
 

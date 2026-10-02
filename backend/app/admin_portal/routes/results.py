@@ -7,7 +7,7 @@ from app.admin_portal.models.exam_attempt import ExamSession
 from app.admin_portal.models.user import User
 from app.admin_portal.models.exam import Exam
 from app.admin_portal.routes.auth import get_current_admin
-from app.models.orm import QuestionModel, OptionModel, StudentAnswerModel
+from app.models.orm import QuestionModel, OptionModel, StudentAnswerModel, ResultModel
 
 
 router = APIRouter(
@@ -153,6 +153,12 @@ def build_attempt_responses(db: Session, attempts: list[ExamSession]):
     user_ids = {attempt.user_id for attempt in attempts}
     exam_ids = {attempt.exam_id for attempt in attempts}
     attempt_ids = {attempt.id for attempt in attempts}
+    saved_results = {
+        result.attempt_id: result
+        for result in db.scalars(
+            select(ResultModel).where(ResultModel.attempt_id.in_(attempt_ids))
+        ).all()
+    }
     user_by_id = {
         user.id: user
         for user in db.scalars(select(User).where(User.id.in_(user_ids))).all()
@@ -202,6 +208,23 @@ def build_attempt_responses(db: Session, attempts: list[ExamSession]):
         user = user_by_id.get(attempt.user_id)
         exam = exam_by_id.get(attempt.exam_id)
         scoped_questions = questions_by_scope.get((attempt.exam_id, attempt.set_id), [])
+        saved = saved_results.get(attempt.id)
+        result_summary = (
+            {
+                "total_questions": saved.total_questions,
+                "correct_answers": saved.correct_answers,
+                "wrong_answers": saved.wrong_answers,
+                "unanswered": saved.unanswered,
+                "score": float(saved.score),
+                "percentage": float(saved.percentage),
+            }
+            if saved is not None
+            else _result_from_rows(
+                scoped_questions,
+                answers_by_attempt.get(attempt.id, []),
+                correct_option_by_question,
+            )
+        )
         responses.append({
             "attempt_id": attempt.id,
             "student": {
@@ -216,11 +239,7 @@ def build_attempt_responses(db: Session, attempts: list[ExamSession]):
             "started_at": attempt.started_at,
             "submitted_at": attempt.submitted_at,
             "status": attempt.status,
-            "result": _result_from_rows(
-                scoped_questions,
-                answers_by_attempt.get(attempt.id, []),
-                correct_option_by_question,
-            ),
+            "result": result_summary,
         })
     return responses
 
@@ -245,9 +264,20 @@ def build_attempt_response(
         )
     )
 
-    attempt_result = calculate_attempt_result(
-        db,
-        attempt,
+    saved = db.scalar(
+        select(ResultModel).where(ResultModel.attempt_id == attempt.id)
+    )
+    attempt_result = (
+        {
+            "total_questions": saved.total_questions,
+            "correct_answers": saved.correct_answers,
+            "wrong_answers": saved.wrong_answers,
+            "unanswered": saved.unanswered,
+            "score": float(saved.score),
+            "percentage": float(saved.percentage),
+        }
+        if saved is not None
+        else calculate_attempt_result(db, attempt)
     )
 
     return {

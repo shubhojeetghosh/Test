@@ -39,7 +39,16 @@ class QuestionCreate(BaseModel):
         default="DRAFT",
         max_length=20,
     )
-    options: list[OptionCreate] = []
+    options: list[OptionCreate] = Field(default_factory=list)
+
+
+class ExamSetQuestionsReplace(BaseModel):
+    title: str = Field(..., min_length=1, max_length=150)
+    duration_minutes: int = Field(..., gt=0)
+    total_questions: int = Field(..., gt=0)
+    total_marks: float = Field(..., ge=0)
+    status: str = Field(..., pattern="^(DRAFT|PUBLISHED)$")
+    questions: list[QuestionCreate] = Field(..., min_length=1, max_length=2000)
 
 
 class QuestionUpdate(BaseModel):
@@ -89,4 +98,4 @@ class QuestionResponse(BaseModel):
     created_by: int | None = None
     set_id: int | None = None
     status: str | None = None
-    options: list[OptionResponse] = []
+    options: list[OptionResponse] = Field(default_factory=list)

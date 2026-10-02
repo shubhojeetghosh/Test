@@ -35,6 +35,7 @@ def list_quizzes(
     exams = (
         db.query(ExamModel)
         .options(selectinload(ExamModel.sets))
+        .filter(ExamModel.status == "PUBLISHED")
         .order_by(ExamModel.id.asc())
         .offset(offset)
         .limit(limit)
@@ -84,7 +85,10 @@ def get_quiz_detail(
 
     exam = (
         db.query(ExamModel)
-        .filter(ExamModel.id == quiz_id)
+        .filter(
+            ExamModel.id == quiz_id,
+            ExamModel.status == "PUBLISHED",
+        )
         .first()
     )
 

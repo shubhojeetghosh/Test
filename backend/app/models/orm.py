@@ -64,6 +64,14 @@ class ExamModel(Base):
         nullable=False
     )
 
+    # Keep the student-facing ORM in sync with the admin model/schema.
+    # Draft and archived exams must never be exposed to student endpoints.
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="DRAFT",
+    )
+
     created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime,
         server_default=func.now()
@@ -636,7 +644,7 @@ class ResultModel(Base):
     )
 
     score: Mapped[float] = mapped_column(
-        Numeric(5, 2),
+        Numeric(10, 2),
         nullable=False,
         default=0
     )

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
@@ -8,7 +8,9 @@ from app.admin_portal.models.exam import Exam
 from app.admin_portal.models.exam_set import ExamSet
 from app.admin_portal.models.question import Question
 from app.admin_portal.models.option import Option
+from app.admin_portal.models.exam_attempt import ExamSession
 from app.admin_portal.schemas.question import (
+    ExamSetQuestionsReplace,
     QuestionCreate,
     QuestionUpdate,
 )
@@ -399,6 +401,110 @@ def bulk_create_questions(
 
     return {
         "message": "Questions created successfully.",
+        "created_count": len(question_rows),
+        "question_ids": [question.id for question in question_rows],
+    }
+
+
+@router.put("/exams/{exam_id}/sets/{set_id}/questions")
+def replace_exam_set_questions(
+    exam_id: int,
+    set_id: int,
+    payload: ExamSetQuestionsReplace,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+):
+    """Replace a set's questions atomically while preserving attempt history."""
+    questions_data = payload.questions
+
+    exam = db.scalar(select(Exam).where(Exam.id == exam_id))
+    exam_set = db.scalar(
+        select(ExamSet).where(
+            ExamSet.id == set_id,
+            ExamSet.exam_id == exam_id,
+        )
+    )
+    if exam is None or exam_set is None:
+        raise HTTPException(status_code=404, detail="Exam set not found.")
+
+    if db.scalar(
+        select(ExamSession.id).where(ExamSession.exam_id == exam_id).limit(1)
+    ) is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Questions cannot be replaced after students have started this exam, because their attempt history must remain intact.",
+        )
+
+    if any(
+        item.exam_id != exam_id or item.set_id != set_id
+        for item in questions_data
+    ):
+        raise HTTPException(status_code=400, detail="Every question must belong to this exam set.")
+
+    question_numbers = [item.question_number for item in questions_data]
+    if len(question_numbers) != len(set(question_numbers)):
+        raise HTTPException(status_code=409, detail="Question numbers must be unique within this set.")
+
+    question_ids = db.scalars(
+        select(Question.id).where(
+            Question.exam_id == exam_id,
+            Question.set_id == set_id,
+        )
+    ).all()
+
+    try:
+        if question_ids:
+            db.execute(delete(Option).where(Option.question_id.in_(question_ids)))
+            db.execute(delete(Question).where(Question.id.in_(question_ids)))
+            db.flush()
+
+        question_rows = [
+            Question(
+                exam_id=exam_id,
+                set_id=set_id,
+                question_number=item.question_number,
+                question_type=item.question_type,
+                question_text=item.question_text,
+                image_url=item.image_url,
+                audio_url=item.audio_url,
+                marks=item.marks,
+                created_by=current_admin.id,
+                status=item.status or "DRAFT",
+            )
+            for item in questions_data
+        ]
+        db.add_all(question_rows)
+        db.flush()
+        db.add_all([
+            Option(
+                question_id=question.id,
+                option_label=option.option_label,
+                option_text=option.option_text,
+                image_url=option.image_url,
+                audio_url=option.audio_url,
+                is_correct=option.is_correct,
+                image_id=option.image_id,
+            )
+            for item, question in zip(questions_data, question_rows)
+            for option in item.options
+        ])
+        exam.title = payload.title
+        exam.duration_minutes = payload.duration_minutes
+        exam.total_questions = payload.total_questions
+        exam.total_marks = payload.total_marks
+        exam.status = payload.status
+        db.execute(
+            update(Question)
+            .where(Question.exam_id == exam_id)
+            .values(status=payload.status)
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "message": "Questions updated successfully.",
         "created_count": len(question_rows),
         "question_ids": [question.id for question in question_rows],
     }

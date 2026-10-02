@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.routes.auth import get_current_user_id
@@ -567,6 +568,73 @@ def submit_attempt(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Only an active attempt can be submitted.",
+        )
+
+    # Persist the final score in the same transaction as submission. The
+    # attempt row lock above makes this safe when clients retry or double-click.
+    question_query = (
+        select(QuestionModel)
+        .options(selectinload(QuestionModel.options))
+        .where(
+            QuestionModel.exam_id == session.exam_id,
+            QuestionModel.status == "PUBLISHED",
+        )
+        .order_by(QuestionModel.question_number.asc())
+    )
+    if session.set_id is not None:
+        question_query = question_query.where(
+            QuestionModel.set_id == session.set_id
+        )
+    questions = db.scalars(question_query).all()
+    question_ids = [question.id for question in questions]
+    answers = (
+        db.scalars(
+            select(StudentAnswerModel).where(
+                StudentAnswerModel.attempt_id == session.id,
+                StudentAnswerModel.question_id.in_(question_ids),
+            )
+        ).all()
+        if question_ids
+        else []
+    )
+    answers_by_question = {answer.question_id: answer for answer in answers}
+    correct_answers = 0
+    wrong_answers = 0
+    score = Decimal("0")
+    total_marks = Decimal("0")
+    for question in questions:
+        total_marks += Decimal(str(question.marks or 0))
+        answer = answers_by_question.get(question.id)
+        if answer is None or answer.selected_option_id is None:
+            continue
+        correct = any(
+            option.id == answer.selected_option_id and option.is_correct
+            for option in question.options
+        )
+        if correct:
+            correct_answers += 1
+            score += Decimal(str(question.marks or 0))
+        else:
+            wrong_answers += 1
+    unanswered = len(questions) - correct_answers - wrong_answers
+    percentage = (
+        (score * Decimal("100") / total_marks)
+        if total_marks
+        else Decimal("0")
+    )
+    if db.scalar(
+        select(ResultModel.id).where(ResultModel.attempt_id == session.id)
+    ) is None:
+        db.add(
+            ResultModel(
+                attempt_id=session.id,
+                total_questions=len(questions),
+                correct_answers=correct_answers,
+                wrong_answers=wrong_answers,
+                unanswered=unanswered,
+                score=score,
+                percentage=percentage,
+            )
         )
 
     now = datetime.now(timezone.utc)

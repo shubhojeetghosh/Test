@@ -33,9 +33,10 @@ def get_set_questions(
     Correct answers are intentionally not included.
     """
 
-    ensure_exam_set_access(db, current_user.id, set_id)
+    exam_set = ensure_exam_set_access(db, current_user.id, set_id)
 
     base_query = db.query(QuestionModel).filter(
+        QuestionModel.exam_id == exam_set.exam_id,
         QuestionModel.set_id == set_id,
         QuestionModel.status == "PUBLISHED",
     )

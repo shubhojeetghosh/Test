@@ -8,6 +8,7 @@ from app.core.security import decode_access_token
 from app.models import User
 from app.admin_portal.models.exam_set import ExamSet
 from app.admin_portal.models.student_exam_access import StudentExamAccess
+from app.admin_portal.models.exam import Exam
 
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -51,6 +52,10 @@ def ensure_exam_set_access(db: Session, student_id: int, set_id: int) -> ExamSet
     """Return an exam set only when the student is entitled to access it."""
     exam_set = db.scalar(select(ExamSet).where(ExamSet.id == set_id))
     if exam_set is None:
+        raise HTTPException(status_code=404, detail="Exam set not found.")
+
+    exam = db.scalar(select(Exam).where(Exam.id == exam_set.exam_id))
+    if exam is None or str(exam.status).strip().upper() != "PUBLISHED":
         raise HTTPException(status_code=404, detail="Exam set not found.")
 
     if exam_set.set_number != 1:

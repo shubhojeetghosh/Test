@@ -730,6 +730,8 @@
       editParams.get("edit");
 
     let editingQuiz = null;
+    let editingSetId = null;
+    let editingSets = [];
 
 
     /* =========================================================
@@ -805,11 +807,6 @@ async function loadQuizForEditing() {
       );
     }
 
-    /*
-     * Continue with the existing
-     * quiz-loading code below this point.
-     */
-
     document.getElementById(
       "quizTitle"
     ).value =
@@ -818,12 +815,12 @@ async function loadQuizForEditing() {
     document.getElementById(
       "quizSetNumber"
     ).value =
-      editingQuiz.set_number || "";
+      "";
 
     document.getElementById(
       "quizDuration"
     ).value =
-      editingQuiz.duration || "";
+      editingQuiz.duration_minutes || "";
 
     document.getElementById(
       "quizTotalMarks"
@@ -839,6 +836,35 @@ async function loadQuizForEditing() {
       "quizDescription"
     ).value =
       editingQuiz.description || "";
+
+    const setsResponse = await fetch(
+      `${API_BASE_URL}/admin/exams/${editQuizId}/sets`,
+      { headers: { "Authorization": `Bearer ${token}` } }
+    );
+    const setsData = await setsResponse.json().catch(() => []);
+    if (!setsResponse.ok) {
+      throw new Error(getReadableApiError(setsData.detail, "Unable to load exam sets."));
+    }
+    editingSets = Array.isArray(setsData) ? setsData : [];
+
+    const setControl = document.getElementById("quizSetNumber");
+    if (editingSets.length) {
+      const selector = document.createElement("select");
+      selector.id = "quizSetNumber";
+      selector.required = true;
+      editingSets.forEach((set) => {
+        const option = document.createElement("option");
+        option.value = String(set.set_number);
+        option.textContent = `${set.set_name || `Set ${set.set_number}`} (${set.set_number})`;
+        option.dataset.setId = String(set.id);
+        selector.appendChild(option);
+      });
+      setControl.replaceWith(selector);
+      selector.addEventListener("change", () => loadQuestionsForEditingSet(selector.value).catch((error) => alert(error.message)));
+      await loadQuestionsForEditingSet(selector.value);
+    } else {
+      setControl.value = "1";
+    }
 
   }
 
@@ -857,6 +883,68 @@ async function loadQuizForEditing() {
   }
 
 }
+
+async function loadQuestionsForEditingSet(setNumber) {
+  const token = localStorage.getItem("admin_access_token");
+  const apiBase = window.EPS_API?.baseUrl || window.API_BASE_URL;
+  const selectedSet = editingSets.find((set) => String(set.set_number) === String(setNumber));
+  if (!selectedSet) return;
+  editingSetId = Number(selectedSet.id);
+
+  const setControl = document.getElementById("quizSetNumber");
+  setControl.value = String(selectedSet.set_number);
+  const cards = document.querySelectorAll(".admin-question-card");
+  cards.forEach((card) => card.remove());
+  questionCount = 0;
+
+  let offset = 0;
+  const pageSize = 200;
+  let questions = [];
+  while (true) {
+    const response = await fetch(
+      `${apiBase}/admin/exams/${editQuizId}/questions?limit=${pageSize}&offset=${offset}`,
+      { headers: { "Authorization": `Bearer ${token}` } }
+    );
+    const page = await response.json().catch(() => []);
+    if (!response.ok) {
+      throw new Error(getReadableApiError(page.detail, "Unable to load saved questions."));
+    }
+    if (!Array.isArray(page)) throw new Error("The saved question response was invalid.");
+    questions.push(...page.filter((question) => Number(question.set_id) === editingSetId));
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  questions.sort((a, b) => a.question_number - b.question_number);
+  questions.forEach((question) => addQuestion(question));
+  const emptyMessage = document.getElementById("emptyQuestionMessage");
+  if (emptyMessage) emptyMessage.style.display = questions.length ? "none" : "block";
+  updateQuestionStats();
+}
+
+async function ensureEditingSet(examId, token, apiBase) {
+  if (editingSetId) return editingSetId;
+  const setNumber = Number(document.getElementById("quizSetNumber").value) || 1;
+  const response = await fetch(`${apiBase}/admin/exams/${examId}/sets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      set_number: setNumber,
+      set_name: `Set ${setNumber}`,
+      created_by: null
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(getReadableApiError(data.detail, "Unable to create the exam set."));
+  }
+  editingSetId = Number(data.exam_set.id);
+  editingSets.push(data.exam_set);
+  return editingSetId;
+}
     
 
 
@@ -864,7 +952,7 @@ async function loadQuizForEditing() {
        ADD QUESTION
        ========================================================= */
 
-    function addQuestion() {
+    function addQuestion(savedQuestion = null) {
 
       questionCount++;
 
@@ -899,6 +987,18 @@ async function loadQuizForEditing() {
 
       question.dataset.questionId =
         questionCount;
+
+      if (savedQuestion) {
+        question.dataset.savedQuestionId = String(savedQuestion.id);
+        question.dataset.imageUrl = savedQuestion.image_url || "";
+        question.dataset.audioUrl = savedQuestion.audio_url || "";
+        question.dataset.optionMedia = JSON.stringify(
+          Object.fromEntries((savedQuestion.options || []).map((option) => [option.option_label, {
+            image_url: option.image_url || "",
+            audio_url: option.audio_url || ""
+          }]))
+        );
+      }
 
 
       question.innerHTML = `
@@ -1291,12 +1391,28 @@ async function loadQuizForEditing() {
 
 container.insertBefore(question, addButton);
 
+if (savedQuestion) {
+  const setValue = (selector, value) => {
+    const element = question.querySelector(selector);
+    if (element) element.value = value == null ? "" : String(value);
+  };
+  setValue(".question-section", savedQuestion.question_type);
+  setValue(".question-marks", savedQuestion.marks);
+  setValue(".question-text", savedQuestion.question_text);
+  const optionsByLabel = Object.fromEntries((savedQuestion.options || []).map((item) => [item.option_label, item]));
+  ["A", "B", "C", "D"].forEach((label) => {
+    const option = optionsByLabel[label] || {};
+    setValue(`.option-${label.toLowerCase()}`, option.option_text);
+    if (option.is_correct) setValue(".correct-answer", label);
+  });
+  handleQuestionType(question.querySelector(".question-section"));
+}
+
 updateQuestionStats();
 
-question.scrollIntoView({
-  behavior: "smooth",
-  block: "start"
-});
+if (!savedQuestion) {
+  question.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
     }
 
@@ -1570,18 +1686,20 @@ question.scrollIntoView({
       validateFile(question.audio_file, "audio/", "Question audio");
 
       const media = {
-        image_url: question.image_file ? await uploadQuizMediaFile(question.image_file) : null,
-        audio_url: question.audio_file ? await uploadQuizMediaFile(question.audio_file) : null,
+        image_url: question.image_file ? await uploadQuizMediaFile(question.image_file) : (question.existing_image_url || null),
+        audio_url: question.audio_file ? await uploadQuizMediaFile(question.audio_file) : (question.existing_audio_url || null),
         options: {}
       };
 
+      const existingOptionMedia = question.existing_option_media || {};
       for (const label of ["A", "B", "C", "D"]) {
         const optionMedia = question.option_media?.[label] || {};
+        const existing = existingOptionMedia[label] || {};
         validateFile(optionMedia.image_file, "image/", `Option ${label} image`);
         validateFile(optionMedia.audio_file, "audio/", `Option ${label} audio`);
         media.options[label] = {
-          image_url: optionMedia.image_file ? await uploadQuizMediaFile(optionMedia.image_file) : null,
-          audio_url: optionMedia.audio_file ? await uploadQuizMediaFile(optionMedia.audio_file) : null
+          image_url: optionMedia.image_file ? await uploadQuizMediaFile(optionMedia.image_file) : (existing.image_url || null),
+          audio_url: optionMedia.audio_file ? await uploadQuizMediaFile(optionMedia.audio_file) : (existing.audio_url || null)
         };
       }
 
@@ -1633,6 +1751,18 @@ question.scrollIntoView({
 
             audio_file:
               card.querySelector(".question-audio")?.files?.[0] || null,
+
+            existing_question_id:
+              card.dataset.savedQuestionId || null,
+
+            existing_image_url:
+              card.dataset.imageUrl || null,
+
+            existing_audio_url:
+              card.dataset.audioUrl || null,
+
+            existing_option_media:
+              JSON.parse(card.dataset.optionMedia || "{}"),
 
             marks:
               Number(
@@ -1923,6 +2053,17 @@ question.scrollIntoView({
 
       try {
 
+        if (editQuizId) {
+          const setId = await ensureEditingSet(Number(editQuizId), token, API_BASE_URL);
+          await saveQuestionsToBackend(Number(editQuizId), setId, quiz, "DRAFT");
+          quiz.id = Number(editQuizId);
+          quiz.status = "draft";
+          quiz.questions_count = quiz.questions.length;
+          localStorage.setItem("admin_quiz_draft", JSON.stringify(quizWithoutFileObjects(quiz)));
+          alert("Quiz changes saved as a draft.");
+          return;
+        }
+
         const response =
           await fetch(
             `${API_BASE_URL}/admin/exams`,
@@ -2158,7 +2299,8 @@ await saveQuestionsToBackend(
     async function saveQuestionsToBackend(
       examId,
       setId,
-      quiz
+      quiz,
+      questionStatus = "DRAFT"
     ) {
 
       const token =
@@ -2239,20 +2381,31 @@ await saveQuestionsToBackend(
           marks: question.marks || 0,
           created_by: null,
           set_id: setId,
-          status: "DRAFT",
+          status: questionStatus,
           options
         };
         }));
         questionsPayload.push(...batch);
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/exams/${examId}/questions/bulk`, {
-        method: "POST",
+      const isEditingExistingSet = Boolean(editQuizId) && Number(editQuizId) === Number(examId);
+      const endpoint = isEditingExistingSet
+        ? `${API_BASE_URL}/admin/exams/${examId}/sets/${setId}/questions`
+        : `${API_BASE_URL}/admin/exams/${examId}/questions/bulk`;
+      const response = await fetch(endpoint, {
+        method: isEditingExistingSet ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(questionsPayload)
+        body: JSON.stringify(isEditingExistingSet ? {
+          title: quiz.title,
+          duration_minutes: quiz.duration,
+          total_questions: quiz.questions.length,
+          total_marks: quiz.total_marks,
+          status: questionStatus,
+          questions: questionsPayload
+        } : questionsPayload)
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -2332,77 +2485,11 @@ await saveQuestionsToBackend(
            ===================================================== */
 
        if (editQuizId) {
-
-          examId =
-            Number(editQuizId);
-
-
-          const response =
-            await fetch(
-              `${API_BASE_URL}/admin/exams/${examId}`,
-              {
-
-                method: "PUT",
-
-                headers: {
-
-                  "Content-Type":
-                    "application/json",
-
-                  "Authorization":
-                    `Bearer ${token}`
-
-                },
-
-                body:
-                  JSON.stringify({
-
-                    title:
-                      quiz.title,
-
-                    duration_minutes:
-                      Number(
-                        quiz.duration
-                      ) || 0,
-
-                    total_questions:
-                      quiz.questions.length,
-
-                    total_marks:
-                      Number(
-                        quiz.total_marks
-                      ) || 0,
-
-                    status:
-                      "PUBLISHED"
-
-                  })
-
-              }
-            );
-
-
-          const data =
-            await response.json();
-
-
-          if (!response.ok) {
-
-            throw new Error(
-              getReadableApiError(
-                data.detail,
-                "Unable to publish the existing quiz."
-              )
-            );
-
-          }
-
-
-          quiz.id =
-            examId;
-
-          quiz.status =
-            "published";
+          examId = Number(editQuizId);
+          const setId = await ensureEditingSet(examId, token, API_BASE_URL);
+          await saveQuestionsToBackend(examId, setId, quiz, "PUBLISHED");
+          quiz.id = examId;
+          quiz.status = "published";
 
         }
 
