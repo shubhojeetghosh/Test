@@ -1,9 +1,6 @@
+"""Shared pytest configuration.
+
+Current application regression tests install dependencies backed by a
+temporary SQLite database. The production FastAPI app has no USE_DB switch;
+test isolation is configured explicitly by those test fixtures.
 """
-Root conftest.py
-================
-Sets USE_DB=false before any test module is imported so that
-create_app() uses in-memory repositories instead of hitting
-the Neon database. This keeps the test suite fast and isolated.
-"""
-import os
-os.environ.setdefault("USE_DB", "false")
