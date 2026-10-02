@@ -729,6 +729,12 @@
     const editQuizId =
       editParams.get("edit");
 
+    const requestedEditSetId =
+      editParams.get("set_id");
+
+    const requestedEditSetNumber =
+      editParams.get("set_number");
+
     let editingQuiz = null;
     let editingSetId = null;
     let editingSets = [];
@@ -849,6 +855,12 @@ async function loadQuizForEditing() {
 
     const setControl = document.getElementById("quizSetNumber");
     if (editingSets.length) {
+      const requestedSet = editingSets.find((set) =>
+        (requestedEditSetId && String(set.id) === String(requestedEditSetId)) ||
+        (!requestedEditSetId && requestedEditSetNumber &&
+          String(set.set_number) === String(requestedEditSetNumber))
+      ) || editingSets[0];
+
       const selector = document.createElement("select");
       selector.id = "quizSetNumber";
       selector.required = true;
@@ -857,6 +869,7 @@ async function loadQuizForEditing() {
         option.value = String(set.set_number);
         option.textContent = `${set.set_name || `Set ${set.set_number}`} (${set.set_number})`;
         option.dataset.setId = String(set.id);
+        option.selected = Number(set.id) === Number(requestedSet.id);
         selector.appendChild(option);
       });
       setControl.replaceWith(selector);
@@ -902,7 +915,7 @@ async function loadQuestionsForEditingSet(setNumber) {
   let questions = [];
   while (true) {
     const response = await fetch(
-      `${apiBase}/admin/exams/${editQuizId}/questions?limit=${pageSize}&offset=${offset}`,
+      `${apiBase}/admin/exams/${editQuizId}/questions?set_id=${encodeURIComponent(editingSetId)}&limit=${pageSize}&offset=${offset}`,
       { headers: { "Authorization": `Bearer ${token}` } }
     );
     const page = await response.json().catch(() => []);
@@ -910,7 +923,7 @@ async function loadQuestionsForEditingSet(setNumber) {
       throw new Error(getReadableApiError(page.detail, "Unable to load saved questions."));
     }
     if (!Array.isArray(page)) throw new Error("The saved question response was invalid.");
-    questions.push(...page.filter((question) => Number(question.set_id) === editingSetId));
+    questions.push(...page);
     if (page.length < pageSize) break;
     offset += pageSize;
   }

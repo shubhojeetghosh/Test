@@ -2914,6 +2914,21 @@ if (viewResultModal) {
                     ? quiz.sets[0].set_number
                     : null);
 
+            const matchingSet =
+                Array.isArray(quiz.sets)
+                    ? quiz.sets.find(set =>
+                        String(set.set_number) === String(setNumber)
+                    ) || quiz.sets[0]
+                    : null;
+
+            const setId =
+                quiz.set_id ??
+                quiz.exam_set_id ??
+                quiz.exam_set?.id ??
+                quiz.set?.id ??
+                matchingSet?.id ??
+                "";
+
 
             const status =
                 String(
@@ -2975,7 +2990,9 @@ if (viewResultModal) {
 
             <button
                 class="table-action edit-quiz-btn"
-                data-quiz-id="${quiz.id}">
+                data-quiz-id="${quiz.id}"
+                data-set-id="${setId}"
+                data-set-number="${setNumber ?? ""}">
                 Edit
             </button>
 
@@ -3275,16 +3292,24 @@ document.addEventListener(
             const quizId =
                 editButton.dataset.quizId;
 
+            const setId =
+                editButton.dataset.setId;
+
+            const setNumber =
+                editButton.dataset.setNumber;
+
 
             if (!quizId) {
                 return;
             }
 
 
+            const editParams = new URLSearchParams({ edit: quizId });
+            if (setId) editParams.set("set_id", setId);
+            if (setNumber) editParams.set("set_number", setNumber);
+
             window.location.href =
-                `admin-create-quiz.html?edit=${encodeURIComponent(
-                    quizId
-                )}`;
+                `admin-create-quiz.html?${editParams.toString()}`;
 
         }
     );

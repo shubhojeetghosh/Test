@@ -63,6 +63,7 @@ def get_questions(
     exam_id: int,
     limit: int = Query(default=200, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    set_id: int | None = Query(default=None, gt=0),
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
@@ -76,13 +77,30 @@ def get_questions(
             detail="Exam not found",
         )
 
-    questions = db.scalars(
+    if set_id is not None:
+        exam_set = db.scalar(
+            select(ExamSet).where(
+                ExamSet.id == set_id,
+                ExamSet.exam_id == exam_id,
+            )
+        )
+        if exam_set is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Exam set not found",
+            )
+
+    question_query = (
         select(Question)
         .where(Question.exam_id == exam_id)
         .order_by(Question.question_number)
         .offset(offset)
         .limit(limit)
-    ).all()
+    )
+    if set_id is not None:
+        question_query = question_query.where(Question.set_id == set_id)
+
+    questions = db.scalars(question_query).all()
 
     result = []
 

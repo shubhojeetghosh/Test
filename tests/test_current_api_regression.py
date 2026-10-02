@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 
 import httpx
@@ -14,6 +15,7 @@ from app.core.config import settings as student_settings
 from app.core.security import create_access_token as create_student_token
 from app.database.database import get_db as admin_get_db
 from app.main import app
+from app.models.orm import ExamModel, ExamSetModel, OptionModel, QuestionModel
 from app.models.user import User
 
 
@@ -104,15 +106,97 @@ def test_configured_frontend_origin_passes_cors_preflight():
 
 
 def test_quiz_editor_checks_admin_profile_with_admin_endpoint():
-    editor = (
-        Path(__file__).resolve().parents[1]
-        / "frontend"
-        / "admin"
-        / "admin-create-quiz.html"
-    ).read_text(encoding="utf-8")
+    root = Path(__file__).resolve().parents[1]
+    editor = (root / "frontend" / "admin" / "admin-create-quiz.html").read_text(encoding="utf-8")
+    admin_page = (root / "frontend" / "admin" / "admin.js").read_text(encoding="utf-8")
 
     assert "${API_BASE_URL}/auth/admin/profile" in editor
     assert "${API_BASE_URL}/auth/profile" not in editor
+    assert 'data-set-id="${setId}"' in admin_page
+    assert 'editParams.set("set_id", setId)' in admin_page
+    assert 'editParams.get("set_id")' in editor
+    assert "?set_id=${encodeURIComponent(editingSetId)}&limit=" in editor
+
+
+def test_admin_question_list_returns_only_requested_exam_set(local_database):
+    add_local_user(local_database, 81, "admin")
+    with local_database() as session:
+        exam = ExamModel(
+            id=31,
+            title="Set isolation",
+            duration_minutes=30,
+            total_questions=2,
+            total_marks=Decimal("5.0"),
+            status="PUBLISHED",
+            sets=[
+                ExamSetModel(id=301, exam_id=31, set_number=1, set_name="Set 1"),
+                ExamSetModel(id=302, exam_id=31, set_number=2, set_name="Set 2"),
+            ],
+            questions=[
+                QuestionModel(
+                    id=3101,
+                    exam_id=31,
+                    set_id=301,
+                    question_number=1,
+                    question_type="READING",
+                    question_text="Question from set 1",
+                    marks=Decimal("2.5"),
+                    status="PUBLISHED",
+                    options=[
+                        OptionModel(
+                            id=31011,
+                            question_id=3101,
+                            option_label="A",
+                            option_text="Set 1 option",
+                            is_correct=True,
+                        )
+                    ],
+                ),
+                QuestionModel(
+                    id=3102,
+                    exam_id=31,
+                    set_id=302,
+                    question_number=2,
+                    question_type="READING",
+                    question_text="Question from set 2",
+                    marks=Decimal("2.5"),
+                    status="PUBLISHED",
+                    options=[
+                        OptionModel(
+                            id=31021,
+                            question_id=3102,
+                            option_label="A",
+                            option_text="Set 2 option",
+                            is_correct=True,
+                        )
+                    ],
+                ),
+            ],
+        )
+        session.add(exam)
+        session.commit()
+
+    token = create_admin_token(81, "admin")
+    response = request(
+        "GET",
+        "/admin/exams/31/questions?set_id=302&limit=200&offset=0",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    questions = response.json()
+    assert [question["question_text"] for question in questions] == [
+        "Question from set 2"
+    ]
+    assert questions[0]["set_id"] == 302
+    assert questions[0]["options"][0]["option_text"] == "Set 2 option"
+
+    wrong_exam_set = request(
+        "GET",
+        "/admin/exams/31/questions?set_id=999&limit=200&offset=0",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert wrong_exam_set.status_code == 404
 
 
 @pytest.mark.parametrize(
