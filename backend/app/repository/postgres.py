@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import time
 from collections import OrderedDict
 from typing import Optional
 
@@ -83,21 +84,27 @@ class PostgresExamRepository:
     """
 
     def __init__(self) -> None:
-        self._cache: OrderedDict[str, Exam] = OrderedDict()
-        self._max_cached_exams = 16
+        self._cache: OrderedDict[str, tuple[float, Exam]] = OrderedDict()
+        self._max_cached_exams = 8
+        self._cache_ttl_seconds = 30
+        self._cache_question_limit = 250
 
     def save(self, exam: Exam) -> None:
         """For compatibility with in-memory interface — updates the cache."""
-        self._cache[exam.id] = exam
-        self._cache.move_to_end(exam.id)
+        cache_key = f"{exam.id}:*"
+        self._cache[cache_key] = (time.monotonic(), exam)
+        self._cache.move_to_end(cache_key)
         while len(self._cache) > self._max_cached_exams:
             self._cache.popitem(last=False)
 
-    def get(self, exam_id: str) -> Optional[Exam]:
-        cached = self._cache.get(str(exam_id))
-        if cached is not None:
-            self._cache.move_to_end(str(exam_id))
-            return cached
+    def get(self, exam_id: str, set_id: Optional[str] = None) -> Optional[Exam]:
+        cache_key = f"{exam_id}:{set_id or '*'}"
+        cached_entry = self._cache.get(cache_key)
+        if cached_entry is not None and time.monotonic() - cached_entry[0] < self._cache_ttl_seconds:
+            self._cache.move_to_end(cache_key)
+            return cached_entry[1]
+        if cached_entry is not None:
+            self._cache.pop(cache_key, None)
 
         try:
             db_exam_id = int(exam_id)
@@ -106,20 +113,61 @@ class PostgresExamRepository:
 
         db: Session = SessionLocal()
         try:
-            row = (
-                db.query(ExamModel)
-                .options(
-                    selectinload(ExamModel.questions).selectinload(
-                        QuestionModel.options
-                    )
-                )
-                .filter(ExamModel.id == db_exam_id)
-                .first()
-            )
+            row = db.query(ExamModel).filter(ExamModel.id == db_exam_id).first()
             if row is None:
                 return None
-            exam = _build_exam(row)
-            self.save(exam)
+
+            question_query = (
+                db.query(QuestionModel)
+                .options(selectinload(QuestionModel.options))
+                .filter(
+                    QuestionModel.exam_id == db_exam_id,
+                    QuestionModel.status == "PUBLISHED",
+                )
+            )
+            if set_id is not None:
+                question_query = question_query.filter(
+                    QuestionModel.set_id == int(set_id)
+                )
+            questions = question_query.order_by(QuestionModel.question_number).all()
+
+            exam = Exam(
+                id=str(row.id),
+                title=row.title,
+                duration_minutes=row.duration_minutes,
+                total_questions=len(questions),
+                marks_per_question=(
+                    float(row.total_marks) / len(questions) if questions else 0.0
+                ),
+            )
+            for question_row in questions:
+                options = [
+                    _build_option(option_row)
+                    for option_row in sorted(
+                        question_row.options,
+                        key=lambda option: option.option_label,
+                    )
+                ]
+                exam.add_question(
+                    Question(
+                        id=str(question_row.id),
+                        question_number=question_row.question_number,
+                        question_type=_qtype(question_row.question_type),
+                        text=question_row.question_text or "",
+                        marks=float(question_row.marks),
+                        image_url=question_row.image_url,
+                        audio_url=question_row.audio_url,
+                        options=options,
+                    )
+                )
+            exam_key = f"{exam.id}:{set_id or '*'}"
+            # Large sets are deliberately not kept in each serverless worker's
+            # memory. Small sets get a short cache to reduce repeat DB reads.
+            if len(questions) <= self._cache_question_limit:
+                self._cache[exam_key] = (time.monotonic(), exam)
+                self._cache.move_to_end(exam_key)
+                while len(self._cache) > self._max_cached_exams:
+                    self._cache.popitem(last=False)
             return exam
         finally:
             db.close()
@@ -178,6 +226,7 @@ class PostgresAttemptRepository:
             ) if row.started_at else None,
             status=self._map_status(row.status),
             current_question=1,
+            set_id=str(row.set_id) if row.set_id is not None else None,
         )
         # restore answers
         for ans_row in row.answers:
@@ -228,6 +277,7 @@ class PostgresAttemptRepository:
                 session_row = ExamSessionModel(
                     user_id=user_id,
                     exam_id=exam_id,
+                    set_id=int(attempt.set_id) if attempt.set_id else None,
                     started_at=attempt.started_at or datetime.now(timezone.utc),
                     status=self._domain_status(attempt.status),
                 )
@@ -252,6 +302,8 @@ class PostgresAttemptRepository:
                     raise ValueError("Attempt is no longer active.")
 
             session_row.status = self._domain_status(attempt.status)
+            if attempt.set_id is not None:
+                session_row.set_id = int(attempt.set_id)
             if attempt.status in (AttemptStatus.SUBMITTED, AttemptStatus.EXPIRED):
                 session_row.submitted_at = session_row.submitted_at or datetime.now(timezone.utc)
 
@@ -372,7 +424,7 @@ class PostgresAttemptRepository:
             if db.get_bind().dialect.name == "postgresql":
                 db.execute(
                     text("SELECT pg_advisory_xact_lock(:user_id, :exam_id)"),
-                    {"user_id": user_id, "exam_id": exam_id},
+                    {"user_id": user_id, "exam_id": int(attempt.set_id or exam_id)},
                 )
 
             submitted = (
@@ -384,6 +436,7 @@ class PostgresAttemptRepository:
                 .filter_by(
                     exam_id=exam_id,
                     user_id=user_id,
+                    set_id=int(attempt.set_id) if attempt.set_id else None,
                     status="SUBMITTED",
                 )
                 .order_by(ExamSessionModel.id.desc())
@@ -400,7 +453,11 @@ class PostgresAttemptRepository:
                     selectinload(ExamSessionModel.exam),
                     selectinload(ExamSessionModel.answers),
                 )
-                .filter_by(exam_id=exam_id, user_id=user_id)
+                .filter_by(
+                    exam_id=exam_id,
+                    user_id=user_id,
+                    set_id=int(attempt.set_id) if attempt.set_id else None,
+                )
                 .order_by(ExamSessionModel.id.desc())
                 .with_for_update()
                 .first()
@@ -420,6 +477,7 @@ class PostgresAttemptRepository:
             row = ExamSessionModel(
                 user_id=user_id,
                 exam_id=exam_id,
+                set_id=int(attempt.set_id) if attempt.set_id else None,
                 started_at=attempt.started_at or datetime.now(timezone.utc),
                 status="IN_PROGRESS",
             )
@@ -522,6 +580,25 @@ class PostgresAudioTracker:
             )
             if session_row is None:
                 raise ValueError("Attempt not found.")
+
+            question_query = db.query(QuestionModel).filter(
+                QuestionModel.id == db_question_id,
+                QuestionModel.exam_id == session_row.exam_id,
+                QuestionModel.status == "PUBLISHED",
+            )
+            if session_row.set_id is not None:
+                question_query = question_query.filter(
+                    QuestionModel.set_id == session_row.set_id
+                )
+            question_row = question_query.first()
+            if question_row is None:
+                raise ValueError("Question does not belong to this exam set.")
+            has_audio = bool(question_row.audio_url) or db.query(OptionModel.id).filter(
+                OptionModel.question_id == db_question_id,
+                OptionModel.audio_url.is_not(None),
+            ).first() is not None
+            if not has_audio:
+                raise ValueError("This question has no audio to play.")
 
             row = (
                 db.query(AudioPlayLogModel)

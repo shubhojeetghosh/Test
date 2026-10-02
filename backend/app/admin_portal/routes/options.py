@@ -6,6 +6,8 @@ from app.database.database import get_db
 from app.admin_portal.models.question import Question
 from app.admin_portal.models.option import Option
 from app.admin_portal.schemas.question import OptionCreate, OptionUpdate
+from app.admin_portal.models.user import User
+from app.admin_portal.routes.auth import get_current_admin
 
 
 router = APIRouter(
@@ -22,6 +24,7 @@ router = APIRouter(
 def get_options(
     question_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     question = db.scalar(
         select(Question).where(
@@ -65,6 +68,7 @@ def get_option(
     question_id: int,
     option_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     option = db.scalar(
         select(Option).where(
@@ -103,6 +107,7 @@ def create_option(
     question_id: int,
     option_data: OptionCreate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     question = db.scalar(
         select(Question).where(
@@ -168,6 +173,7 @@ def update_option(
     option_id: int,
     option_data: OptionUpdate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     option = db.scalar(
         select(Option).where(
@@ -232,6 +238,7 @@ def delete_option(
     question_id: int,
     option_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     option = db.scalar(
         select(Option).where(

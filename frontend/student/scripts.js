@@ -7,6 +7,8 @@ const API_BASE_URL =
 
 const QUIZ_ID =
   new URLSearchParams(window.location.search).get("quiz") || "exam1";
+const QUIZ_SET_ID =
+  new URLSearchParams(window.location.search).get("set");
 
 
 /* =========================================================
@@ -1033,7 +1035,7 @@ async function initializeExam() {
 
     const started =
       await api(
-        `/api/attempts/start/${encodeURIComponent(QUIZ_ID)}`,
+        `/api/attempts/start/${encodeURIComponent(QUIZ_ID)}?set_id=${encodeURIComponent(QUIZ_SET_ID || "")}`,
         {
           method: "POST"
         }

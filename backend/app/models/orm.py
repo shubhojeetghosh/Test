@@ -24,6 +24,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -195,10 +196,19 @@ class QuestionModel(Base):
             "status",
             "question_number",
         ),
-        UniqueConstraint(
+        Index(
+            "uq_questions_set_number",
+            "set_id",
+            "question_number",
+            unique=True,
+            postgresql_where=text("set_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_questions_unassigned_exam_number",
             "exam_id",
             "question_number",
-            name="unique_question_number"
+            unique=True,
+            postgresql_where=text("set_id IS NULL"),
         ),
 
         CheckConstraint(
@@ -367,9 +377,11 @@ class ExamSessionModel(Base):
 
     __table_args__ = (
         Index(
-            "ix_exam_sessions_user_exam_id",
+            "ix_exam_sessions_user_exam_set_status_id",
             "user_id",
             "exam_id",
+            "set_id",
+            "status",
             "id",
         ),
         CheckConstraint(
@@ -401,6 +413,12 @@ class ExamSessionModel(Base):
             ondelete="CASCADE"
         ),
         nullable=False
+    )
+
+    set_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("exam_sets.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     started_at: Mapped[datetime] = mapped_column(

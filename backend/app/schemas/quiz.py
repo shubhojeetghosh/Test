@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.question import QuestionType
 
@@ -94,6 +94,10 @@ class SubmitAttemptResponse(BaseModel):
 class SubmitAnswerRequest(BaseModel):
     question_id: str
     selected_option_id: str
+
+
+class SubmitAnswersRequest(BaseModel):
+    answers: list[SubmitAnswerRequest] = Field(max_length=2000)
 
 
 class SubmitAnswerResponse(BaseModel):

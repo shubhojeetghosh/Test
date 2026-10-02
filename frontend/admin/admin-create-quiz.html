@@ -1523,35 +1523,45 @@ question.scrollIntoView({
        COLLECT QUIZ DATA
        ========================================================= */
 
-    function readMediaFileAsDataUrl(file) {
-      return new Promise(function (resolve, reject) {
-        const reader = new FileReader();
-        reader.onload = function () { resolve(reader.result); };
-        reader.onerror = function () { reject(new Error(`Could not read ${file.name}.`)); };
-        reader.readAsDataURL(file);
+    async function uploadQuizMediaFile(file) {
+      const token = localStorage.getItem("admin_access_token");
+      if (!token) throw new Error("Your admin session has expired. Please login again.");
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error(`${file.name} is larger than the 10 MB upload limit.`);
+      }
+
+      const apiBase = window.API_BASE_URL;
+      const ticketResponse = await fetch(`${apiBase}/admin/media/upload-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ filename: file.name, content_type: file.type })
       });
+      const ticket = await ticketResponse.json().catch(() => ({}));
+      if (!ticketResponse.ok) {
+        throw new Error(ticket.detail || `Could not prepare ${file.name} for upload.`);
+      }
+
+      const uploadResponse = await fetch(ticket.upload_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+          "x-upsert": "false",
+          "cache-control": "max-age=31536000, immutable"
+        },
+        body: file
+      });
+      if (!uploadResponse.ok) {
+        throw new Error(`Could not upload ${file.name} to Supabase Storage.`);
+      }
+      return ticket.storage_path;
     }
 
     async function prepareQuestionMedia(question) {
-      const mediaFiles = [
-        question.image_file,
-        question.audio_file,
-        ...Object.values(question.option_media || {}).flatMap(function (media) {
-          return [media.image_file, media.audio_file];
-        })
-      ].filter(Boolean);
-
-      const totalBytes = mediaFiles.reduce(function (total, file) {
-        return total + file.size;
-      }, 0);
-
-      // Base64 adds roughly 33%; keep each JSON request under common serverless limits.
-      if (totalBytes > 3 * 1024 * 1024) {
-        throw new Error(`Question ${question.question_number} has over 3 MB of media. Reduce the file sizes and try again.`);
-      }
-
       const validateFile = function (file, expectedType, label) {
-        if (file && !file.type.startsWith(expectedType)) {
+        if (file && !String(file.type || "").startsWith(expectedType)) {
           throw new Error(`${label} must be a valid ${expectedType === "image/" ? "image" : "audio"} file.`);
         }
       };
@@ -1560,8 +1570,8 @@ question.scrollIntoView({
       validateFile(question.audio_file, "audio/", "Question audio");
 
       const media = {
-        image_url: question.image_file ? await readMediaFileAsDataUrl(question.image_file) : null,
-        audio_url: question.audio_file ? await readMediaFileAsDataUrl(question.audio_file) : null,
+        image_url: question.image_file ? await uploadQuizMediaFile(question.image_file) : null,
+        audio_url: question.audio_file ? await uploadQuizMediaFile(question.audio_file) : null,
         options: {}
       };
 
@@ -1570,8 +1580,8 @@ question.scrollIntoView({
         validateFile(optionMedia.image_file, "image/", `Option ${label} image`);
         validateFile(optionMedia.audio_file, "audio/", `Option ${label} audio`);
         media.options[label] = {
-          image_url: optionMedia.image_file ? await readMediaFileAsDataUrl(optionMedia.image_file) : null,
-          audio_url: optionMedia.audio_file ? await readMediaFileAsDataUrl(optionMedia.audio_file) : null
+          image_url: optionMedia.image_file ? await uploadQuizMediaFile(optionMedia.image_file) : null,
+          audio_url: optionMedia.audio_file ? await uploadQuizMediaFile(optionMedia.audio_file) : null
         };
       }
 
@@ -2178,13 +2188,10 @@ await saveQuestionsToBackend(
           : window.API_BASE_URL;
 
 
-      for (
-        const question of
-        quiz.questions
-      ) {
-
+      const questionsPayload = [];
+      for (let index = 0; index < quiz.questions.length; index += 4) {
+        const batch = await Promise.all(quiz.questions.slice(index, index + 4).map(async (question) => {
         const media = await prepareQuestionMedia(question);
-
         const options =
           [
             "A",
@@ -2222,85 +2229,35 @@ await saveQuestionsToBackend(
           );
 
 
-        const response =
-          await fetch(
-            `${API_BASE_URL}/admin/exams/${examId}/questions`,
-            {
-
-              method: "POST",
-
-              headers: {
-
-                "Content-Type":
-                  "application/json",
-
-                "Authorization":
-                  `Bearer ${token}`
-
-              },
-
-              body:
-                JSON.stringify({
-
-                  exam_id:
-                    examId,
-
-                  question_number:
-                    question.question_number,
-
-                  question_type:
-                    question.section ||
-                    "reading",
-
-                  question_text:
-                    question.question ||
-                    null,
-
-                  image_url:
-                    media.image_url,
-
-                  audio_url:
-                    media.audio_url,
-
-                  marks:
-                    question.marks ||
-                    0,
-
-                  created_by:
-                    null,
-
-                  set_id:
-                    setId,
-
-                  status:
-                    "DRAFT",
-
-                  options:
-                    options
-
-                })
-
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            getReadableApiError(
-              data.detail,
-              `Failed to save Question ${question.question_number}.`
-            )
-          );
-
-        }
-
+        return {
+          exam_id: examId,
+          question_number: question.question_number,
+          question_type: question.section || "reading",
+          question_text: question.question || null,
+          image_url: media.image_url,
+          audio_url: media.audio_url,
+          marks: question.marks || 0,
+          created_by: null,
+          set_id: setId,
+          status: "DRAFT",
+          options
+        };
+        }));
+        questionsPayload.push(...batch);
       }
 
+      const response = await fetch(`${API_BASE_URL}/admin/exams/${examId}/questions/bulk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(questionsPayload)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(getReadableApiError(data.detail, "Failed to save quiz questions."));
+      }
 
       return true;
 

@@ -32,6 +32,7 @@ class Attempt:
     status: AttemptStatus = AttemptStatus.NOT_STARTED
     current_question: int = 1
     answers: dict[str, Answer] = field(default_factory=dict)
+    set_id: Optional[str] = None
 
     def start(self, duration_minutes: int) -> None:
         if self.status != AttemptStatus.NOT_STARTED:

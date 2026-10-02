@@ -50,7 +50,7 @@ def get_student_dashboard(
             ExamSessionModel.user_id == current_user_id,
             ExamSessionModel.status.in_(("SUBMITTED", "AUTO_SUBMITTED")),
         )
-        .group_by(ExamSessionModel.exam_id)
+        .group_by(ExamSessionModel.exam_id, ExamSessionModel.set_id)
         .subquery()
     )
 
@@ -58,7 +58,7 @@ def get_student_dashboard(
         db.query(
             ExamModel.title.label("test_name"),
             ExamSessionModel.started_at.label("started_at"),
-            ExamModel.total_marks.label("total_marks"),
+            func.coalesce(func.sum(QuestionModel.marks), 0).label("total_marks"),
             func.coalesce(
                 func.sum(
                     case(
@@ -73,17 +73,23 @@ def get_student_dashboard(
                 0,
             ).label("correct_answers"),
         )
-        .join(latest_attempts, latest_attempts.c.exam_id == ExamModel.id)
-        .join(ExamSessionModel, ExamSessionModel.id == latest_attempts.c.attempt_id)
-        .outerjoin(
-            StudentAnswerModel,
-            StudentAnswerModel.attempt_id == ExamSessionModel.id,
+        .join(
+            latest_attempts,
+            latest_attempts.c.exam_id == ExamModel.id,
         )
+        .join(ExamSessionModel, ExamSessionModel.id == latest_attempts.c.attempt_id)
         .outerjoin(
             QuestionModel,
             and_(
-                QuestionModel.id == StudentAnswerModel.question_id,
                 QuestionModel.exam_id == ExamModel.id,
+                QuestionModel.set_id.is_not_distinct_from(ExamSessionModel.set_id),
+            ),
+        )
+        .outerjoin(
+            StudentAnswerModel,
+            and_(
+                StudentAnswerModel.attempt_id == ExamSessionModel.id,
+                StudentAnswerModel.question_id == QuestionModel.id,
             ),
         )
         .outerjoin(

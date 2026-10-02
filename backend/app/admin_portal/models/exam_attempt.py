@@ -26,6 +26,12 @@ class ExamSession(Base):
         nullable=False,
     )
 
+    set_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("exam_sets.id"),
+        nullable=True,
+    )
+
     started_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
@@ -40,5 +46,4 @@ class ExamSession(Base):
         String(20),
         nullable=False,
     )
-
 

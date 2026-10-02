@@ -3295,13 +3295,13 @@ console.log("Set ID:", setId);
 console.log("Token exists:", !!token);
 console.log(
     "Start URL:",
-    `${apiBase}/api/attempts/start/${encodeURIComponent(examId)}`
+    `${apiBase}/api/attempts/start/${encodeURIComponent(examId)}?set_id=${encodeURIComponent(setId)}`
 );
 console.log("======================================");
 
 
        const startResponse = await fetch(
-    `${apiBase}/api/attempts/start/${encodeURIComponent(examId)}`,
+    `${apiBase}/api/attempts/start/${encodeURIComponent(examId)}?set_id=${encodeURIComponent(setId)}`,
     {
         method: "POST",
         headers: {
@@ -4104,60 +4104,30 @@ async function submitExamToBackend(autoSubmit = false) {
    SAVE EVERY SELECTED ANSWER IN PARALLEL
    ===================================================== */
 
-const answerRequests =
-    Object.entries(selectedAnswers)
-        .filter(
-            ([questionId, selectedOptionId]) =>
-                selectedOptionId
-        )
-        .map(
-            async ([questionId, selectedOptionId]) => {
+const answersToSave = Object.entries(selectedAnswers)
+    .filter(([, selectedOptionId]) => selectedOptionId)
+    .map(([questionId, selectedOptionId]) => ({
+        question_id: String(questionId),
+        selected_option_id: String(selectedOptionId)
+    }));
 
-                const response =
-                    await fetch(
-                        `${API_BASE_URL}/api/attempts/${encodeURIComponent(studentAttemptId)}/answer`,
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-
-                                "Authorization":
-                                    `Bearer ${token}`
-                            },
-
-                            body: JSON.stringify({
-                                question_id:
-                                    String(questionId),
-
-                                selected_option_id:
-                                    String(selectedOptionId)
-                            })
-                        }
-                    );
-
-                if (!response.ok) {
-
-                    const errorText =
-                        await response.text();
-
-                    console.error(
-                        "Failed to save answer:",
-                        errorText
-                    );
-
-                    throw new Error(
-                        `Failed to save answer for question ${questionId}.`
-                    );
-                }
-
-                return response;
-            }
-        );
-
-/* Wait for all answers to finish */
-await Promise.all(answerRequests);
+if (answersToSave.length) {
+    const saveResponse = await fetch(
+        `${API_BASE_URL}/api/attempts/${encodeURIComponent(studentAttemptId)}/answers/batch`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ answers: answersToSave })
+        }
+    );
+    const saveResult = await saveResponse.json().catch(() => ({}));
+    if (!saveResponse.ok) {
+        throw new Error(saveResult.detail || "Could not save your answers.");
+    }
+}
 
         /* =====================================================
            STEP 2

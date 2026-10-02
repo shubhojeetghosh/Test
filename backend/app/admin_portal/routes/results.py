@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
@@ -33,17 +33,14 @@ def calculate_attempt_result(
     the application's exam_sessions table.
     """
 
+    question_query = select(QuestionModel).where(
+        QuestionModel.exam_id == attempt.exam_id
+    )
+    if attempt.set_id is not None:
+        question_query = question_query.where(QuestionModel.set_id == attempt.set_id)
     questions = db.scalars(
-        select(QuestionModel)
-        .where(
-            QuestionModel.exam_id == attempt.exam_id
-        )
-        .order_by(
-            QuestionModel.question_number.asc()
-        )
+        question_query.order_by(QuestionModel.question_number.asc())
     ).all()
-
-    total_questions = len(questions)
 
     # Get all answers belonging to this exam session.
     student_answers = db.scalars(
@@ -53,6 +50,20 @@ def calculate_attempt_result(
         )
     ).all()
 
+    correct_option_by_question = dict(
+        db.execute(
+            select(OptionModel.question_id, OptionModel.id)
+            .where(
+                OptionModel.question_id.in_([question.id for question in questions]),
+                OptionModel.is_correct.is_(True),
+            )
+        ).all()
+    ) if questions else {}
+    return _result_from_rows(questions, student_answers, correct_option_by_question)
+
+
+def _result_from_rows(questions, student_answers, correct_option_by_question):
+    total_questions = len(questions)
     answer_map = {
         answer.question_id: answer.selected_option_id
         for answer in student_answers
@@ -74,18 +85,9 @@ def calculate_attempt_result(
             unanswered += 1
             continue
 
-        correct_option = db.scalar(
-            select(OptionModel)
-            .where(
-                OptionModel.question_id == question.id,
-                OptionModel.is_correct.is_(True),
-            )
-        )
+        correct_option_id = correct_option_by_question.get(question.id)
 
-        if (
-            correct_option is not None
-            and selected_option_id == correct_option.id
-        ):
+        if correct_option_id is not None and selected_option_id == correct_option_id:
             correct_answers += 1
 
             # Use the question's marks when available.
@@ -144,6 +146,85 @@ def calculate_attempt_result(
     }
 
 
+def build_attempt_responses(db: Session, attempts: list[ExamSession]):
+    """Build a page of results using a fixed number of queries, not per attempt."""
+    if not attempts:
+        return []
+    user_ids = {attempt.user_id for attempt in attempts}
+    exam_ids = {attempt.exam_id for attempt in attempts}
+    attempt_ids = {attempt.id for attempt in attempts}
+    user_by_id = {
+        user.id: user
+        for user in db.scalars(select(User).where(User.id.in_(user_ids))).all()
+    }
+    exam_by_id = {
+        exam.id: exam
+        for exam in db.scalars(select(Exam).where(Exam.id.in_(exam_ids))).all()
+    }
+
+    scopes = {
+        (attempt.exam_id, attempt.set_id)
+        for attempt in attempts
+    }
+    question_query = select(QuestionModel).where(
+        or_(*[
+            and_(
+                QuestionModel.exam_id == exam_id,
+                QuestionModel.set_id == set_id
+                if set_id is not None
+                else QuestionModel.set_id.is_(None),
+            )
+            for exam_id, set_id in scopes
+        ])
+    )
+    questions = db.scalars(question_query).all()
+    questions_by_scope: dict[tuple[int, int | None], list[QuestionModel]] = {}
+    for question in questions:
+        questions_by_scope.setdefault((question.exam_id, question.set_id), []).append(question)
+
+    question_ids = [question.id for question in questions]
+    correct_option_by_question = dict(
+        db.execute(
+            select(OptionModel.question_id, OptionModel.id).where(
+                OptionModel.question_id.in_(question_ids),
+                OptionModel.is_correct.is_(True),
+            )
+        ).all()
+    ) if question_ids else {}
+    answers_by_attempt: dict[int, list[StudentAnswerModel]] = {}
+    for answer in db.scalars(
+        select(StudentAnswerModel).where(StudentAnswerModel.attempt_id.in_(attempt_ids))
+    ).all():
+        answers_by_attempt.setdefault(answer.attempt_id, []).append(answer)
+
+    responses = []
+    for attempt in attempts:
+        user = user_by_id.get(attempt.user_id)
+        exam = exam_by_id.get(attempt.exam_id)
+        scoped_questions = questions_by_scope.get((attempt.exam_id, attempt.set_id), [])
+        responses.append({
+            "attempt_id": attempt.id,
+            "student": {
+                "id": user.id if user else None,
+                "name": user.name if user else None,
+                "email": user.email if user else None,
+            },
+            "exam": {
+                "id": exam.id if exam else None,
+                "title": exam.title if exam else None,
+            },
+            "started_at": attempt.started_at,
+            "submitted_at": attempt.submitted_at,
+            "status": attempt.status,
+            "result": _result_from_rows(
+                scoped_questions,
+                answers_by_attempt.get(attempt.id, []),
+                correct_option_by_question,
+            ),
+        })
+    return responses
+
+
 # ============================================================
 # BUILD ATTEMPT RESPONSE
 # ============================================================
@@ -200,7 +281,7 @@ def build_attempt_response(
 @router.get("/attempts")
 def get_attempts(
     current_admin=Depends(get_current_admin),
-    limit: int = Query(default=100, ge=1, le=500),
+    limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
@@ -212,13 +293,7 @@ def get_attempts(
         ).offset(offset).limit(limit)
     ).all()
 
-    return [
-        build_attempt_response(
-            db,
-            attempt,
-        )
-        for attempt in attempts
-    ]
+    return build_attempt_responses(db, attempts)
 
 
 # ============================================================
@@ -229,6 +304,7 @@ def get_attempts(
 def get_attempt(
     attempt_id: int,
     db: Session = Depends(get_db),
+    current_admin=Depends(get_current_admin),
 ):
 
     attempt = db.scalar(

@@ -6,6 +6,8 @@ from app.database.database import get_db
 from app.admin_portal.models.exam import Exam
 from app.admin_portal.models.exam_set import ExamSet
 from app.admin_portal.schemas.exam_set import ExamSetCreate, ExamSetUpdate
+from app.admin_portal.models.user import User
+from app.admin_portal.routes.auth import get_current_admin
 
 
 router = APIRouter(
@@ -22,6 +24,7 @@ router = APIRouter(
 def get_exam_sets(
     exam_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     exam = db.scalar(
         select(Exam).where(Exam.id == exam_id)
@@ -61,6 +64,7 @@ def get_exam_set(
     exam_id: int,
     set_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     exam_set = db.scalar(
         select(ExamSet).where(
@@ -97,6 +101,7 @@ def create_exam_set(
     exam_id: int,
     set_data: ExamSetCreate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     exam = db.scalar(
         select(Exam).where(Exam.id == exam_id)
@@ -155,6 +160,7 @@ def update_exam_set(
     set_id: int,
     set_data: ExamSetUpdate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     exam_set = db.scalar(
         select(ExamSet).where(
@@ -216,6 +222,7 @@ def delete_exam_set(
     exam_id: int,
     set_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     exam_set = db.scalar(
         select(ExamSet).where(

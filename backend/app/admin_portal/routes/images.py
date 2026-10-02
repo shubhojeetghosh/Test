@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.admin_portal.models.image import Image
 from app.admin_portal.schemas.image import ImageCreate, ImageUpdate
+from app.admin_portal.models.user import User
+from app.admin_portal.routes.auth import get_current_admin
 
 
 router = APIRouter(
@@ -16,6 +18,7 @@ router = APIRouter(
 @router.get("")
 def get_images(
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     images = db.scalars(
         select(Image).order_by(Image.id)
@@ -36,6 +39,7 @@ def get_images(
 def get_image(
     image_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     image = db.scalar(
         select(Image).where(Image.id == image_id)
@@ -62,6 +66,7 @@ def get_image(
 def create_image(
     image_data: ImageCreate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     image = Image(
         file_name=image_data.file_name,
@@ -88,6 +93,7 @@ def update_image(
     image_id: int,
     image_data: ImageUpdate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     image = db.scalar(
         select(Image).where(Image.id == image_id)
@@ -124,6 +130,7 @@ def update_image(
 def delete_image(
     image_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
 ):
     image = db.scalar(
         select(Image).where(Image.id == image_id)

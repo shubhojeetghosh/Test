@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import ensure_exam_set_access, get_current_user
 from app.models.orm import QuestionModel, OptionModel
 from app.schemas.quiz import QuestionResponse, OptionResponse
+from app.services.media_storage import resolve_media_urls
 
 
 router = APIRouter(
@@ -31,6 +32,8 @@ def get_set_questions(
 
     Correct answers are intentionally not included.
     """
+
+    ensure_exam_set_access(db, current_user.id, set_id)
 
     base_query = db.query(QuestionModel).filter(
         QuestionModel.set_id == set_id,
@@ -77,8 +80,22 @@ def get_set_questions(
             []
         ).append(option)
 
+    media_values = [
+        value
+        for question in questions
+        for value in (question.image_url, question.audio_url)
+    ] + [
+        value
+        for option in all_options
+        for value in (option.image_url, option.audio_url)
+    ]
+    try:
+        signed_media = resolve_media_urls(media_values)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="Exam media is temporarily unavailable.") from exc
+
     # Build response
-    response = []
+    result = []
 
     for question in questions:
 
@@ -87,7 +104,7 @@ def get_set_questions(
             []
         )
 
-        response.append(
+        result.append(
             QuestionResponse(
                 id=str(question.id),
                 question_number=question.question_number,
@@ -95,18 +112,18 @@ def get_set_questions(
                     question.question_type
                 ).lower(),
                 text=question.question_text or "",
-                image_url=question.image_url,
-                audio_url=question.audio_url,
+                image_url=signed_media.get(question.image_url, question.image_url),
+                audio_url=signed_media.get(question.audio_url, question.audio_url),
                 options=[
                     OptionResponse(
                         id=str(option.id),
                         text=option.option_text or "",
-                        image_url=option.image_url,
-                        audio_url=option.audio_url,
+                        image_url=signed_media.get(option.image_url, option.image_url),
+                        audio_url=signed_media.get(option.audio_url, option.audio_url),
                     )
                     for option in options
                 ],
             )
         )
 
-    return response
+    return result
