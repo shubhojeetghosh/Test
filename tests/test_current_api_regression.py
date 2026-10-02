@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import httpx
 import pytest
@@ -100,6 +101,18 @@ def test_configured_frontend_origin_passes_cors_preflight():
     assert response.headers["access-control-allow-origin"] == (
         "https://test-frontend-eta-ecru.vercel.app"
     )
+
+
+def test_quiz_editor_checks_admin_profile_with_admin_endpoint():
+    editor = (
+        Path(__file__).resolve().parents[1]
+        / "frontend"
+        / "admin"
+        / "admin-create-quiz.html"
+    ).read_text(encoding="utf-8")
+
+    assert "${API_BASE_URL}/auth/admin/profile" in editor
+    assert "${API_BASE_URL}/auth/profile" not in editor
 
 
 @pytest.mark.parametrize(
