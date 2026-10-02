@@ -4194,6 +4194,10 @@ if (answersToSave.length) {
             submitData
         );
 
+        const submittedAttemptId = studentAttemptId;
+        localStorage.setItem("last_attempt_id", submittedAttemptId);
+        studentAttemptId = null;
+
 
         /* =====================================================
            STEP 3
@@ -4233,39 +4237,28 @@ if (answersToSave.length) {
            GET FINAL RESULT FROM BACKEND
            ===================================================== */
 
-        const resultResponse =
-            await fetch(
-                `${API_BASE_URL}/api/attempts/${encodeURIComponent(studentAttemptId)}/result`,
+        let resultData;
+        try {
+            const resultResponse = await fetch(
+                `${API_BASE_URL}/api/attempts/${encodeURIComponent(submittedAttemptId)}/result`,
                 {
                     method: "GET",
-
+                    signal: AbortSignal.timeout(20000),
                     headers: {
-                        "Authorization":
-                            `Bearer ${token}`,
-
-                        "Content-Type":
-                            "application/json"
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
                     }
                 }
             );
-
-
-        const resultData =
-            await resultResponse.json();
-
-
-        if (!resultResponse.ok) {
-
-            console.error(
-                "Result API failed:",
-                resultData
-            );
-
-
-            throw new Error(
-                resultData.detail ||
-                "Exam submitted, but the result could not be loaded."
-            );
+            resultData = await resultResponse.json().catch(() => ({}));
+            if (!resultResponse.ok) {
+                throw new Error(resultData.detail || `Result request failed (${resultResponse.status}).`);
+            }
+        } catch (resultError) {
+            console.error("Exam was submitted, but result loading failed:", resultError);
+            // Answers page retries the result request and retains the attempt ID.
+            window.location.href = "answers.html";
+            return;
         }
 
 
@@ -4286,7 +4279,7 @@ if (answersToSave.length) {
         );
         localStorage.setItem(
             "last_attempt_id",
-            String(resultData.attempt_id || studentAttemptId)
+            String(resultData.attempt_id || submittedAttemptId)
         );
 
 
@@ -4294,9 +4287,6 @@ if (answersToSave.length) {
            STEP 7
            PREVENT ANOTHER SUBMISSION
            ===================================================== */
-
-        studentAttemptId = null;
-
 
         /* =====================================================
            STEP 8

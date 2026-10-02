@@ -38,10 +38,17 @@ document.addEventListener(
         // GET ATTEMPT ID
         // =========================================================
 
+        const requestedAttemptId =
+            new URLSearchParams(window.location.search).get("attempt");
         let attemptId =
+            requestedAttemptId ||
             localStorage.getItem(
                 "last_attempt_id"
             );
+
+        if (requestedAttemptId) {
+            localStorage.setItem("last_attempt_id", requestedAttemptId);
+        }
 
 
         /*
@@ -882,7 +889,7 @@ document.addEventListener(
 
             setText(
                 "resultMessage",
-                "The exam result could not be loaded."
+                "Your exam was submitted successfully, but the result is temporarily unavailable. Refresh this page shortly; you do not need to submit again."
             );
 
         }

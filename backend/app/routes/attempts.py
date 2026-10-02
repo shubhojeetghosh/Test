@@ -669,234 +669,183 @@ def submit_attempt(
 )
 def get_attempt_result(
     attempt_id: str,
-    request: Request,
+    db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
+    prefix, separator, raw_id = attempt_id.partition("_")
+    if prefix != "attempt" or not separator or not raw_id.isdecimal():
+        raise HTTPException(status_code=404, detail="Attempt not found.")
 
-    attempt_repo = request.app.state.attempt_repo
-    exam_repo = request.app.state.exam_repo
+    record = db.execute(
+        select(ExamSessionModel, ExamModel.duration_minutes)
+        .join(ExamModel, ExamModel.id == ExamSessionModel.exam_id)
+        .where(ExamSessionModel.id == int(raw_id))
+    ).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Attempt not found.")
 
-    # --------------------------------------------------------
-    # GET ATTEMPT
-    # --------------------------------------------------------
-
-    attempt = attempt_repo.get(attempt_id)
-
-    if attempt is None:
-
+    session, _duration_minutes = record
+    if session.user_id != current_user_id:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Attempt not found.",
-        )
-
-    # --------------------------------------------------------
-    # OWNERSHIP CHECK
-    # --------------------------------------------------------
-
-    if str(attempt.student_id) != str(current_user_id):
-
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=403,
             detail="You are not allowed to view this result.",
         )
-
-    # --------------------------------------------------------
-    # CHECK SUBMISSION
-    # --------------------------------------------------------
-
-    if attempt.status not in (AttemptStatus.SUBMITTED, AttemptStatus.EXPIRED):
-
+    if session.status not in ("SUBMITTED", "AUTO_SUBMITTED"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail="The exam has not been submitted yet.",
         )
 
-    # --------------------------------------------------------
-    # GET EXAM
-    # --------------------------------------------------------
-
-    exam = exam_repo.get(attempt.exam_id, attempt.set_id)
-
-    if exam is None:
-
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Exam not found.",
+    question_query = (
+        select(QuestionModel)
+        .options(selectinload(QuestionModel.options))
+        .where(
+            QuestionModel.exam_id == session.exam_id,
+            QuestionModel.status == "PUBLISHED",
         )
-
-    # --------------------------------------------------------
-    # CALCULATE RESULT
-    # --------------------------------------------------------
-
-    total_questions = len(exam.questions)
+        .order_by(QuestionModel.question_number.asc())
+    )
+    if session.set_id is not None:
+        question_query = question_query.where(
+            QuestionModel.set_id == session.set_id
+        )
+    questions = db.scalars(question_query).all()
+    answers = db.scalars(
+        select(StudentAnswerModel).where(
+            StudentAnswerModel.attempt_id == session.id
+        )
+    ).all()
+    answers_by_question = {answer.question_id: answer for answer in answers}
+    saved_result = db.scalar(
+        select(ResultModel).where(ResultModel.attempt_id == session.id)
+    )
+    review_data = []
+    for question in questions:
+        answer = answers_by_question.get(question.id)
+        selected_id = answer.selected_option_id if answer else None
+        sorted_options = sorted(
+            question.options, key=lambda item: item.option_label
+        )
+        correct_option = next(
+            (option for option in sorted_options if option.is_correct), None
+        )
+        review_data.append({
+            "id": str(question.id),
+            "question_number": question.question_number,
+            "question_type": str(question.question_type or "reading").lower(),
+            "text": question.question_text or "",
+            "_marks": question.marks,
+            "image_url": question.image_url,
+            "audio_url": question.audio_url,
+            "selected_option_id": str(selected_id) if selected_id is not None else None,
+            "correct_option_id": str(correct_option.id) if correct_option else None,
+            "options": [
+                {
+                    "id": str(option.id),
+                    "text": option.option_text or "",
+                    "image_url": option.image_url,
+                    "audio_url": option.audio_url,
+                    "_is_correct": option.is_correct,
+                }
+                for option in sorted_options
+            ],
+        })
 
     media_values = [
         value
-        for question in exam.questions
-        for value in (question.image_url, question.audio_url)
+        for question in review_data
+        for value in (question["image_url"], question["audio_url"])
     ] + [
         value
-        for question in exam.questions
-        for option in question.options
-        for value in (option.image_url, option.audio_url)
+        for question in review_data
+        for option in question["options"]
+        for value in (option["image_url"], option["audio_url"])
     ]
+    saved_stats = None
+    if saved_result is not None:
+        saved_stats = {
+            "total_questions": saved_result.total_questions,
+            "correct_answers": saved_result.correct_answers,
+            "wrong_answers": saved_result.wrong_answers,
+            "unanswered": saved_result.unanswered,
+            "score": saved_result.score,
+            "percentage": saved_result.percentage,
+        }
+    # Release the database connection before potentially signing media URLs.
+    db.commit()
     try:
         signed_media = resolve_media_urls(media_values)
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail="Exam media is temporarily unavailable.") from exc
+        raise HTTPException(
+            status_code=503,
+            detail="Exam media is temporarily unavailable.",
+        ) from exc
 
     correct_answers = 0
     wrong_answers = 0
     unanswered = 0
-    score = 0.0
-
-    # --------------------------------------------------------
-    # REVIEW QUESTIONS
-    # --------------------------------------------------------
-
+    calculated_score = Decimal("0")
     review_questions = []
-
-    for question in exam.questions:
-
-        answer = attempt.answers.get(
-            question.id
-        )
-
-        selected_option_id = None
-
-        if answer is not None:
-
-            selected_option_id = (
-                answer.selected_option_id
-            )
-
-        # ----------------------------------------------------
-        # CALCULATE QUESTION RESULT
-        # ----------------------------------------------------
-
-        if answer is None:
-
+    for question in review_data:
+        selected_id = question["selected_option_id"]
+        if selected_id is None:
             unanswered += 1
-
-        elif answer.selected_option_id is None:
-
-            unanswered += 1
-
-        elif question.is_correct(
-            answer.selected_option_id
+        elif any(
+            option["id"] == selected_id and option["_is_correct"]
+            for option in question["options"]
         ):
-
             correct_answers += 1
-
-            score += question.marks
-
+            calculated_score += Decimal(str(question["_marks"] or 0))
         else:
-
             wrong_answers += 1
 
-        # ----------------------------------------------------
-        # GET CORRECT OPTION
-        # ----------------------------------------------------
-
-        correct_option = (
-            question.get_correct_option()
-        )
-
-        correct_option_id = None
-
-        if correct_option is not None:
-
-            correct_option_id = str(
-                correct_option.id
-            )
-
-        # ----------------------------------------------------
-        # BUILD OPTIONS
-        # ----------------------------------------------------
-
-        options = []
-
-        for option in question.options:
-
-            options.append(
+        review_questions.append({
+            **{
+                key: value
+                for key, value in question.items()
+                if not key.startswith("_")
+            },
+            "image_url": signed_media.get(question["image_url"], question["image_url"]),
+            "audio_url": signed_media.get(question["audio_url"], question["audio_url"]),
+            "options": [
                 {
-                    "id": str(option.id),
-                    "text": option.text or "",
-                    "image_url": signed_media.get(option.image_url, option.image_url),
-                    "audio_url": signed_media.get(option.audio_url, option.audio_url),
+                    **{
+                        key: value
+                        for key, value in option.items()
+                        if not key.startswith("_")
+                    },
+                    "image_url": signed_media.get(option["image_url"], option["image_url"]),
+                    "audio_url": signed_media.get(option["audio_url"], option["audio_url"]),
                 }
-            )
+                for option in question["options"]
+            ],
+        })
 
-        # ----------------------------------------------------
-        # BUILD REVIEW QUESTION
-        # ----------------------------------------------------
-
-        review_questions.append(
-            {
-                "id": str(question.id),
-
-                "question_number": question.question_number,
-
-                "question_type": str(
-                    question.question_type
-                ).lower(),
-
-                "text": question.text or "",
-
-                "image_url": signed_media.get(question.image_url, question.image_url),
-
-                "audio_url": signed_media.get(question.audio_url, question.audio_url),
-
-                "selected_option_id": (
-                    str(selected_option_id)
-                    if selected_option_id is not None
-                    else None
-                ),
-
-                "correct_option_id": (
-                    correct_option_id
-                ),
-
-                "options": options,
-            }
+    total_questions = len(questions)
+    total_marks = sum(
+        (Decimal(str(question["_marks"] or 0)) for question in review_data),
+        Decimal("0"),
+    )
+    score = saved_stats["score"] if saved_stats else calculated_score
+    percentage = (
+        saved_stats["percentage"]
+        if saved_stats
+        else (
+            calculated_score * Decimal("100")
+            / total_marks
+            if total_marks
+            else Decimal("0")
         )
-
-    # --------------------------------------------------------
-    # CALCULATE PERCENTAGE
-    # --------------------------------------------------------
-
-    total_marks = sum(question.marks for question in exam.questions)
-    if total_marks:
-
-        percentage = (
-            score / total_marks
-        ) * 100
-
-    else:
-
-        percentage = 0.0
-
-    # --------------------------------------------------------
-    # RETURN RESULT
-    # --------------------------------------------------------
-
+    )
     return {
         "attempt_id": attempt_id,
-
-        "exam_id": attempt.exam_id,
-
-        "total_questions": total_questions,
-
-        "correct_answers": correct_answers,
-
-        "wrong_answers": wrong_answers,
-
-        "unanswered": unanswered,
-
+        "exam_id": str(session.exam_id),
+        "total_questions": saved_stats["total_questions"] if saved_stats else total_questions,
+        "correct_answers": saved_stats["correct_answers"] if saved_stats else correct_answers,
+        "wrong_answers": saved_stats["wrong_answers"] if saved_stats else wrong_answers,
+        "unanswered": saved_stats["unanswered"] if saved_stats else unanswered,
         "score": float(score),
-
         "percentage": float(percentage),
-
         "questions": review_questions,
     }
 
