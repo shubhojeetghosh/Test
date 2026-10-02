@@ -3012,6 +3012,7 @@ let studentAttemptId = null;
 let examExpiresAt = null;
 let examTimerInterval = null;
 let examTimerSyncInterval = null;
+let timerStatusAbortController = null;
 
 function updateExamStats() {
     const solvedElement = document.getElementById("solved");
@@ -3143,6 +3144,11 @@ async function refreshBackendExamTimer() {
         window.EPS_API?.baseUrl ||
         window.API_BASE_URL;
 
+    if (timerStatusAbortController) {
+        return;
+    }
+
+    timerStatusAbortController = new AbortController();
     try {
 
         const response =
@@ -3157,7 +3163,8 @@ async function refreshBackendExamTimer() {
 
                         "Content-Type":
                             "application/json"
-                    }
+                    },
+                    signal: timerStatusAbortController.signal
                 }
             );
 
@@ -3207,10 +3214,14 @@ async function refreshBackendExamTimer() {
 
     } catch (error) {
 
-        console.error(
-            "Failed to refresh server timer:",
-            error
-        );
+        if (error.name !== "AbortError") {
+            console.error(
+                "Failed to refresh server timer:",
+                error
+            );
+        }
+    } finally {
+        timerStatusAbortController = null;
     }
 }
 
@@ -4096,6 +4107,15 @@ async function submitExamToBackend(autoSubmit = false) {
         return;
     }
 
+    // Keep the periodic timer poll from competing with the save/submit calls
+    // for the backend's deliberately small database connection pool.
+    if (examTimerSyncInterval) {
+        clearInterval(examTimerSyncInterval);
+        examTimerSyncInterval = null;
+    }
+    if (timerStatusAbortController) {
+        timerStatusAbortController.abort();
+    }
 
     try {
 
@@ -4116,6 +4136,7 @@ if (answersToSave.length) {
         `${API_BASE_URL}/api/attempts/${encodeURIComponent(studentAttemptId)}/answers/batch`,
         {
             method: "POST",
+            signal: AbortSignal.timeout(20000),
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
@@ -4139,6 +4160,7 @@ if (answersToSave.length) {
                 `${API_BASE_URL}/api/attempts/${encodeURIComponent(studentAttemptId)}/submit`,
                 {
                     method: "POST",
+                    signal: AbortSignal.timeout(25000),
 
                     headers: {
                         "Authorization":
@@ -4308,6 +4330,13 @@ if (answersToSave.length) {
             error.message ||
             "Something went wrong while submitting your exam."
         );
+
+        if (!autoSubmit && examExpiresAt && !examTimerSyncInterval) {
+            examTimerSyncInterval = setInterval(
+                refreshBackendExamTimer,
+                10000
+            );
+        }
     }
 }
 

@@ -15,7 +15,7 @@ from app.services.scoring import QuizScorer
 from app.core.database import get_db
 from app.core.dependencies import ensure_exam_set_access
 from app.core.rate_limit import enforce_rate_limit
-from app.models.orm import ExamSessionModel, OptionModel, QuestionModel, StudentAnswerModel
+from app.models.orm import ExamModel, ExamSessionModel, OptionModel, QuestionModel, StudentAnswerModel
 from app.models.orm import ResultModel
 from app.services.media_storage import resolve_media_urls
 
@@ -449,61 +449,56 @@ def submit_answer(
 )
 def get_attempt_status(
     attempt_id: str,
-    request: Request,
+    db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
-
-    attempt_repo = request.app.state.attempt_repo
-
-    attempt = attempt_repo.get(attempt_id)
-
-    if attempt is None:
+    prefix, separator, raw_id = attempt_id.partition("_")
+    if prefix != "attempt" or not separator or not raw_id.isdecimal():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Attempt not found.",
         )
+    db_id = int(raw_id)
 
-    # --------------------------------------------------------
-    # OWNERSHIP CHECK
-    # --------------------------------------------------------
+    record = db.execute(
+        select(ExamSessionModel, ExamModel.duration_minutes)
+        .join(ExamModel, ExamModel.id == ExamSessionModel.exam_id)
+        .where(ExamSessionModel.id == db_id)
+    ).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Attempt not found.")
 
-    if str(attempt.student_id) != str(current_user_id):
-
+    session, duration_minutes = record
+    if session.user_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not allowed to access this attempt.",
         )
 
-    # --------------------------------------------------------
-    # CHECK EXPIRATION
-    # --------------------------------------------------------
-
-    was_in_progress = attempt.status == AttemptStatus.IN_PROGRESS
-    QuizTimer.is_expired(attempt)
-    if was_in_progress and attempt.status == AttemptStatus.EXPIRED:
-        attempt_repo.save(attempt)
-
-    # --------------------------------------------------------
-    # CALCULATE REMAINING TIME
-    # --------------------------------------------------------
-
-    remaining = (
-        QuizTimer.remaining_seconds(attempt)
-        if attempt.started_at
-        else 0
+    now = datetime.now(timezone.utc)
+    started_at = session.started_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=timezone.utc)
+    remaining = max(
+        0,
+        int(started_at.timestamp() + int(duration_minutes) * 60 - now.timestamp()),
     )
 
-    # --------------------------------------------------------
-    # RETURN STATUS
-    #
-    # AttemptStatusResponse requires
-    # time_remaining_seconds.
-    # --------------------------------------------------------
+    status_value = {
+        "IN_PROGRESS": AttemptStatus.IN_PROGRESS.value,
+        "SUBMITTED": AttemptStatus.SUBMITTED.value,
+        "AUTO_SUBMITTED": AttemptStatus.EXPIRED.value,
+    }.get(session.status, AttemptStatus.IN_PROGRESS.value)
+    if session.status == "IN_PROGRESS" and remaining == 0:
+        session.status = "AUTO_SUBMITTED"
+        session.submitted_at = now.replace(tzinfo=None)
+        db.commit()
+        status_value = AttemptStatus.EXPIRED.value
 
     return AttemptStatusResponse(
-        attempt_id=attempt.id,
-        status=attempt.status.value,
-        current_question=attempt.current_question,
+        attempt_id=attempt_id,
+        status=status_value,
+        current_question=1,
         time_remaining_seconds=remaining,
     )
 
