@@ -2366,12 +2366,12 @@ if (viewResultModal) {
      * Do NOT trust admin_user from localStorage
      * for authentication or authorization.
      *
-     * The backend /auth/me endpoint is used to
-     * verify the actual logged-in account.
+     * The admin-only endpoint verifies the account
+     * and role before populating the dashboard.
      */
 
     fetch(
-        `${API_BASE_URL}/auth/profile`,
+        `${API_BASE_URL}/auth/admin/profile`,
         {
             method: "GET",
 

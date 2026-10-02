@@ -82,6 +82,7 @@ def test_current_app_health_and_api_contract():
     assert "/api/attempts/start/{exam_id}" in paths
     assert "/api/attempts/{attempt_id}/submit" in paths
     assert "/admin/exams/{exam_id}/sets/{set_id}/questions" in paths
+    assert "/auth/admin/profile" in paths
 
 
 def test_configured_frontend_origin_passes_cors_preflight():
@@ -218,3 +219,16 @@ def test_admin_dashboard_accepts_admin_token(local_database):
 
     assert response.status_code == 200
     assert response.json()["total_attempts"] == 0
+
+    profile_response = request(
+        "GET",
+        "/auth/admin/profile",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert profile_response.status_code == 200
+    assert profile_response.json() == {
+        "id": 74,
+        "name": "Test Admin",
+        "email": "admin-74@example.test",
+        "role": "ADMIN",
+    }

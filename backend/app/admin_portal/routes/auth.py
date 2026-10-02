@@ -154,7 +154,7 @@ def _validate_password(password: str) -> str:
 #
 # Used by:
 #
-# PUT /auth/admin/profile
+# GET /auth/admin/profile and PUT /auth/admin/profile
 #
 # The currently logged-in Admin can update:
 # - name
@@ -172,6 +172,13 @@ class AdminProfileUpdateRequest(BaseModel):
 class AdminProfileUpdateResponse(BaseModel):
     message: str
     user_id: int
+    name: str
+    email: str
+    role: str
+
+
+class AdminProfileResponse(BaseModel):
+    id: int
     name: str
     email: str
     role: str
@@ -383,12 +390,13 @@ def admin_login(
 
 
 # =========================================================
-# SAVE ADMIN PROFILE / SETTINGS
+# GET AND SAVE ADMIN PROFILE / SETTINGS
 # =========================================================
 #
 # Endpoint:
 #
-# PUT /auth/admin/profile
+# GET /auth/admin/profile returns the current admin.
+# PUT /auth/admin/profile updates the current admin.
 #
 # Used by:
 #
@@ -407,6 +415,22 @@ def admin_login(
 # get_current_admin() gets the authenticated admin
 # directly from the JWT.
 # =========================================================
+
+@router.get(
+    "/admin/profile",
+    response_model=AdminProfileResponse,
+)
+def get_admin_profile(
+    current_admin: User = Depends(get_current_admin),
+):
+    """Return the verified admin associated with the supplied admin token."""
+    return AdminProfileResponse(
+        id=current_admin.id,
+        name=current_admin.name,
+        email=current_admin.email,
+        role="ADMIN",
+    )
+
 
 @router.put(
     "/admin/profile",
