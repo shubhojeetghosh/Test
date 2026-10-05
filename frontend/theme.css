@@ -130,7 +130,7 @@ html[data-theme="dark"] [data-theme-surface="light"] {
 html[data-theme="dark"] [data-theme-text="light"] { color: #e1e9f7 !important; }
 html[data-theme="dark"] [data-theme-text="dark"] { color: #172746 !important; }
 html[data-theme="dark"] :is(.result-header, .table-header, thead, th) { background-color: #18253a; color: #c0cbe0; }
-html[data-theme="dark"] :is(.dashboard-stat-card, .profile-button, .logout-btn, .test-button, .secondary-btn, .nav-login, .student-login-btn, .admin-login-btn) { background-color: #17253a; border-color: #35445d; color: #dce6fa; }
+html[data-theme="dark"] :is(.dashboard-stat-card, .profile-button, .profile-nav-btn, .edit-profile-header-btn, .logout-btn, .test-button, .secondary-btn, .nav-login, .student-login-btn, .admin-login-btn) { background-color: #17253a; border-color: #35445d; color: #dce6fa; }
 html[data-theme="dark"] :is(.chart-grid-line) { stroke: #33435c; }
 html[data-theme="dark"] .chart-area { fill: rgba(125, 162, 255, .13); }
 html[data-theme="dark"] .dashboard-welcome { background: linear-gradient(112deg, #111d37 0%, #193a92 57%, #315be8 100%); }

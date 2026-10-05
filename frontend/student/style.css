@@ -3301,7 +3301,18 @@ body.dashboard-page {
 @media (max-width: 700px) {
   .dashboard-page .dashboard-welcome { min-height: 0; padding: 25px 21px; }
   .dashboard-page .dashboard-container { padding-top: 20px; }
-  .dashboard-page .edit-profile-header-btn { min-height: 34px; padding: 0 9px; font-size: 9px; }
+  .dashboard-page .edit-profile-header-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 0 9px; font-size: 9px; white-space: nowrap; }
+}
+
+@media (max-width: 380px) {
+  .dashboard-page .dashboard-navbar { padding-inline: 3%; }
+  .dashboard-page .dashboard-logo { width: 36px; height: 36px; }
+  .dashboard-page .dashboard-brand { gap: 7px; }
+  .dashboard-page .dashboard-brand h1 { font-size: 13px; }
+  .dashboard-page .user-menu { gap: 5px; }
+  .dashboard-page .user-avatar { width: 31px; height: 31px; }
+  .dashboard-page .edit-profile-header-btn,
+  .dashboard-page .logout-btn { min-height: 31px; padding: 0 7px; font-size: 8px; }
 }
 
 /* =========================================================
@@ -6207,7 +6218,7 @@ body.dashboard-page {
 }
 @media (max-width: 800px) {
   .index-page .navbar { height: auto; min-height: 72px; flex-wrap: wrap; gap: 10px 20px; padding-block: 12px; }
-  .index-page .navbar nav { order: 3; width: 100%; justify-content: center; gap: 28px; }
+  .index-page .navbar nav { display: flex; order: 3; width: 100%; justify-content: center; gap: 28px; }
   .index-page .hero { grid-template-columns: 1fr; gap: 14px; padding: 52px 7% 45px; }
   .index-page .hero-copy { max-width: 720px; }
   .index-page .hero-art { min-height: 350px; width: min(100%, 590px); margin: 0 auto; }

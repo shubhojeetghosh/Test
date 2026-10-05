@@ -4334,6 +4334,37 @@ html[data-theme="dark"] .admin-access-feedback[data-state="error"] { color: #ff9
     margin-top: 20px;
 }
 
+.mobile-menu[data-sidebar-toggle] {
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    line-height: 1;
+    cursor: pointer;
+}
+.mobile-menu[data-sidebar-toggle]:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+    .admin-quiz-builder .topbar {
+        height: auto;
+        min-height: 85px;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        padding: 12px 14px;
+    }
+    .admin-quiz-builder .page-heading { min-width: 0; flex: 1 1 auto; }
+    .admin-quiz-builder .topbar-right {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+        margin-left: 0;
+    }
+}
+
 
 /* =========================
    ADMIN ACCESS RESPONSIVE
