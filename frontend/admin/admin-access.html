@@ -287,8 +287,8 @@
                     </h2>
 
                     <p>
-                        Verify another person's Gmail and grant
-                        administrator access to the platform.
+                        An existing admin can invite a new admin by email. Student
+                        accounts are not allowed into the admin portal.
                     </p>
 
                 </div>
@@ -342,6 +342,8 @@
 
 
                 <form id="adminAccessForm">
+
+                    <p class="admin-access-feedback" id="adminAccessFeedback" role="status" aria-live="polite"></p>
 
 
                     <!-- EMAIL -->
@@ -467,6 +469,8 @@
                                 name="name"
                                 placeholder="Enter administrator name"
                                 autocomplete="name"
+                                maxlength="100"
+                                required
                             >
 
                         </div>
@@ -488,6 +492,8 @@
                                 name="password"
                                 placeholder="Create a password"
                                 autocomplete="new-password"
+                                minlength="8"
+                                required
                             >
 
                         </div>
@@ -509,6 +515,8 @@
                                 name="confirmPassword"
                                 placeholder="Confirm password"
                                 autocomplete="new-password"
+                                minlength="8"
+                                required
                             >
 
                         </div>
@@ -637,38 +645,11 @@
 
 
 
-                <div class="admin-list">
-
-
-                    <!-- Backend data will be loaded here later -->
-
-                    <div
-                        class="admin-list-empty"
-                        id="adminListEmpty"
-                    >
-
-
-                        <div class="admin-list-empty-icon">
-                            👤
-                        </div>
-
-
-                        <strong>
-                            Administrator information will
-                            appear here.
-                        </strong>
-
-
-                        <span>
-                            This list will be loaded from the
-                            authenticated backend account once
-                            backend integration is connected.
-                        </span>
-
-
+                <div class="admin-list" id="adminAccountList" aria-live="polite">
+                    <div class="admin-list-empty">
+                        <div class="admin-list-empty-icon" aria-hidden="true">👤</div>
+                        <strong>Loading administrator accounts…</strong>
                     </div>
-
-
                 </div>
 
 
@@ -719,6 +700,7 @@
 
 
 
+<script src="admin-access.js"></script>
 <script src="admin.js"></script>
 
 </body>

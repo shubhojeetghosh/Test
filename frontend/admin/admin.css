@@ -4279,6 +4279,55 @@ td {
     line-height: 1.5;
 }
 
+.admin-access-feedback {
+    min-height: 18px;
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.admin-access-feedback[data-state="success"] { color: #16815f; }
+.admin-access-feedback[data-state="error"] { color: #c43f52; }
+.admin-access-card button:disabled { cursor: not-allowed; opacity: .62; }
+.admin-account-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 14px 15px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #f8fafc;
+}
+.admin-account-row + .admin-account-row { margin-top: 9px; }
+.admin-account-avatar {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 800;
+}
+.admin-account-identity { display: grid; min-width: 0; gap: 3px; flex: 1; }
+.admin-account-identity strong { overflow-wrap: anywhere; font-size: 12px; }
+.admin-account-identity span { overflow-wrap: anywhere; color: var(--muted); font-size: 11px; }
+.admin-account-badge {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 750;
+}
+html[data-theme="dark"] .admin-account-row { background: #101a2a; border-color: #2a3850; }
+html[data-theme="dark"] .admin-account-badge { color: #a8c0ff; }
+html[data-theme="dark"] .admin-access-feedback[data-state="success"] { color: #74d6ae; }
+html[data-theme="dark"] .admin-access-feedback[data-state="error"] { color: #ff9ca8; }
+
 .admin-access-notice {
     max-width: 760px;
 

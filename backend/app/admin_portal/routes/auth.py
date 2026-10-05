@@ -432,6 +432,31 @@ def get_admin_profile(
     )
 
 
+@router.get("/admin/accounts")
+def list_admin_accounts(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Return safe account details for administrators only."""
+    admins = db.scalars(
+        select(User)
+        .where(func.lower(func.trim(User.role)) == "admin")
+        .order_by(User.created_at.asc(), User.id.asc())
+    ).all()
+    return {
+        "current_admin_id": current_admin.id,
+        "admins": [
+            {
+                "id": admin.id,
+                "name": admin.name,
+                "email": admin.email,
+                "created_at": admin.created_at,
+            }
+            for admin in admins
+        ],
+    }
+
+
 @router.put(
     "/admin/profile",
     response_model=AdminProfileUpdateResponse,
