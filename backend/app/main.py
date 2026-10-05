@@ -32,6 +32,10 @@ from app.admin_portal.routes.student_exam_access import (
     router as student_exam_access_router
 )
 from app.admin_portal.routes.students import router as students_router
+from app.admin_portal.routes.support_inquiries import (
+    admin_router as admin_inquiries_router,
+    public_router as contact_router,
+)
 
 from app.routes.student_exams import router as student_exams_router
 from app.routes.student_dashboard import router as student_dashboard_router
@@ -104,6 +108,8 @@ def create_app() -> FastAPI:
     app.include_router(audio_play_logs_router)
     app.include_router(student_exam_access_router)
     app.include_router(admin_student_access_router)
+    app.include_router(contact_router)
+    app.include_router(admin_inquiries_router)
 
        # Student
     app.include_router(student_exams_router)

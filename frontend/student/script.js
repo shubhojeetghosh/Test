@@ -85,9 +85,13 @@ const email =
   localStorage.getItem("user_email") ||
   "";
 
-const studentId =
-  localStorage.getItem("student_id") ||
-  "2023000950";
+  const studentId =
+    savedUser.student_id ||
+    savedUser.studentId ||
+    savedUser.roll_no ||
+    savedUser.rollNo ||
+    localStorage.getItem("student_id") ||
+    "";
   
 
   const photo =
@@ -104,11 +108,6 @@ const studentId =
   document.getElementById(
     "profileEmail"
   ).value = email;
-
-
-  document.getElementById(
-    "profileStudentId"
-  ).value = studentId;
 
 
   /* Left card */
@@ -538,11 +537,16 @@ async function handleProfileUpdate(event) {
       .trim();
 
 
+  const savedUser =
+    JSON.parse(localStorage.getItem("user") || "{}");
+
   const studentId =
-    document
-      .getElementById("profileStudentId")
-      .value
-      .trim();
+    savedUser.student_id ||
+    savedUser.studentId ||
+    savedUser.roll_no ||
+    savedUser.rollNo ||
+    localStorage.getItem("student_id") ||
+    "";
 
 
   const currentPassword =
@@ -588,19 +592,6 @@ async function handleProfileUpdate(event) {
     return;
 
   }
-
-
-  if (!studentId) {
-
-    showMessage(
-      "Please enter your student ID.",
-      "error"
-    );
-
-    return;
-
-  }
-
 
 
   /*
@@ -691,10 +682,7 @@ async function handleProfileUpdate(event) {
   );
 
 
-  localStorage.setItem(
-    "student_id",
-    studentId
-  );
+  // Keep the registered student ID read-only; profile edits do not change it.
 
 
   document.getElementById(
@@ -4700,93 +4688,123 @@ if (confirmSubmitButton) {
 );
 
 /* =========================================================
-   BEGIN TEST - LOGIN REQUIRED
+   STUDENT ACTIONS - LOGIN REQUIRED
    ========================================================= */
 
-const beginTestBtn =
-  document.getElementById("beginTestBtn");
-
-const loginRequiredModal =
-  document.getElementById("loginRequiredModal");
-
-const closeLoginModal =
-  document.getElementById("closeLoginModal");
-
-const cancelLoginModal =
-  document.getElementById("cancelLoginModal");
-
-
-if (beginTestBtn) {
-
-  beginTestBtn.addEventListener(
-    "click",
-    function (event) {
-
-      event.preventDefault();
-
-      const accessToken =
-        localStorage.getItem("access_token");
-
-      if (!accessToken) {
-
-        loginRequiredModal.style.display = "flex";
-
-        return;
-      }
-
-      window.location.href =
-        "student/set.html";
-
-    }
-  );
-
-}
-
-
-/* ================= CLOSE POPUP ================= */
+const loginRequiredModal = document.getElementById("loginRequiredModal");
+const loginRequiredLink = document.getElementById("loginRequiredLink");
+const loginRequiredTitle = document.getElementById("loginRequiredTitle");
+const loginRequiredMessage = document.getElementById("loginRequiredMessage");
+const closeLoginModal = document.getElementById("closeLoginModal");
+const cancelLoginModal = document.getElementById("cancelLoginModal");
+const studentActionDestinations = {
+  test: "student/set.html",
+  subscription: "student/subscription.html"
+};
 
 function closeLoginRequiredModal() {
-
-  if (loginRequiredModal) {
-    loginRequiredModal.style.display = "none";
-  }
-
+  if (loginRequiredModal) loginRequiredModal.style.display = "none";
 }
 
+document.querySelectorAll("[data-student-gate]").forEach(function (link) {
+  link.addEventListener("click", function (event) {
+    const action = link.dataset.studentGate;
+    const destination = studentActionDestinations[action];
+    if (!destination) return;
 
-if (closeLoginModal) {
+    event.preventDefault();
+    let accessToken = null;
+    try {
+      accessToken = localStorage.getItem("access_token");
+    } catch (error) {
+      // Treat unavailable storage as a signed-out visitor.
+    }
 
-  closeLoginModal.addEventListener(
-    "click",
-    closeLoginRequiredModal
-  );
+    if (accessToken) {
+      window.location.href = destination;
+      return;
+    }
 
-}
+    if (!loginRequiredModal) {
+      window.location.href = `student/login.html?next=${encodeURIComponent(`../${destination}`)}`;
+      return;
+    }
 
+    const isSubscription = action === "subscription";
+    if (loginRequiredTitle) {
+      loginRequiredTitle.textContent = isSubscription
+        ? "Log in to view subscriptions"
+        : "Log in to start a test";
+    }
+    if (loginRequiredMessage) {
+      loginRequiredMessage.textContent = isSubscription
+        ? "Sign in to your student account to view test access and subscription options."
+        : "Sign in to your student account before starting a practice test.";
+    }
+    if (loginRequiredLink) {
+      loginRequiredLink.href = `student/login.html?next=${encodeURIComponent(`../${destination}`)}`;
+    }
+    loginRequiredModal.style.display = "flex";
+    if (closeLoginModal) closeLoginModal.focus();
+  });
+});
 
-if (cancelLoginModal) {
-
-  cancelLoginModal.addEventListener(
-    "click",
-    closeLoginRequiredModal
-  );
-
-}
-
-
-/* ================= CLICK OUTSIDE ================= */
-
+if (closeLoginModal) closeLoginModal.addEventListener("click", closeLoginRequiredModal);
+if (cancelLoginModal) cancelLoginModal.addEventListener("click", closeLoginRequiredModal);
 if (loginRequiredModal) {
+  loginRequiredModal.addEventListener("click", function (event) {
+    if (event.target === loginRequiredModal) closeLoginRequiredModal();
+  });
+}
 
-  loginRequiredModal.addEventListener(
-    "click",
-    function (event) {
+const contactInquiryForm = document.getElementById("contactInquiryForm");
+if (contactInquiryForm) {
+  contactInquiryForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const submitButton = contactInquiryForm.querySelector(".contact-submit");
+    const statusMessage = document.getElementById("contactFormStatus");
+    const formData = Object.fromEntries(new FormData(contactInquiryForm).entries());
 
-      if (event.target === loginRequiredModal) {
-        closeLoginRequiredModal();
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Sending…";
+    }
+    if (statusMessage) {
+      statusMessage.dataset.state = "";
+      statusMessage.textContent = "Sending your message securely…";
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact/inquiries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      let result = {};
+      try {
+        result = await response.json();
+      } catch (error) {
+        // Use the helpful fallback below if the server response is not JSON.
+      }
+      if (!response.ok) {
+        throw new Error(result.detail || result.message || "We couldn’t send your message. Please try again.");
       }
 
+      contactInquiryForm.reset();
+      if (statusMessage) {
+        statusMessage.dataset.state = "success";
+        statusMessage.textContent = "Message sent. The administrator can now see it in the portal inbox.";
+      }
+    } catch (error) {
+      if (statusMessage) {
+        statusMessage.dataset.state = "error";
+        statusMessage.textContent = error.message || "Unable to send your message right now. Please try again.";
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Send message <span aria-hidden="true">→</span>';
+      }
     }
-  );
-
+  });
 }

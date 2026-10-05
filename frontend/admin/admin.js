@@ -167,6 +167,144 @@ document.addEventListener("DOMContentLoaded", () => {
     const sidebar =
         document.querySelector(".sidebar");
 
+    const adminInquiriesList = document.getElementById("adminInquiriesList");
+    const inquiriesFeedback = document.getElementById("inquiriesFeedback");
+    const newInquiryCount = document.getElementById("newInquiryCount");
+
+    function setInquiriesFeedback(message, state = "") {
+        if (!inquiriesFeedback) return;
+        inquiriesFeedback.textContent = message;
+        inquiriesFeedback.dataset.state = state;
+    }
+
+    async function loadAdminInquiries() {
+        if (!adminInquiriesList) return;
+        setInquiriesFeedback("Loading messages…");
+        const adminToken = localStorage.getItem("admin_access_token");
+        if (!adminToken) {
+            setInquiriesFeedback("Your admin session has expired. Please sign in again.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/inquiries?limit=100`, {
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.detail || data.message || "Unable to load the inbox.");
+            }
+
+            if (newInquiryCount) newInquiryCount.textContent = String(data.new_count ?? 0);
+            adminInquiriesList.replaceChildren();
+            const inquiries = Array.isArray(data.inquiries) ? data.inquiries : [];
+            if (!inquiries.length) {
+                const empty = document.createElement("div");
+                empty.className = "inquiries-empty";
+                empty.textContent = "No messages yet. Student questions sent from the website will appear here.";
+                adminInquiriesList.append(empty);
+            } else {
+                inquiries.forEach(inquiry => {
+                    const card = document.createElement("article");
+                    card.className = "inquiry-item";
+
+                    const header = document.createElement("div");
+                    header.className = "inquiry-item-header";
+                    const sender = document.createElement("div");
+                    const name = document.createElement("div");
+                    name.className = "inquiry-sender";
+                    name.textContent = inquiry.name || "Student";
+                    const email = document.createElement("a");
+                    email.className = "inquiry-email";
+                    email.href = `mailto:${inquiry.email || ""}?subject=${encodeURIComponent(`Re: ${inquiry.subject || "EPS TOPIK enquiry"}`)}`;
+                    email.textContent = inquiry.email || "No email provided";
+                    sender.append(name, email);
+                    const date = document.createElement("time");
+                    date.className = "inquiry-date";
+                    if (inquiry.created_at) {
+                        date.dateTime = inquiry.created_at;
+                        const parsedDate = new Date(inquiry.created_at);
+                        date.textContent = Number.isNaN(parsedDate.getTime())
+                            ? inquiry.created_at
+                            : parsedDate.toLocaleString();
+                    } else {
+                        date.textContent = "Date unavailable";
+                    }
+                    header.append(sender, date);
+
+                    const subject = document.createElement("h3");
+                    subject.className = "inquiry-subject";
+                    subject.textContent = inquiry.subject || "No subject";
+                    const message = document.createElement("p");
+                    message.className = "inquiry-message";
+                    message.textContent = inquiry.message || "";
+
+                    const footer = document.createElement("div");
+                    footer.className = "inquiry-item-footer";
+                    const badge = document.createElement("span");
+                    const isResolved = inquiry.status === "resolved";
+                    badge.className = `inquiry-status${isResolved ? " resolved" : ""}`;
+                    badge.textContent = isResolved ? "Resolved" : "New";
+                    const actions = document.createElement("div");
+                    actions.className = "inquiry-actions";
+                    const reply = document.createElement("a");
+                    reply.href = email.href;
+                    reply.textContent = "Reply by email";
+                    reply.setAttribute("aria-label", `Reply to ${inquiry.name || inquiry.email}`);
+                    const statusButton = document.createElement("button");
+                    statusButton.type = "button";
+                    statusButton.dataset.inquiryId = String(inquiry.id);
+                    statusButton.dataset.nextStatus = isResolved ? "new" : "resolved";
+                    statusButton.textContent = isResolved ? "Reopen" : "Mark resolved";
+                    actions.append(reply, statusButton);
+                    footer.append(badge, actions);
+                    card.append(header, subject, message, footer);
+                    adminInquiriesList.append(card);
+                });
+            }
+            setInquiriesFeedback(`${data.total ?? inquiries.length} message${(data.total ?? inquiries.length) === 1 ? "" : "s"} in the inbox.`);
+        } catch (error) {
+            setInquiriesFeedback(error.message || "Unable to load the inbox. Please retry.", "error");
+            adminInquiriesList.replaceChildren();
+            const empty = document.createElement("div");
+            empty.className = "inquiries-empty";
+            empty.textContent = "The inbox could not be loaded. Use Refresh inbox to try again.";
+            adminInquiriesList.append(empty);
+        }
+    }
+
+    if (adminInquiriesList) {
+        adminInquiriesList.addEventListener("click", async event => {
+            const button = event.target.closest("button[data-inquiry-id]");
+            if (!button) return;
+            button.disabled = true;
+            setInquiriesFeedback("Updating message…");
+            try {
+                const adminToken = localStorage.getItem("admin_access_token");
+                const response = await fetch(
+                    `${API_BASE_URL}/admin/inquiries/${encodeURIComponent(button.dataset.inquiryId)}/status`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            Authorization: `Bearer ${adminToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ status: button.dataset.nextStatus })
+                    }
+                );
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.detail || "Unable to update this message.");
+                await loadAdminInquiries();
+            } catch (error) {
+                button.disabled = false;
+                setInquiriesFeedback(error.message || "Unable to update this message.", "error");
+            }
+        });
+    }
+
+    const refreshInquiriesButton = document.getElementById("refreshInquiries");
+    if (refreshInquiriesButton) refreshInquiriesButton.addEventListener("click", loadAdminInquiries);
+
 
     /* =====================================================
        DASHBOARD STATISTICS
@@ -3434,6 +3572,16 @@ document.addEventListener(
 
                     },
 
+                    inquiries: {
+
+                        title:
+                            "Student Inquiries",
+
+                        subtitle:
+                            "Read and respond to questions from the website"
+
+                    },
+
                     settings: {
 
                         title:
@@ -3473,6 +3621,10 @@ document.addEventListener(
                         "open"
                     );
 
+                }
+
+                if (sectionName === "inquiries") {
+                    loadAdminInquiries();
                 }
 
             }
@@ -3600,6 +3752,16 @@ document.addEventListener(
 
             },
 
+            inquiries: {
+
+                title:
+                    "Student Inquiries",
+
+                subtitle:
+                    "Read and respond to questions from the website"
+
+            },
+
             settings: {
 
                 title:
@@ -3626,6 +3788,10 @@ document.addEventListener(
             pageSubtitle.textContent =
                 pageMeta[hash].subtitle;
 
+        }
+
+        if (hash === "inquiries") {
+            loadAdminInquiries();
         }
 
     }

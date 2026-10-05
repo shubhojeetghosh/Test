@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | EPS TOPIK</title>
     <link rel="stylesheet" href="admin.css">
+  <script src="../theme.js"></script>
+  <link rel="stylesheet" href="../theme.css">
 </head>
 
 <body>
@@ -49,6 +51,11 @@
 <a href="#" class="nav-item" data-section="payments">
     <span class="nav-icon">₹</span>
     Payments
+</a>
+
+<a href="#" class="nav-item" data-section="inquiries">
+    <span class="nav-icon">✉</span>
+    Student Inquiries
 </a>
 
 <p class="nav-title">SYSTEM</p>
@@ -551,6 +558,26 @@
 
     </div>
 
+</section>
+
+<!-- Student Contact Inquiries -->
+<section class="content-section" id="inquiries">
+    <div class="section-header">
+        <div>
+            <h2>Student Inquiries</h2>
+            <p>Questions sent through the website contact form.</p>
+        </div>
+        <button type="button" class="inquiries-refresh" id="refreshInquiries">Refresh inbox</button>
+    </div>
+
+    <div class="inquiries-summary">
+        <span class="inquiries-summary-icon" aria-hidden="true">✉</span>
+        <div><strong id="newInquiryCount">—</strong><span>New messages</span></div>
+    </div>
+    <p class="inquiries-feedback" id="inquiriesFeedback" role="status" aria-live="polite"></p>
+    <div class="inquiries-list" id="adminInquiriesList" aria-live="polite">
+        <div class="inquiries-empty">Open this section to load the inbox.</div>
+    </div>
 </section>
 
 

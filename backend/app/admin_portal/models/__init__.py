@@ -10,6 +10,7 @@ from app.admin_portal.models.image import Image
 from app.admin_portal.models.audio_play_log import AudioPlayLog
 from app.admin_portal.models.email_otp import EmailOTP
 from app.admin_portal.models.student_exam_access import StudentExamAccess
+from app.admin_portal.models.support_inquiry import SupportInquiry
 
 __all__ = [
     "User",
@@ -22,4 +23,5 @@ __all__ = [
     "Result",
     "Image",
     "AudioPlayLog",
+    "SupportInquiry",
 ]

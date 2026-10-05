@@ -15,10 +15,12 @@
     rel="stylesheet"
     href="student/style.css"
   >
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="theme.css">
 </head>
 
 
-<body>
+<body class="index-page">
 
 
   <!-- ================= NAVBAR ================= -->
@@ -51,11 +53,11 @@
 
     <nav>
 
-      <a href="student/set.html">
+      <a href="student/set.html" data-student-gate="test">
         Tests
       </a>
 
-      <a href="student/subscription.html">
+      <a href="student/subscription.html" data-student-gate="subscription">
         Subscription
       </a>
 
@@ -69,6 +71,17 @@
     <!-- ================= LOGIN BUTTONS ================= -->
 
     <div class="nav-login-group">
+
+      <button
+        type="button"
+        class="theme-toggle"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Turn on dark theme"
+      >
+        <span class="theme-toggle-icon" aria-hidden="true">☾</span>
+        <span class="theme-toggle-label">Dark</span>
+      </button>
 
       <!-- STUDENT LOGIN -->
 
@@ -156,10 +169,11 @@
 
           <a
             class="primary-btn"
-            href="#tests"
+            href="student/set.html"
+            data-student-gate="test"
           >
 
-            Start Free Test
+            Start Preparing
 
             <span>
               →
@@ -170,13 +184,20 @@
 
           <a
             class="secondary-btn"
-            href="#materials"
+            href="student/set.html"
+            data-student-gate="test"
           >
 
-            Study Materials
+            Explore Exams
 
           </a>
 
+        </div>
+
+        <div class="hero-assurances" aria-label="Practice platform highlights">
+          <span><i aria-hidden="true">✓</i> EPS TOPIK-style practice</span>
+          <span><i aria-hidden="true">✓</i> Reading &amp; listening</span>
+          <span><i aria-hidden="true">✓</i> Results after your test</span>
         </div>
 
 
@@ -231,9 +252,48 @@
 
 
 
-      <!-- ================= DAILY KOREAN HIGHLIGHT ================= -->
+      <div class="hero-art">
+        <svg class="hero-illustration" viewBox="0 0 560 460" role="img" aria-label="Illustration of a Korean language study book and practice progress">
+          <defs>
+            <linearGradient id="studyOrb" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#dce8ff"/>
+              <stop offset="1" stop-color="#f4f7ff"/>
+            </linearGradient>
+            <linearGradient id="bookCover" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#4169f4"/>
+              <stop offset="1" stop-color="#754df1"/>
+            </linearGradient>
+            <filter id="artShadow" x="-30%" y="-30%" width="160%" height="180%">
+              <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#263f80" flood-opacity=".16"/>
+            </filter>
+          </defs>
+          <circle cx="298" cy="222" r="190" fill="url(#studyOrb)"/>
+          <circle cx="300" cy="222" r="154" fill="none" stroke="#c9d8ff" stroke-width="1.5" stroke-dasharray="5 9"/>
+          <path d="M80 336c65-41 104-38 155-13m120-213c53-31 94-30 134-8" fill="none" stroke="#8ca9ff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+          <g filter="url(#artShadow)" transform="translate(135 103) rotate(-7 145 135)">
+            <path d="M29 49c47-14 91-7 119 15v208c-35-22-79-29-119-16z" fill="#fff" stroke="#d6e1f3" stroke-width="3"/>
+            <path d="M148 64c37-27 78-35 122-26v207c-43-8-84 1-122 27z" fill="#f8faff" stroke="#d6e1f3" stroke-width="3"/>
+            <path d="M148 64v208" stroke="#ccd8ee" stroke-width="3"/>
+            <path d="M54 92c28-6 53-2 76 9M54 119c26-6 51-2 76 8M54 147c26-5 51-1 76 9" fill="none" stroke="#b9c9ed" stroke-width="7" stroke-linecap="round"/>
+            <path d="M173 94c26-15 54-22 81-23M173 122c26-15 54-22 81-23M173 150c26-15 54-22 81-23" fill="none" stroke="#b9c9ed" stroke-width="7" stroke-linecap="round"/>
+            <path d="M23 40l126 21v214L23 251z" fill="url(#bookCover)" stroke="#fff" stroke-width="5"/>
+            <text x="84" y="148" text-anchor="middle" fill="#fff" font-size="43" font-family="Arial,sans-serif" font-weight="700">한글</text>
+            <text x="84" y="176" text-anchor="middle" fill="#e8edff" font-size="11" font-family="Arial,sans-serif" letter-spacing="2">EPS TOPIK</text>
+            <path d="M149 60v215" stroke="#f1f4fc" stroke-width="5"/>
+          </g>
+          <g filter="url(#artShadow)" transform="translate(380 71)">
+            <rect width="112" height="72" rx="18" fill="#fff"/>
+            <circle cx="35" cy="36" r="19" fill="#edf3ff"/>
+            <path d="M26 37l7 7 13-16" fill="none" stroke="#315be8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M64 28h31M64 39h23M64 50h28" stroke="#c3cee2" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <circle cx="96" cy="155" r="8" fill="#ffbd62"/>
+          <circle cx="464" cy="313" r="11" fill="#7e9cff"/>
+          <path d="M423 365l9 9 18-21" fill="none" stroke="#27b88a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
 
-      <aside class="daily-highlight">
+        <!-- ================= DAILY KOREAN HIGHLIGHT ================= -->
+        <aside class="daily-highlight">
 
         <div class="daily-label">
           DAILY KOREAN
@@ -254,7 +314,8 @@
           Korean expression of the day
         </span>
 
-      </aside>
+        </aside>
+      </div>
 
 
     </section>
@@ -360,7 +421,7 @@
 
 
 
-    <!-- ================= STUDY MATERIAL / TEST PREVIEW ================= -->
+    <!-- ================= JOURNEY REGISTRATION CTA ================= -->
 
     <section
       class="test-preview"
@@ -368,18 +429,20 @@
     >
 
 
+      <span class="journey-cta-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="m2 9 10-5 10 5-10 5L2 9Zm4 2.1v5.2c3.7 2.8 8.3 2.8 12 0v-5.2l-6 3-6-3Zm14-.2v5.6h2v-6.6l-2 1Z" fill="currentColor"/>
+        </svg>
+      </span>
+
       <div>
 
-        <span class="eyebrow">
-          FREE PRACTICE
-        </span>
-
         <h2>
-          Set No. 01
+          Ready to Start Your Journey?
         </h2>
 
         <p>
-          Korean Vowels &amp; Consonants
+          Create your student account and start preparing for the EPS TOPIK exam.
         </p>
 
       </div>
@@ -387,10 +450,10 @@
 
      <a
   class="primary-btn"
-  href="#"
-  id="beginTestBtn"
+  href="student/register.html"
+  id="journeyRegisterBtn"
 >
-  Begin Test →
+  Register Now <span aria-hidden="true">→</span>
 </a>
 
 
@@ -401,11 +464,68 @@
 
 
 
+  <!-- ================= ABOUT & CONTACT ================= -->
+
+  <section class="index-about" id="about" aria-labelledby="aboutTitle">
+    <div class="about-copy">
+      <span class="eyebrow">ABOUT EPS TOPIK</span>
+      <h2 id="aboutTitle">A clearer path to exam practice.</h2>
+      <p>
+        EPS TOPIK is a practice platform for learners preparing for the Korean
+        language exam. Use reading and listening question sets, practise at
+        your own pace, and review your score after each completed test.
+      </p>
+      <p class="about-disclaimer">
+        This is an independent study tool. It is not the official EPS-TOPIK
+        registration, examination, or results service.
+      </p>
+      <div class="about-highlights" aria-label="What the platform offers">
+        <span><b aria-hidden="true">01</b> Practice question sets</span>
+        <span><b aria-hidden="true">02</b> Reading and listening</span>
+        <span><b aria-hidden="true">03</b> Results to guide revision</span>
+      </div>
+    </div>
+
+    <div class="contact-card">
+      <span class="contact-kicker">WE’RE HERE TO HELP</span>
+      <h3>Ask the administrator</h3>
+      <p>Your message will appear in the admin portal inbox.</p>
+      <form id="contactInquiryForm">
+        <div class="contact-form-row">
+          <label>
+            Your name
+            <input name="name" type="text" autocomplete="name" maxlength="100" required>
+          </label>
+          <label>
+            Email address
+            <input name="email" type="email" autocomplete="email" maxlength="254" required>
+          </label>
+        </div>
+        <label>
+          Subject
+          <input name="subject" type="text" maxlength="160" required>
+        </label>
+        <label>
+          Your message
+          <textarea name="message" rows="4" maxlength="4000" required></textarea>
+        </label>
+        <label class="contact-trap" aria-hidden="true" tabindex="-1">
+          Leave this field empty
+          <input name="website" type="text" tabindex="-1" autocomplete="off">
+        </label>
+        <div class="contact-form-bottom">
+          <p id="contactFormStatus" role="status" aria-live="polite"></p>
+          <button class="contact-submit" type="submit">Send message <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+
   <!-- ================= FOOTER ================= -->
 
   <footer
     class="main-footer"
-    id="about"
   >
 
     <p>
@@ -435,6 +555,9 @@
   id="loginRequiredModal"
   class="login-modal"
   style="display: none;"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="loginRequiredTitle"
 >
   <div class="login-modal-box">
 
@@ -442,6 +565,7 @@
       type="button"
       class="login-modal-close"
       id="closeLoginModal"
+      aria-label="Close login prompt"
     >
       ×
     </button>
@@ -451,11 +575,11 @@
     </div>
 
     <h3>
-      Login Required
+      <span id="loginRequiredTitle">Student login required</span>
     </h3>
 
-    <p>
-      Please login to your student account before starting the test.
+    <p id="loginRequiredMessage">
+      Log in to your student account to continue to tests and subscriptions.
     </p>
 
     <div class="login-modal-actions">
@@ -469,7 +593,8 @@
       </button>
 
       <a
-        href="student/login.html"
+        href="student/login.html?next=..%2Fstudent%2Fset.html"
+        id="loginRequiredLink"
         class="login-modal-login"
       >
         Student Login
