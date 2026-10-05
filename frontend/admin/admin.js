@@ -1770,7 +1770,7 @@ function renderAdminResultsTable(
                         <button
                             type="button"
                             class="table-action view-result-btn"
-                            data-attempt-id="${attempt.attempt_id ?? attempt.id}"
+                            data-attempt-id="${escapeAdminHtml(attempt.attempt_id ?? attempt.id)}"
                         >
                             View
                         </button>
@@ -2799,13 +2799,13 @@ if (viewResultModal) {
 
                         <div class="table-avatar">
 
-                            ${name
+                                ${escapeAdminHtml(name
                                 .charAt(0)
-                                .toUpperCase()}
+                                .toUpperCase())}
 
                         </div>
 
-                        ${name}
+                        ${escapeAdminHtml(name)}
 
                     </div>
 
@@ -2813,16 +2813,16 @@ if (viewResultModal) {
 
 
                 <td>
-                    ${email}
+                    ${escapeAdminHtml(email)}
                 </td>
 
 
                 <td>
 
                     <span
-                        class="status ${status.toLowerCase()}-status"
+                        class="status ${escapeAdminHtml(status.toLowerCase())}-status"
                     >
-                        ${status}
+                        ${escapeAdminHtml(status)}
                     </span>
 
                 </td>
@@ -2839,19 +2839,19 @@ if (viewResultModal) {
 
                         <button
                             class="table-action view-user-btn"
-                            data-user-id="${user.id}">
+                            data-user-id="${escapeAdminHtml(user.id)}">
                             View
                         </button>
 
                         <button
                             class="table-action edit-user-btn"
-                            data-user-id="${user.id}">
+                            data-user-id="${escapeAdminHtml(user.id)}">
                             Edit
                         </button>
 
                         <button
                         class="table-action access-user-btn"
-                        data-user-id="${user.id}">
+                        data-user-id="${escapeAdminHtml(user.id)}">
                         Access
                         </button>
 
@@ -3086,7 +3086,7 @@ if (viewResultModal) {
             row.innerHTML = `
 
     <td>
-        ${title}
+        ${escapeAdminHtml(title)}
     </td>
 
     <td>
@@ -3105,9 +3105,9 @@ if (viewResultModal) {
     <td>
 
         <span
-            class="status ${status.toLowerCase()}-status"
+            class="status ${escapeAdminHtml(status.toLowerCase())}-status"
         >
-            ${status}
+            ${escapeAdminHtml(status)}
         </span>
 
     </td>
@@ -3122,21 +3122,21 @@ if (viewResultModal) {
 
             <button
                 class="table-action view-quiz-btn"
-                data-quiz-id="${quiz.id}">
+                data-quiz-id="${escapeAdminHtml(quiz.id)}">
                 View
             </button>
 
             <button
                 class="table-action edit-quiz-btn"
-                data-quiz-id="${quiz.id}"
-                data-set-id="${setId}"
-                data-set-number="${setNumber ?? ""}">
+                data-quiz-id="${escapeAdminHtml(quiz.id)}"
+                data-set-id="${escapeAdminHtml(setId)}"
+                data-set-number="${escapeAdminHtml(setNumber ?? "")}">
                 Edit
             </button>
 
             <button
                 class="table-action delete-quiz-btn"
-                data-quiz-id="${quiz.id}">
+                data-quiz-id="${escapeAdminHtml(quiz.id)}">
                 Delete
             </button>
 

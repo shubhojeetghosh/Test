@@ -469,6 +469,15 @@ function loadQuiz() {
    RENDER QUIZ
    ========================================================= */
 
+function escapeQuizHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 function renderQuiz(quiz) {
 
     const container =
@@ -505,8 +514,9 @@ function renderQuiz(quiz) {
 
                         <span class="question-section">
                             ${
-                                question.section ||
+                                escapeQuizHtml(question.section ||
                                 "Reading"
+                                )
                             }
                         </span>
 
@@ -515,8 +525,9 @@ function renderQuiz(quiz) {
 
                     <div class="question-text">
                         ${
-                            question.question ||
+                            escapeQuizHtml(question.question ||
                             "No question text"
+                            )
                         }
                     </div>
 
@@ -563,16 +574,18 @@ function renderQuiz(quiz) {
 
             <h2 class="quiz-title">
                 ${
-                    quiz.title ||
+                    escapeQuizHtml(quiz.title ||
                     "Untitled Quiz"
+                    )
                 }
             </h2>
 
 
             <div class="quiz-description">
                 ${
-                    quiz.description ||
+                    escapeQuizHtml(quiz.description ||
                     "No description provided."
+                    )
                 }
             </div>
 
@@ -587,8 +600,9 @@ function renderQuiz(quiz) {
 
                     <span class="info-value">
                         ${
-                            quiz.set_number ??
+                            escapeQuizHtml(quiz.set_number ??
                             "-"
+                            )
                         }
                     </span>
 
@@ -603,8 +617,9 @@ function renderQuiz(quiz) {
 
                     <span class="info-value">
                         ${
-                            quiz.duration ??
+                            escapeQuizHtml(quiz.duration ??
                             "-"
+                            )
                         } minutes
                     </span>
 
@@ -619,8 +634,9 @@ function renderQuiz(quiz) {
 
                     <span class="info-value">
                         ${
-                            quiz.total_marks ??
+                            escapeQuizHtml(quiz.total_marks ??
                             "-"
+                            )
                         }
                     </span>
 
@@ -635,8 +651,9 @@ function renderQuiz(quiz) {
 
                     <span class="info-value">
                         ${
-                            quiz.pass_marks ??
+                            escapeQuizHtml(quiz.pass_marks ??
                             "-"
+                            )
                         }
                     </span>
 
@@ -725,8 +742,9 @@ function renderOption(
             </strong>
 
             ${
-                text ||
+                escapeQuizHtml(text ||
                 "No option"
+                )
             }
 
 

@@ -10,6 +10,15 @@ const SET_PRICE = 50;
 
 const WHATSAPP_BUSINESS_NUMBER = "919547428567";
 
+function escapePaymentHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 
 /* =========================================
    ELEMENTS
@@ -171,7 +180,7 @@ function renderCart(items) {
       <div class="selected-set-info">
 
         <strong>
-          ${categoryName}
+          ${escapePaymentHtml(categoryName)}
         </strong>
 
         <span>

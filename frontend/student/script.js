@@ -1,4 +1,13 @@
 const API_BASE_URL = window.API_BASE_URL || "";
+function escapeStudentHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const API_ENDPOINTS = {
 
   login:
@@ -2599,7 +2608,7 @@ function renderRecentResults(results) {
         row.innerHTML = `
 
             <span>
-                ${result.test_name || "-"}
+                ${escapeStudentHtml(result.test_name || "-")}
             </span>
 
             <span>
@@ -2617,7 +2626,7 @@ function renderRecentResults(results) {
                     ? "passed"
                     : ""
             }">
-                ${result.result || "-"}
+                ${escapeStudentHtml(result.result || "-")}
             </span>
 
         `;
@@ -2739,7 +2748,7 @@ function renderAvailableTests(tests) {
 
 
                 <p>
-                    ${test.set_name || ""}
+                ${escapeStudentHtml(test.set_name || "")}
                 </p>
 
 
@@ -3622,7 +3631,7 @@ if (Number.isFinite(questionCount)) {
 
         optionsContainer.innerHTML = `
             <p style="color:red;">
-                ${error.message}
+                ${escapeStudentHtml(error.message)}
             </p>
         `;
     }
