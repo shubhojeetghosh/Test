@@ -1630,6 +1630,8 @@ td {
     grid-template-columns: 1fr;
 }
 
+}
+
 /* Student contact inbox */
 .inquiries-refresh {
     min-height: 40px;
@@ -1670,6 +1672,8 @@ td {
     .inquiry-item-footer { align-items: flex-start; flex-direction: column; }
     .inquiry-actions { flex-wrap: wrap; }
 }
+
+@media (max-width: 700px) {
 
 .results-filters {
     flex-direction: column;
