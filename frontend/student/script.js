@@ -10,6 +10,12 @@ const API_ENDPOINTS = {
   register:
     `${API_BASE_URL}/auth/register`,
 
+  verifyRegistrationOtp:
+    `${API_BASE_URL}/auth/verify-registration-otp`,
+
+  resendRegistrationOtp:
+    `${API_BASE_URL}/auth/resend-registration-otp`,
+
   forgotPassword:
     `${API_BASE_URL}/auth/forgot-password`,
 
@@ -827,9 +833,9 @@ if (registerForm) {
       }
 
 
-      // ==========================================
-      // CALL BACKEND REGISTER API
-      // ==========================================
+    // ==========================================
+    // CALL BACKEND REGISTER API
+    // ==========================================
 
       const response = await fetch(
         API_ENDPOINTS.register,
@@ -913,28 +919,13 @@ if (registerForm) {
       }
 
 
-      // ==========================================
-      // REGISTRATION SUCCESS
-      // ==========================================
-
       if (messageBox) {
-
         messageBox.textContent =
-          "Account created successfully!";
-
+          "Verification code sent. Check your email to finish creating your account.";
       }
-
-
-      console.log(
-        "Registration successful:",
-        data
-      );
-
-
-      // Make the successful registration unmistakable before continuing.
-      window.alert("Registration successful! You can now log in.");
-      window.location.href = "login.html";
-
+      // Keep only the email temporarily; passwords and OTPs never enter storage or URLs.
+      sessionStorage.setItem("pending_registration_email", email.toLowerCase());
+      window.location.href = "verify-registration.html";
 
     } catch (error) {
 
@@ -973,6 +964,129 @@ if (registerForm) {
 
   });
 
+}
+
+/* =========================================================
+   STUDENT REGISTRATION EMAIL VERIFICATION
+   ========================================================= */
+
+const registrationOtpForm = document.getElementById("registrationOtpForm");
+if (registrationOtpForm) {
+  const email = sessionStorage.getItem("pending_registration_email") || "";
+  const emailLabel = document.getElementById("registrationEmailLabel");
+  const otpInput = document.getElementById("registrationOtp");
+  const verifyButton = document.getElementById("verifyRegistrationOtpButton");
+  const resendButton = document.getElementById("resendRegistrationOtpButton");
+  const messageBox = document.getElementById("messageBox");
+  const resendTimer = document.getElementById("resendTimer");
+  let resendCountdown = 30;
+
+  const maskEmail = (value) => {
+    const [name, domain] = value.split("@");
+    if (!name || !domain) return "your email";
+    return `${name.slice(0, 1)}${"•".repeat(Math.min(Math.max(name.length - 1, 2), 6))}@${domain}`;
+  };
+
+  if (!email) {
+    window.location.replace("register.html");
+  } else {
+    if (emailLabel) emailLabel.textContent = maskEmail(email);
+    otpInput?.focus();
+
+    const updateResendCountdown = () => {
+      if (!resendButton || !resendTimer) return;
+      resendButton.disabled = resendCountdown > 0;
+      resendTimer.textContent = resendCountdown > 0
+        ? `Resend available in ${resendCountdown}s`
+        : "You can request a new code.";
+      if (resendCountdown > 0) {
+        resendCountdown -= 1;
+        window.setTimeout(updateResendCountdown, 1000);
+      }
+    };
+    updateResendCountdown();
+
+    otpInput?.addEventListener("input", () => {
+      otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 6);
+      if (messageBox) messageBox.textContent = "";
+    });
+
+    otpInput?.addEventListener("paste", (event) => {
+      const pasted = (event.clipboardData || window.clipboardData).getData("text");
+      if (/^\s*\d{6}\s*$/.test(pasted)) {
+        event.preventDefault();
+        otpInput.value = pasted.trim();
+      }
+    });
+
+    registrationOtpForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const otp = (otpInput?.value || "").trim();
+      if (!/^\d{6}$/.test(otp)) {
+        if (messageBox) messageBox.textContent = "Enter the 6-digit code from your email.";
+        return;
+      }
+      verifyButton.disabled = true;
+      verifyButton.textContent = "Verifying...";
+      try {
+        const response = await fetch(API_ENDPOINTS.verifyRegistrationOtp, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || "That code is invalid or expired.");
+        if (!data.access_token) throw new Error("Verification succeeded but sign-in could not be completed. Please log in.");
+
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("token_type", data.token_type || "bearer");
+        localStorage.setItem("user_email", data.email || email);
+        localStorage.setItem("user", JSON.stringify({
+          name: data.name,
+          email: data.email || email,
+          id: data.user_id,
+          role: data.role,
+        }));
+        localStorage.setItem("login_type", "student");
+        sessionStorage.removeItem("pending_registration_email");
+        window.location.replace("dashboard.html");
+      } catch (error) {
+        if (messageBox) messageBox.textContent = error.message || "Could not verify your email. Try again.";
+      } finally {
+        verifyButton.disabled = false;
+        verifyButton.textContent = "Verify email";
+      }
+    });
+
+    resendButton?.addEventListener("click", async () => {
+      resendButton.disabled = true;
+      if (messageBox) messageBox.textContent = "Sending a new code...";
+      try {
+        const response = await fetch(API_ENDPOINTS.resendRegistrationOtp, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (response.status === 429) {
+            const retryAfter = Number(response.headers.get("Retry-After")) || 30;
+            if (messageBox) messageBox.textContent = `Please wait ${retryAfter} seconds before requesting another code.`;
+          } else {
+            throw new Error(data.detail || "Could not resend the verification code.");
+          }
+          resendButton.disabled = false;
+          return;
+        }
+        if (messageBox) messageBox.textContent = data.message || "A new code has been sent.";
+        resendCountdown = 30;
+        updateResendCountdown();
+      } catch (error) {
+        if (messageBox) messageBox.textContent = error.message || "Could not resend the verification code.";
+        resendButton.disabled = false;
+      }
+    });
+  }
 }
 
 /* =========================================================
@@ -1410,10 +1524,6 @@ if (loginForm) {
 
         }
 else {
-  alert(
-    "Login successful!"
-  );
-
   window.location.href =
     getLoginReturnUrl();
 }

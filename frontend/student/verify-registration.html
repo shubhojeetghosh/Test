@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="../api-config.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPS TOPIK - Verify Email</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+  <main class="auth-page">
+    <section class="auth-card">
+      <a href="../index.html" class="auth-logo">
+        <div class="auth-logo-mark">K</div>
+        <div><h1>EPS TOPIK</h1><span>EXAM PLATFORM</span></div>
+      </a>
+      <div class="auth-heading">
+        <p class="auth-eyebrow">EMAIL VERIFICATION</p>
+        <h2>Verify your email</h2>
+        <p>We sent a 6-digit code to <strong id="registrationEmailLabel">your email</strong>. The code expires in 5 minutes.</p>
+      </div>
+      <div id="messageBox" class="message-box" role="status" aria-live="polite"></div>
+      <form id="registrationOtpForm">
+        <div class="form-group">
+          <label for="registrationOtp">Verification code</label>
+          <input type="text" id="registrationOtp" class="otp-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" aria-label="Six digit verification code" required>
+        </div>
+        <button type="submit" id="verifyRegistrationOtpButton" class="auth-submit">Verify email</button>
+      </form>
+      <div class="auth-switch">
+        Didn't receive the code? <button type="button" id="resendRegistrationOtpButton" class="registration-resend" disabled>Resend code</button>
+        <p id="resendTimer" class="registration-timer" aria-live="polite">Resend available in 30s</p>
+      </div>
+      <a href="register.html" class="auth-back" id="changeRegistrationEmail">← Change email</a>
+    </section>
+  </main>
+  <script>
+    document.getElementById("changeRegistrationEmail").addEventListener("click", () => {
+      sessionStorage.removeItem("pending_registration_email");
+    });
+  </script>
+  <script src="js/api.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

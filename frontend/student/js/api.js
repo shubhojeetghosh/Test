@@ -18,6 +18,8 @@
     request,
     auth: {
       register: (body) => request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
+      verifyRegistrationOtp: (body) => request("/auth/verify-registration-otp", { method: "POST", body: JSON.stringify(body) }),
+      resendRegistrationOtp: (body) => request("/auth/resend-registration-otp", { method: "POST", body: JSON.stringify(body) }),
       login: (body) => request("/auth/login", { method: "POST", body: JSON.stringify(body) }),
       forgotPassword: (body) => request("/auth/forgot-password", { method: "POST", body: JSON.stringify(body) }),
       verifyOtp: (body) => request("/auth/verify-otp", { method: "POST", body: JSON.stringify(body) }),

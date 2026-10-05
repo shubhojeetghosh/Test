@@ -4,7 +4,7 @@
 # C:\Users\user\quiz-platform\backend\app\routes\auth.py
 # ============================================================
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 
 from app.core.security import (
@@ -26,7 +27,7 @@ from app.core.security import (
     decode_access_token,
 )
 
-from app.core.email import send_otp_email
+from app.core.email import send_otp_email, send_registration_otp_email
 
 from app.models import PasswordResetOTP, User
 
@@ -71,6 +72,12 @@ def get_current_user_id(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Student account required",
         )
+
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in.",
+        )
     return user_id
 
 # ============================================================
@@ -112,11 +119,12 @@ class ForgotPasswordRequest(BaseModel):
 
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
+    otp: str = Field(pattern=r"^\d{6}$")
 
-    otp: str = Field(
-        min_length=6,
-        max_length=6
-    )
+
+class VerifyRegistrationOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(pattern=r"^\d{6}$")
 
 
 class ResetPasswordRequest(BaseModel):
@@ -148,18 +156,27 @@ def register(
         window_seconds=3600,
     )
 
-    # 1. Check whether email already exists
+    # An unverified registration is a pending account. Repeated registration
+    # requests resend its code and never overwrite the original credentials.
     existing_user = (
         db.query(User)
         .filter(User.email == normalized_email)
         .first()
     )
 
-    if existing_user:
+    if existing_user and existing_user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
+
+    if existing_user:
+        _send_registration_code(db, existing_user)
+        return {
+            "message": "A verification code has been sent to your email.",
+            "email": normalized_email,
+            "requires_verification": True,
+        }
 
     # 2. Hash password
     hashed_password = hash_password(data.password)
@@ -168,7 +185,9 @@ def register(
     new_user = User(
         name=data.name,
         email=normalized_email,
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        role="student",
+        email_verified=False,
     )
 
     # 4. Save user
@@ -190,13 +209,147 @@ def register(
             detail="Could not create the account. Please try again.",
         ) from exc
 
-    # 5. Return response
+    _send_registration_code(db, new_user)
     return {
-        "message": "User registered successfully",
-        "user_id": new_user.id,
-        "name": new_user.name,
-        "email": new_user.email
+        "message": "A verification code has been sent to your email.",
+        "email": new_user.email,
+        "requires_verification": True,
     }
+
+
+REGISTRATION_OTP_PURPOSE = "student_registration"
+REGISTRATION_OTP_MINUTES = max(1, settings.OTP_EXPIRE_MINUTES)
+REGISTRATION_OTP_COOLDOWN_SECONDS = max(1, settings.OTP_RESEND_COOLDOWN_SECONDS)
+REGISTRATION_OTP_MAX_ATTEMPTS = max(1, settings.OTP_MAX_ATTEMPTS)
+
+
+def _send_registration_code(db: Session, user: User) -> None:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    active_otp = db.scalar(
+        select(PasswordResetOTP)
+        .where(
+            PasswordResetOTP.user_id == user.id,
+            PasswordResetOTP.purpose == REGISTRATION_OTP_PURPOSE,
+            PasswordResetOTP.used.is_(False),
+        )
+        .order_by(PasswordResetOTP.id.desc())
+    )
+    if active_otp and (now - active_otp.created_at).total_seconds() < REGISTRATION_OTP_COOLDOWN_SECONDS:
+        wait = max(1, int(REGISTRATION_OTP_COOLDOWN_SECONDS - (now - active_otp.created_at).total_seconds()))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Please wait before requesting another verification code.",
+            headers={"Retry-After": str(wait)},
+        )
+
+    enforce_rate_limit(
+        db,
+        scope="student-registration-resend",
+        subject=user.email,
+        limit=5,
+        window_seconds=3600,
+    )
+    if active_otp:
+        active_otp.used = True
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    otp_record = PasswordResetOTP(
+        user_id=user.id,
+        otp_hash=hash_otp(code),
+        purpose=REGISTRATION_OTP_PURPOSE,
+        expires_at=now + timedelta(minutes=REGISTRATION_OTP_MINUTES),
+        attempts=0,
+        used=False,
+        created_at=now,
+    )
+    db.add(otp_record)
+    db.commit()
+    if not send_registration_otp_email(user.email, code):
+        otp_record.used = True
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We could not send the verification email. Please try again shortly.",
+        )
+
+
+@router.post("/verify-registration-otp")
+def verify_registration_otp(
+    data: VerifyRegistrationOTPRequest,
+    db: Session = Depends(get_db),
+):
+    email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-registration-verify",
+        subject=email,
+        limit=10,
+        window_seconds=3600,
+    )
+    user = db.scalar(select(User).where(User.email == email).with_for_update())
+    if user is None or str(user.role).strip().lower() != "student":
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+    if user.email_verified:
+        raise HTTPException(status_code=400, detail="This email is already verified. Please log in.")
+
+    record = db.scalar(
+        select(PasswordResetOTP)
+        .where(
+            PasswordResetOTP.user_id == user.id,
+            PasswordResetOTP.purpose == REGISTRATION_OTP_PURPOSE,
+            PasswordResetOTP.used.is_(False),
+        )
+        .order_by(PasswordResetOTP.id.desc())
+        .with_for_update()
+    )
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if record is None or record.expires_at <= now or record.attempts >= REGISTRATION_OTP_MAX_ATTEMPTS:
+        if record is not None:
+            record.used = True
+            db.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+    if not verify_otp(data.otp, record.otp_hash):
+        record.attempts += 1
+        if record.attempts >= REGISTRATION_OTP_MAX_ATTEMPTS:
+            record.used = True
+        db.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+    record.used = True
+    user.email_verified = True
+    db.commit()
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {
+        "message": "Email verified successfully.",
+        "access_token": token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+    }
+
+
+@router.post("/resend-registration-otp")
+def resend_registration_otp(
+    data: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    email = str(data.email).strip().lower()
+    enforce_rate_limit(
+        db,
+        scope="student-registration-resend-request",
+        subject=email,
+        limit=5,
+        window_seconds=3600,
+    )
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None or str(user.role).strip().lower() != "student" or user.email_verified:
+        # Avoid disclosing account state to unauthenticated callers.
+        return {"message": "If registration is pending, a verification code will be sent."}
+    _send_registration_code(db, user)
+    return {"message": "A new verification code has been sent to your email."}
 
 # ============================================================
 # LOGIN
@@ -254,6 +407,12 @@ def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
+        )
+
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in.",
         )
 
     # --------------------------------------------------------
@@ -348,7 +507,8 @@ def forgot_password(
         db.query(PasswordResetOTP)
         .filter(
             PasswordResetOTP.user_id == user.id,
-            PasswordResetOTP.used == False
+            PasswordResetOTP.purpose == "password_reset",
+            PasswordResetOTP.used == False,
         )
         .all()
     )
@@ -384,6 +544,7 @@ def forgot_password(
     otp_record = PasswordResetOTP(
         user_id=user.id,
         otp_hash=otp_hash,
+        purpose="password_reset",
         expires_at=expires_at,
         attempts=0,
         used=False
@@ -469,7 +630,8 @@ def verify_otp_endpoint(
         db.query(PasswordResetOTP)
         .filter(
             PasswordResetOTP.user_id == user.id,
-            PasswordResetOTP.used == False
+            PasswordResetOTP.purpose == "password_reset",
+            PasswordResetOTP.used == False,
         )
         .order_by(
             PasswordResetOTP.created_at.desc()
@@ -597,7 +759,8 @@ def reset_password(
         db.query(PasswordResetOTP)
         .filter(
             PasswordResetOTP.user_id == user.id,
-            PasswordResetOTP.used == False
+            PasswordResetOTP.purpose == "password_reset",
+            PasswordResetOTP.used == False,
         )
         .order_by(
             PasswordResetOTP.created_at.desc()

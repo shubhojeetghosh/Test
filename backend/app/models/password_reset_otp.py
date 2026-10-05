@@ -26,6 +26,11 @@ class PasswordResetOTP(Base):
         nullable=False
     )
 
+    # Keeps registration verification independent from password recovery.
+    purpose: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="password_reset", server_default="password_reset"
+    )
+
     expires_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False

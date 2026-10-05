@@ -1264,6 +1264,27 @@ button {
 }
 
 
+.registration-resend {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.registration-resend:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.registration-timer {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .auth-switch a {
 
   color: var(--blue);
