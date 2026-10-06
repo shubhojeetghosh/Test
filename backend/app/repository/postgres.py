@@ -26,6 +26,7 @@ def _qtype(raw: str) -> QuestionType:
     """Map DB question_type string → QuestionType enum."""
     mapping = {
         "READING":      QuestionType.READING,
+        "LISTENING":    QuestionType.LISTENING,
         "IMAGE":        QuestionType.IMAGE,
         "IMAGE_AUDIO":  QuestionType.IMAGE_AUDIO,
         "AUDIO_OPTION": QuestionType.AUDIO_OPTION,

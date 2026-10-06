@@ -5,6 +5,7 @@ from typing import Optional
 
 class QuestionType(str, Enum):
     READING = "reading"
+    LISTENING = "listening"
     IMAGE = "image"
     IMAGE_AUDIO = "image_audio"
     AUDIO_OPTION = "audio_option"

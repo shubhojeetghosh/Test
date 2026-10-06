@@ -703,7 +703,7 @@ const listeningQuestions = questions.filter(
   q => {
     const type = String(q.question_type || "").toLowerCase();
 
-    return type === "image_audio" || type === "audio_option";
+    return type === "listening" || type === "image_audio" || type === "audio_option";
   }
 );
     /*
