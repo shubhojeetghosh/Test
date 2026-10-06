@@ -10,7 +10,7 @@ import httpx
 from app.core.config import settings
 
 STORAGE_PREFIX = "supabase://"
-MAX_MEDIA_BYTES = 10 * 1024 * 1024
+MAX_MEDIA_BYTES = 50 * 1024 * 1024
 SIGNED_URL_SECONDS = 6 * 60 * 60
 
 
@@ -40,7 +40,7 @@ def _auth_headers(api_key: str) -> dict[str, str]:
 
 def upload_media(content: bytes, content_type: str, filename: str) -> str:
     if not content or len(content) > MAX_MEDIA_BYTES:
-        raise ValueError("Media file must be between 1 byte and 10 MB.")
+        raise ValueError("Media file must be between 1 byte and 50 MB.")
     base_url, service_key, bucket = _configuration()
     extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
     if not extension.isalnum() or len(extension) > 8:

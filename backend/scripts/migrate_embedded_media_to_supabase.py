@@ -33,7 +33,7 @@ def decode_data_url(value: str) -> tuple[bytes, str]:
     else:
         content = unquote_to_bytes(payload)
     if not content or len(content) > MAX_MEDIA_BYTES:
-        raise ValueError("Embedded media must be between 1 byte and 10 MB")
+        raise ValueError("Embedded media must be between 1 byte and 50 MB")
     if not (content_type.startswith("image/") or content_type.startswith("audio/")):
         raise ValueError(f"Unsupported media type: {content_type}")
     return content, content_type

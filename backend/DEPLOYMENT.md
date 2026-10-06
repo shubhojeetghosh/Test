@@ -2,7 +2,7 @@
 
 ## Supabase Storage
 
-Create a **private** Storage bucket named `exam-media` and set its maximum file size to 10 MB. Keep the service-role key only in the backend environment; do not add it to frontend files or a `NEXT_PUBLIC_` variable. The backend issues short-lived signed links for private media and short-lived signed upload links so browser uploads go directly to Storage. See Supabase's [signed URL](https://supabase.com/docs/reference/python/storage-from-createsignedurls) and [signed upload URL](https://supabase.com/docs/reference/python/storage-from-createsigneduploadurl) documentation.
+Create a **private** Storage bucket named `exam-media` and set both the global and bucket maximum file size to 50 MB (subject to your Supabase plan). Keep the service-role key only in the backend environment; do not add it to frontend files or a `NEXT_PUBLIC_` variable. The backend issues short-lived signed links for private media and short-lived signed upload links so browser uploads go directly to Storage. See Supabase's [signed URL](https://supabase.com/docs/reference/python/storage-from-createsignedurls) and [signed upload URL](https://supabase.com/docs/reference/python/storage-from-createsigneduploadurl) documentation.
 
 Set these variables on the Vercel **backend** project (Root Directory: `backend`) and in a local `backend/.env`:
 

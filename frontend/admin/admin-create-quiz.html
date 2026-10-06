@@ -1659,8 +1659,8 @@ if (!savedQuestion) {
     async function uploadQuizMediaFile(file) {
       const token = localStorage.getItem("admin_access_token");
       if (!token) throw new Error("Your admin session has expired. Please login again.");
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error(`${file.name} is larger than the 10 MB upload limit.`);
+      if (file.size > 50 * 1024 * 1024) {
+        throw new Error(`${file.name} is larger than the 50 MB upload limit.`);
       }
 
       const apiBase = window.API_BASE_URL;
