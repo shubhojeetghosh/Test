@@ -2,6 +2,14 @@
 <html lang="en">
 
 <head><script src="../api-config.js"></script>
+  <script>
+    /* Theme: light by default; dark only if the visitor chose it (shared with the home page) */
+    (function(){var t="light";try{if(localStorage.getItem("eps_theme")==="dark")t="dark";}catch(e){}
+      document.documentElement.setAttribute("data-theme",t);})();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -9,12 +17,152 @@
 
   <!-- Shared CSS -->
   <link rel="stylesheet" href="style.css">
-  <script src="../theme.js"></script>
-  <link rel="stylesheet" href="../theme.css">
+
+  <style>
+    /* Dashboard visuals only. Scoped to .dashboard-page; shared style.css is untouched. */
+    .dashboard-page{--ink:#0f1b3d;--ink2:#16275a;--kred:#cd2e3a;--track:#eaf0fa;
+      font-family:"Plus Jakarta Sans",Inter,system-ui,sans-serif}
+    .dashboard-page button{font-family:inherit}
+    .kr{font-family:"Noto Serif KR",serif}
+    #dash-progress{position:fixed;top:0;left:0;height:4px;width:0;z-index:10000;pointer-events:none;
+      background:linear-gradient(90deg,#0047a0,#cd2e3a,#f2b84b)}
+
+    /* entrance choreography (CSS only, so content is always visible even if JS fails) */
+    @keyframes dashUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+    @keyframes dashIn{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+    .dashboard-welcome{animation:dashUp .8s cubic-bezier(.16,1,.3,1) both}
+    .dashboard-stat-card{animation:dashUp .7s cubic-bezier(.16,1,.3,1) both}
+    .dashboard-stat-card:nth-child(1){animation-delay:.12s}.dashboard-stat-card:nth-child(2){animation-delay:.2s}
+    .dashboard-stat-card:nth-child(3){animation-delay:.28s}.dashboard-stat-card:nth-child(4){animation-delay:.36s}
+    .dashboard-main-card{animation:dashUp .8s .4s cubic-bezier(.16,1,.3,1) both}
+    .profile-card{animation:dashUp .8s .45s cubic-bezier(.16,1,.3,1) both}
+    .progress-card{animation:dashUp .8s .55s cubic-bezier(.16,1,.3,1) both}
+    .dashboard-section{animation:dashUp .8s .6s cubic-bezier(.16,1,.3,1) both}
+    .dash-in{animation:dashIn .55s cubic-bezier(.16,1,.3,1) both}
+
+    /* navbar */
+    .dashboard-navbar{transition:box-shadow .35s,background .35s}
+    .dashboard-navbar.dash-scrolled{box-shadow:0 10px 35px rgba(15,27,61,.1)}
+    .dashboard-logo{font-family:"Noto Serif KR",serif}
+    .user-avatar,.large-avatar{position:relative}
+    .user-avatar::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(37,99,235,.35);
+      animation:ring 2.6s ease-out infinite}
+    @keyframes ring{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+    .dashboard-page a:focus-visible,.dashboard-page button:focus-visible{outline:3px solid #f2b84b;outline-offset:3px}
+
+    /* welcome banner */
+    .dashboard-welcome{position:relative;overflow:hidden;isolation:isolate;color:#fff;border-radius:26px;
+      padding:38px 40px;border:0;
+      background:radial-gradient(circle at 85% 15%,rgba(0,71,160,.6),transparent 55%),
+        radial-gradient(circle at 5% 100%,rgba(205,46,58,.3),transparent 50%),
+        linear-gradient(150deg,var(--ink),var(--ink2));
+      box-shadow:0 24px 60px rgba(15,27,61,.22)}
+    .dashboard-welcome h2{color:#fff;font-family:"Noto Serif KR",serif;font-weight:900}
+    .dashboard-welcome h2 span{background:linear-gradient(90deg,#ffd27a,#ff8f9c,#9cc2ff,#ffd27a);background-size:300% auto;
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 6s linear infinite}
+    @keyframes shine{to{background-position:300% center}}
+    .dashboard-welcome > div > p:last-child{color:#c9d3ee}
+    .dashboard-welcome .dashboard-eyebrow{color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22)}
+    .kr-hello{display:block;font-family:"Noto Serif KR",serif;font-size:15px;color:#ffd27a;margin-bottom:10px;letter-spacing:.04em}
+    .dashboard-primary-btn{position:relative;overflow:hidden;background:var(--kred) !important;color:#fff !important;
+      transition:transform .25s,box-shadow .25s}
+    .dashboard-primary-btn:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(205,46,58,.4)}
+    .dashboard-primary-btn::after{content:"";position:absolute;top:-30%;left:-60px;width:40px;height:160%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:rotate(25deg);transition:left .7s}
+    .dashboard-primary-btn:hover::after{left:130%}
+    .welcome-art{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+    .welcome-art i{position:absolute;font-style:normal;font-family:"Noto Serif KR",serif;font-weight:900;
+      color:rgba(255,255,255,.07);animation:bob 7s ease-in-out infinite}
+    @keyframes bob{50%{transform:translateY(-18px) rotate(6deg)}}
+    .petal{position:absolute;top:-24px;width:12px;height:9px;border-radius:70% 0 70% 0;
+      background:linear-gradient(135deg,#ffd5dc,#ff9db0);opacity:.85;animation:petalFall linear infinite}
+    @keyframes petalFall{to{transform:translate3d(var(--dx),420px,0) rotate(540deg)}}
+
+    /* stat cards */
+    .dashboard-stat-card{transition:transform .3s,box-shadow .3s}
+    .dashboard-stat-card:hover{transform:translateY(-6px);box-shadow:0 22px 45px rgba(15,27,61,.12)}
+    .stat-icon{transition:transform .35s}
+    .dashboard-stat-card:hover .stat-icon{transform:rotate(-8deg) scale(1.12)}
+    .dashboard-stat-card strong{font-variant-numeric:tabular-nums}
+    .is-loading{color:transparent !important;display:inline-block;min-width:64px;border-radius:8px;
+      background:linear-gradient(90deg,#e7ecf6 25%,#f6f8fd 50%,#e7ecf6 75%);background-size:200% 100%;animation:shimmer 1.3s infinite}
+    @keyframes shimmer{to{background-position:-200% 0}}
+
+    /* tests list + results */
+    .test-card{transition:transform .3s,box-shadow .3s,border-color .3s}
+    .test-card:hover{transform:translateX(6px);box-shadow:0 16px 36px rgba(15,27,61,.1)}
+    .test-number{font-family:"Noto Serif KR",serif;transition:transform .35s}
+    .test-card:hover .test-number{transform:scale(1.1) rotate(-4deg)}
+    .free-badge{animation:pulse 2.4s ease-in-out infinite}
+    @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(22,163,74,.14)}}
+    #availableTestsList > p{animation:fade 1.4s ease-in-out infinite alternate}
+    @keyframes fade{from{opacity:.45}to{opacity:1}}
+    .result-row{transition:background .25s}
+    #recentResultsBody .result-row:hover{background:rgba(37,99,235,.06)}
+
+    /* progress ring + chart */
+    .progress-circle{transition:transform .4s}.progress-circle:hover{transform:scale(1.04)}
+    .progress-circle > div{background:var(--white)}
+    .mini-chart.chart-pending .chart-line,.mini-chart.chart-pending .chart-area,.mini-chart.chart-pending .chart-dot{opacity:0}
+    .mini-chart.chart-empty::after{content:"No scores yet";display:block;text-align:center;font-size:12px;color:var(--muted);margin-top:-60px}
+    .chart-line{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.4s .1s ease-out forwards}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    .chart-area{animation:fade2 1s .6s both}.chart-dot{animation:pop .5s both;transform-box:fill-box;transform-origin:center}
+    @keyframes fade2{from{opacity:0}to{opacity:1}}
+    @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+
+    /* theme toggle */
+    .theme-toggle{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;cursor:pointer;margin-right:6px;
+      border:1.5px solid #d6dcec;background:#fff;color:#0f1b3d;transition:transform .25s,background .3s,border-color .3s,color .3s}
+    .theme-toggle:hover{transform:translateY(-2px) rotate(-8deg)}
+    .theme-toggle svg{width:19px;height:19px;grid-area:1/1;transition:transform .5s cubic-bezier(.4,.2,.2,1),opacity .3s}
+    .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
+    html[data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
+    html[data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:none}
+    html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{
+      transition:background-color .45s,color .45s,border-color .45s,box-shadow .45s !important}
+
+    /* dark mode */
+    html[data-theme="dark"]{color-scheme:dark}
+    html[data-theme="dark"] .dashboard-page{
+      --blue:#4d8dff;--background:#0b1226;--text:#e8eeff;--border:#26335c;--light-border:#1d2850;--white:#131c38;
+      --navy:#e8eeff;--light-blue:#1a2650;--muted:#9aa8cc;--light-text:#7f8db4;--track:#26335c;
+      --success:#4ade80;--success-bg:#0f2a1c;--danger-bg:#2a1217;
+      background:#0b1226;color:#e8eeff}
+    html[data-theme="dark"] .dashboard-navbar,
+    html[data-theme="dark"] .dashboard-stat-card,
+    html[data-theme="dark"] .dashboard-main-card,
+    html[data-theme="dark"] .profile-card,
+    html[data-theme="dark"] .progress-card,
+    html[data-theme="dark"] .dashboard-section,
+    html[data-theme="dark"] .results-table,
+    html[data-theme="dark"] .dashboard-footer{background:#131c38;border-color:#26335c}
+    html[data-theme="dark"] .dashboard-navbar.dash-scrolled{box-shadow:0 10px 35px rgba(0,0,0,.5)}
+    html[data-theme="dark"] .dashboard-brand span{color:#8c9ac2}
+    html[data-theme="dark"] .dashboard-logo{background:#e8eeff;color:#0f1b3d}
+    html[data-theme="dark"] .test-card{background:#0e1730;border-color:#26335c}
+    html[data-theme="dark"] .result-header{background:#0e1730}
+    html[data-theme="dark"] .locked-badge{background:#1a2650;color:#8db6ff}
+    html[data-theme="dark"] .theme-toggle{background:#131c38;border-color:#2f4272;color:#ffd27a}
+    html[data-theme="dark"] .is-loading{background:linear-gradient(90deg,#1a2650 25%,#243268 50%,#1a2650 75%);background-size:200% 100%}
+    html[data-theme="dark"] .dashboard-stat-card:hover,html[data-theme="dark"] .test-card:hover{box-shadow:0 22px 45px rgba(0,0,0,.5)}
+    html[data-theme="dark"] .dashboard-welcome{background:radial-gradient(circle at 85% 15%,rgba(0,71,160,.5),transparent 55%),
+        radial-gradient(circle at 5% 100%,rgba(205,46,58,.22),transparent 50%),linear-gradient(150deg,#060b1c,#0e1838)}
+
+    @media (prefers-reduced-motion:reduce){
+      .dashboard-page *,.dashboard-page *::before,.dashboard-page *::after{
+        animation-duration:.001ms !important;animation-iteration-count:1 !important;
+        animation-delay:0s !important;transition-duration:.001ms !important}
+      .welcome-art .petal{display:none}
+    }
+    @media (max-width:700px){.dashboard-welcome{padding:28px 22px}}
+  </style>
 </head>
 
 
 <body class="dashboard-page">
+
+  <div id="dash-progress" aria-hidden="true"></div>
 
 
   <!-- =====================================================
@@ -43,6 +191,11 @@
     <!-- User -->
     <div class="user-menu">
 
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" aria-pressed="false" title="Toggle dark mode">
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+      </button>
+
       <div
         class="user-avatar"
         id="navUserAvatar"
@@ -59,14 +212,15 @@
 
       </div>
 
+
       <button
         type="button"
-        class="profile-nav-btn edit-profile-header-btn"
-        onclick="editProfile()"
+        class="logout-btn"
+        id="editProfileBtn"
+        onclick="window.location.href='profile.html'"
       >
         Edit Profile
       </button>
-
 
       <button
         type="button"
@@ -98,8 +252,15 @@
 
     <section class="dashboard-welcome">
 
+      <div class="welcome-art" id="dashPetals" aria-hidden="true">
+        <i style="right:6%;top:6%;font-size:110px">한</i>
+        <i style="right:22%;bottom:-4%;font-size:80px;animation-delay:-3s">ㄱ</i>
+        <i style="left:44%;top:8%;font-size:60px;animation-delay:-5s">ㅏ</i>
+      </div>
+
       <div>
 
+        <span class="kr-hello" aria-hidden="true">안녕하세요!</span>
         <span class="dashboard-eyebrow">
           STUDENT DASHBOARD
         </span>
@@ -291,6 +452,46 @@
            =================================================== -->
 
       <aside class="dashboard-sidebar">
+
+
+        <!-- ================= PROFILE ================= -->
+
+        <!-- Hidden (not deleted) so script.js can still find its profile elements -->
+        <div class="profile-card" style="display:none" hidden>
+
+          <div class="profile-top">
+
+            <div
+              class="large-avatar"
+              id="profileAvatar"
+            >
+              --
+            </div>
+
+
+            <div>
+
+              <span class="small-heading">
+                STUDENT PROFILE
+              </span>
+
+              <h3 id="sidebarUserName">
+              
+              </h3>
+
+              <p id="sidebarStudentId">
+              
+              </p>
+
+            </div>
+
+          </div>
+
+
+        </div>
+
+
+
         <!-- =================================================
              PROGRESS CARD
              ================================================= -->
@@ -613,6 +814,10 @@
 
 
       
+    </section>
+
+  </main>
+
   <!-- =====================================================
        FOOTER
        ===================================================== -->
@@ -647,6 +852,141 @@
   <!-- =====================================================
        JAVASCRIPT
        ===================================================== -->
+
+
+  <!-- VISUAL-ONLY SCRIPT: watches the elements script.js fills; changes no data, calls no API -->
+  <script>
+  (function () {
+    "use strict";
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var $ = function (id) { return document.getElementById(id); };
+    function ease(t) { return 1 - Math.pow(1 - t, 3); }
+
+    /* scroll progress + navbar */
+    var bar = $("dash-progress"), nav = document.querySelector(".dashboard-navbar");
+    function onScroll() {
+      var y = window.scrollY || 0, tot = document.documentElement.scrollHeight - innerHeight;
+      bar.style.width = (tot > 0 ? Math.min(100, y / tot * 100) : 0) + "%";
+      if (nav) nav.classList.toggle("dash-scrolled", y > 10);
+    }
+    addEventListener("scroll", onScroll, { passive: true }); onScroll();
+
+    /* petals in the welcome banner */
+    var art = $("dashPetals");
+    if (art && !reduced) {
+      for (var i = 0; i < 10; i++) {
+        var p = document.createElement("span"); p.className = "petal";
+        p.style.left = Math.random() * 100 + "%";
+        p.style.setProperty("--dx", (Math.random() * 120 - 60) + "px");
+        p.style.animationDuration = (8 + Math.random() * 7) + "s";
+        p.style.animationDelay = (-Math.random() * 12) + "s";
+        art.appendChild(p);
+      }
+    }
+
+    /* stat numbers: shimmer while "--", then count up when script.js writes the value */
+    ["testsCompleted", "averageScore", "bestScore", "testsAvailable"].forEach(function (id) {
+      var el = $(id); if (!el) return;
+      var raf = 0;
+      function sync() {
+        var t = el.textContent.trim();
+        el.classList.toggle("is-loading", t === "--" || t === "");
+        if (t === el._last || t === "--" || t === "") return;
+        var m = t.match(/^(-?\d+(?:\.\d+)?)(.*)$/);
+        if (!m || reduced) { el._last = t; return; }
+        var end = parseFloat(m[1]), dec = (m[1].split(".")[1] || "").length, suf = m[2], t0 = performance.now();
+        cancelAnimationFrame(raf);
+        (function step(now) {
+          var k = Math.min(1, (now - t0) / 1100), txt = (end * ease(k)).toFixed(dec) + suf;
+          if (k === 1) txt = t;
+          el._last = txt; el.textContent = txt;
+          if (k < 1) raf = requestAnimationFrame(step);
+        })(t0);
+      }
+      new MutationObserver(sync).observe(el, { childList: true, characterData: true, subtree: true });
+      sync();
+    });
+
+    /* progress ring: script.js writes only the % text, so fill the ring from it */
+    var pct = $("progressPercentage"), ring = document.querySelector(".progress-circle"), ringRaf = 0, ringNow = 0;
+    function paint(deg) { ring.style.background = "conic-gradient(#2563eb 0deg,#7c3aed " + deg * .8 + "deg,var(--track) " + deg + "deg 360deg)"; }
+    function syncRing() {
+      var v = parseFloat(pct.textContent); if (isNaN(v)) return;
+      var to = Math.max(0, Math.min(100, v)) * 3.6, from = ringNow, t0 = performance.now();
+      cancelAnimationFrame(ringRaf);
+      if (reduced) { ringNow = to; paint(to); return; }
+      (function step(now) {
+        var k = Math.min(1, (now - t0) / 1300);
+        ringNow = from + (to - from) * ease(k); paint(ringNow);
+        if (k < 1) ringRaf = requestAnimationFrame(step);
+      })(t0);
+    }
+    if (pct && ring) { new MutationObserver(syncRing).observe(pct, { childList: true, characterData: true, subtree: true }); syncRing(); }
+
+    /* stagger test cards and result rows as script.js adds them */
+    function stagger(id, sel) {
+      var box = $(id); if (!box) return;
+      new MutationObserver(function () {
+        var n = 0;
+        box.querySelectorAll(sel).forEach(function (el) {
+          if (el.dataset.seen) return; el.dataset.seen = 1;
+          el.classList.add("dash-in"); el.style.animationDelay = (n++ * 70) + "ms";
+        });
+      }).observe(box, { childList: true });
+    }
+    stagger("availableTestsList", ".test-card");
+    stagger("recentResultsBody", ".result-row");
+
+    /* score chart: built from the rows script.js renders, so it shows real results only */
+    var chartBox = document.querySelector(".mini-chart"), svg = chartBox && chartBox.querySelector("svg");
+    var growth = $("chartGrowth"), labels = document.querySelector(".chart-labels"), body = $("recentResultsBody"), pend = 0;
+    if (chartBox) chartBox.classList.add("chart-pending");
+    function buildChart() {
+      pend = 0; if (!svg || !body) return;
+      var pts = [];
+      body.querySelectorAll(".result-row").forEach(function (r) {
+        var s = r.querySelector("strong"), sp = r.querySelectorAll("span");
+        var v = s ? parseFloat(s.textContent) : NaN;
+        if (!isNaN(v)) pts.push({ v: v, d: sp[1] ? Date.parse(sp[1].textContent.trim()) : NaN });
+      });
+      if (!pts.length) { chartBox.classList.add("chart-pending"); chartBox.classList.toggle("chart-empty", body.textContent.indexOf("No tests") > -1); if (growth) growth.textContent = "-"; return; }
+      var dated = pts.every(function (p) { return !isNaN(p.d); });
+      if (dated) pts.sort(function (a, b) { return a.d - b.d; }); else pts.reverse(); /* assume newest first */
+      pts = pts.slice(-5);
+      var n = pts.length, xy = pts.map(function (p, i) {
+        return [n === 1 ? 150 : 20 + i * (260 / (n - 1)), 100 - Math.max(0, Math.min(100, p.v)) * .8];
+      });
+      var line = svg.querySelector(".chart-line"), area = svg.querySelector(".chart-area"), dots = svg.querySelectorAll(".chart-dot");
+      line.setAttribute("pathLength", "1");
+      line.setAttribute("points", xy.map(function (q) { return q.join(","); }).join(" "));
+      area.setAttribute("d", "M" + xy.map(function (q) { return q.join(" "); }).join(" L") + " L" + xy[n - 1][0] + " 100 L" + xy[0][0] + " 100 Z");
+      dots.forEach(function (d, i) {
+        if (i < n) { d.setAttribute("cx", xy[i][0]); d.setAttribute("cy", xy[i][1]); d.style.display = ""; d.style.animationDelay = (.5 + i * .12) + "s"; }
+        else d.style.display = "none";
+      });
+      if (labels) labels.innerHTML = pts.map(function (_, i) { return "<span>T" + (i + 1) + "</span>"; }).join("");
+      if (growth) { var df = pts[n - 1].v - pts[0].v; growth.textContent = n < 2 ? "-" : (df >= 0 ? "\u2191 " : "\u2193 ") + Math.abs(df).toFixed(0) + "%"; }
+      chartBox.classList.remove("chart-pending", "chart-empty");
+      line.style.animation = "none"; void line.getBoundingClientRect(); line.style.animation = "";
+    }
+    if (body) new MutationObserver(function () { if (!pend) pend = requestAnimationFrame(buildChart); }).observe(body, { childList: true });
+
+    /* dark mode toggle (same key as the home page) */
+    var root = document.documentElement, tb = $("themeToggle");
+    function syncBtn() {
+      var d = root.getAttribute("data-theme") === "dark";
+      if (tb) { tb.setAttribute("aria-pressed", d); tb.setAttribute("aria-label", d ? "Switch to light mode" : "Switch to dark mode"); }
+    }
+    syncBtn();
+    if (tb) tb.addEventListener("click", function () {
+      var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      if (!reduced) { root.classList.add("theme-anim"); setTimeout(function () { root.classList.remove("theme-anim"); }, 500); }
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("eps_theme", next); } catch (e) {}
+      syncBtn();
+    });
+  })();
+  </script>
 
   <script src="script.js"></script>
 

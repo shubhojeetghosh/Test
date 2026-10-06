@@ -88,9 +88,11 @@ def create_signed_upload(filename: str) -> tuple[str, str]:
         )
         response.raise_for_status()
         data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError("Supabase returned an unexpected response format")
         upload_url = data.get("signedURL") or data.get("signedUrl") or data.get("url")
         token = data.get("token")
-        if not upload_url or not token:
+        if not isinstance(upload_url, str) or not upload_url or not isinstance(token, str) or not token:
             raise ValueError("Supabase did not return a signed URL and upload token")
         if not upload_url.startswith("http://") and not upload_url.startswith("https://"):
             upload_url = f"{base_url}/storage/v1/{upload_url.lstrip('/')}"
@@ -98,8 +100,39 @@ def create_signed_upload(filename: str) -> tuple[str, str]:
         query = dict(parse_qsl(parts.query, keep_blank_values=True))
         query.setdefault("token", token)
         upload_url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
-    except (httpx.HTTPError, ValueError) as exc:
-        raise RuntimeError("Could not create a Supabase upload link.") from exc
+    except httpx.HTTPStatusError as exc:
+        response = exc.response
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {}
+
+        detail = ""
+        if isinstance(payload, dict):
+            detail = str(
+                payload.get("message")
+                or payload.get("error_description")
+                or payload.get("error")
+                or ""
+            )
+        if not detail:
+            detail = "Supabase rejected the request."
+        # Surface the provider's actionable error without exposing request
+        # headers, API keys, signed URLs, or response tokens.
+        detail = " ".join(detail.split())[:240]
+        raise RuntimeError(
+            f"Supabase rejected the upload-link request (HTTP {response.status_code}): {detail}"
+        ) from exc
+    except httpx.RequestError as exc:
+        raise RuntimeError(
+            "Could not reach Supabase Storage to create an upload link. "
+            "Check the backend network and Supabase project URL."
+        ) from exc
+    except ValueError as exc:
+        raise RuntimeError(
+            "Supabase returned an invalid upload-link response. Check the Storage "
+            "configuration and that the backend key belongs to this Supabase project."
+        ) from exc
     return upload_url, f"{STORAGE_PREFIX}{key}"
 
 
