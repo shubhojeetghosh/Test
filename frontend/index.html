@@ -308,8 +308,8 @@
       </div>
     </a>
     <nav>
-      <a href="student/set.html">Tests</a>
-      <a href="student/subscription.html">Subscription</a>
+      <a href="student/login.html?next=..%2Fstudent%2Fset.html" data-student-gate="test">Tests</a>
+      <a href="student/login.html?next=..%2Fstudent%2Fsubscription.html" data-student-gate="subscription">Subscription</a>
       <a href="#about">About</a>
     </nav>
     <div class="nav-login-group">
@@ -348,7 +348,9 @@
           track your progress, and build confidence before the exam.
         </p>
         <div class="hero-actions">
-          <a class="primary-btn landing-ripple-btn" href="#start-test">Start Free Test <span>→</span></a>
+          <a class="primary-btn landing-ripple-btn"
+             href="student/login.html?next=..%2Fstudent%2Fset.html"
+             data-student-gate="test">Start Practicing <span>→</span></a>
           <a class="secondary-btn landing-ripple-btn" href="#about">Learn More <span>→</span></a>
         </div>
         <div class="stats">
@@ -521,6 +523,22 @@
       </a>
     </nav>
   </footer>
+
+  <div class="login-modal" id="loginRequiredModal" role="dialog" aria-modal="true"
+       aria-labelledby="loginRequiredTitle" aria-describedby="loginRequiredMessage"
+       style="display:none">
+    <div class="login-modal-box" tabindex="-1">
+      <button type="button" class="login-modal-close" id="closeLoginModal" aria-label="Close">×</button>
+      <div class="login-modal-icon" aria-hidden="true">🔒</div>
+      <h3 id="loginRequiredTitle">Student account required</h3>
+      <p id="loginRequiredMessage">Log in or register as a student to access tests and subscription options.</p>
+      <div class="login-modal-actions">
+        <button type="button" class="login-modal-cancel" id="cancelLoginModal">Not now</button>
+        <a class="login-modal-login" id="loginRequiredLink"
+           href="student/login.html?next=..%2Fstudent%2Fset.html">Log in / Register</a>
+      </div>
+    </div>
+  </div>
 
 
   <!-- VISUAL-ONLY SCRIPT: does not touch application logic -->
