@@ -1784,8 +1784,8 @@ button {
   display: grid;
 
   grid-template-columns:
-    minmax(0, 1.55fr)
-    minmax(300px, .75fr);
+    minmax(0, 1.4fr)
+    minmax(340px, 1fr);
 
   gap: 20px;
 
@@ -5656,4 +5656,3 @@ button {
 .login-modal-login:hover {
   background: var(--blue-hover);
 }
-
