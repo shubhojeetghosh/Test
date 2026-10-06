@@ -46,7 +46,7 @@ from app.routes.student_dashboard import router as student_dashboard_router
 # APPLICATION FACTORY
 # ─────────────────────────────────────────
 
-def create_app() -> FastAPI:
+def create_app():
     app = FastAPI(
         title="EPS-TOPIK Exam Platform API",
         description=(
@@ -54,31 +54,6 @@ def create_app() -> FastAPI:
             "for the EPS-TOPIK exam platform."
         ),
         version="1.0.0",
-    )
-
-    # ── CORS ──────────────────────────────
-    configured_origins = os.getenv("CORS_ORIGINS", "")
-    allowed_origins = [
-        origin.strip().rstrip("/")
-        for origin in configured_origins.split(",")
-        if origin.strip()
-    ]
-    # Keep the deployed frontend working even if CORS_ORIGINS was not added
-    # to the existing Vercel backend project's environment variables.
-    production_frontend_origin = "https://test-frontend-eta-ecru.vercel.app"
-    allowed_origins.append(production_frontend_origin)
-    if not configured_origins.strip():
-        allowed_origins.extend(
-            ["http://127.0.0.1:5500", "http://localhost:5500"]
-        )
-    allowed_origins = list(dict.fromkeys(allowed_origins))
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["X-Total-Count"],
     )
 
     # ── PostgreSQL repositories ───────────
@@ -115,7 +90,29 @@ def create_app() -> FastAPI:
     app.include_router(student_exams_router)
     app.include_router(student_dashboard_router)
 
-    return app
+    # Wrap the whole FastAPI app, including its server-error handler. If CORS
+    # is installed with add_middleware(), uncaught 500 responses are generated
+    # outside it and browsers report a misleading CORS error instead of the
+    # real API status.
+    configured_origins = os.getenv("CORS_ORIGINS", "")
+    allowed_origins = [
+        origin.strip().rstrip("/")
+        for origin in configured_origins.split(",")
+        if origin.strip()
+    ]
+    allowed_origins.append("https://test-frontend-eta-ecru.vercel.app")
+    if not configured_origins.strip():
+        allowed_origins.extend(
+            ["http://127.0.0.1:5500", "http://localhost:5500"]
+        )
+    return CORSMiddleware(
+        app=app,
+        allow_origins=list(dict.fromkeys(allowed_origins)),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-Total-Count"],
+    )
 
 # ─────────────────────────────────────────
 # APP INSTANCE
