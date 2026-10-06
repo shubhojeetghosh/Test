@@ -532,6 +532,12 @@ class PostgresAttemptRepository:
                         return current
                     existing.status = "AUTO_SUBMITTED"
                     existing.submitted_at = existing.submitted_at or datetime.now(timezone.utc)
+                    # Do not create another attempt on the same start request.
+                    # The route will consume any paid entitlement and report
+                    # that this set has already been completed.
+                    current.status = AttemptStatus.EXPIRED
+                    db.commit()
+                    return current
                 elif current.status == AttemptStatus.SUBMITTED:
                     db.commit()
                     return current

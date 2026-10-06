@@ -319,8 +319,11 @@
       cursor: pointer;
 
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 5px;
+      padding: 23px 12px 10px;
 
       box-shadow:
         0 4px 10px rgba(0, 0, 0, 0.10);
@@ -547,6 +550,41 @@
       background: #10254a;
       color: #ffffff;
       border-color: #10254a;
+    }
+
+    .set-btn.completed {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .set-btn.completed .set-status {
+      background: #475569;
+      border-color: #475569;
+      color: #ffffff;
+    }
+
+    .set-btn.completed.selected .set-status {
+      background: #10254a;
+      border-color: #10254a;
+    }
+
+    .set-title { line-height: 1.2; }
+
+    .set-used-note {
+      max-width: 100%;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .set-btn:disabled {
+      cursor: not-allowed;
+      opacity: .72;
+      transform: none;
+      box-shadow: none;
     }
 
     .set-selected-mark {
@@ -917,12 +955,14 @@
 
 // Sets unlocked by the admin for the logged-in student
 let unlockedSetIds = new Set();
+let usedSetIds = new Set();
 
 async function loadStudentAccess() {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
         unlockedSetIds = new Set();
+        usedSetIds = new Set();
         return;
     }
 
@@ -940,6 +980,7 @@ async function loadStudentAccess() {
             );
 
             unlockedSetIds = new Set();
+            usedSetIds = new Set();
             return;
         }
 
@@ -947,6 +988,9 @@ async function loadStudentAccess() {
 
         unlockedSetIds = new Set(
             (data.unlocked_set_ids || []).map(Number)
+        );
+        usedSetIds = new Set(
+            (data.used_set_ids || []).map(Number)
         );
 
         console.log(
@@ -961,6 +1005,7 @@ async function loadStudentAccess() {
         );
 
         unlockedSetIds = new Set();
+        usedSetIds = new Set();
     }
 }
 
@@ -1420,6 +1465,7 @@ const setName =
   `Set ${String(setNumber).padStart(2, "0")}`;
 
   const isFree = setNumber === 1;
+const isAlreadyUsed = usedSetIds.has(Number(setId));
 
 // Admin-unlocked paid set
 const isUnlocked =
@@ -1433,14 +1479,16 @@ const isSelected =
 
     button.type = "button";
 
-    button.className =
-    isFree
-        ? "set-btn free"
-        : isUnlocked
-            ? "set-btn paid-set unlocked"
-            : isSelected
-                ? "set-btn paid-set selected"
-                : "set-btn paid-set";
+    button.className = isAlreadyUsed
+        ? `${isFree ? "set-btn free" : "set-btn paid-set"} completed${isSelected ? " selected" : ""}`
+        : isFree
+            ? "set-btn free"
+            : isUnlocked
+                ? "set-btn paid-set unlocked"
+                : isSelected
+                    ? "set-btn paid-set selected"
+                    : "set-btn paid-set";
+    button.disabled = isAlreadyUsed && isFree;
 
     button.innerHTML = `
       ${
@@ -1450,7 +1498,9 @@ const isSelected =
       }
 
       <span class="set-status">
-        ${isFree
+        ${isAlreadyUsed
+    ? (isFree ? "COMPLETED" : isSelected ? "IN CART" : "BUY AGAIN")
+    : isFree
     ? "FREE"
     : isUnlocked
         ? "UNLOCKED"
@@ -1460,12 +1510,27 @@ const isSelected =
         }
       </span>
 
-      <span>
+      <span class="set-title">
         ${escapeSetHtml(setName)}
       </span>
+      ${isAlreadyUsed
+        ? `<small class="set-used-note">${isFree ? "Already completed" : "Completed · select to purchase again"}</small>`
+        : ""}
     `;
 
   button.addEventListener("click", () => {
+
+    if (isAlreadyUsed) {
+        if (!isFree) {
+            togglePaidSet(
+                currentCategory,
+                currentCategoryName,
+                setId,
+                set
+            );
+        }
+        return;
+    }
 
     // Free Set 1 OR admin-unlocked paid set
     if (isFree || isUnlocked) {

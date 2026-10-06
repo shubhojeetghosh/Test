@@ -13,7 +13,10 @@ from app.services.quiz_service import QuizEngine
 from app.services.timer import QuizTimer
 from app.services.scoring import QuizScorer
 from app.core.database import get_db
-from app.core.dependencies import ensure_exam_set_access
+from app.core.dependencies import (
+    consume_paid_exam_set_access,
+    ensure_exam_set_access,
+)
 from app.core.rate_limit import enforce_rate_limit
 from app.models.orm import ExamModel, ExamSessionModel, OptionModel, QuestionModel, StudentAnswerModel
 from app.models.orm import ResultModel
@@ -145,6 +148,14 @@ def start_attempt(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="You have already attempted this exam.",
+        )
+
+    if attempt.status == AttemptStatus.EXPIRED:
+        consume_paid_exam_set_access(db, current_user_id, set_id)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Your time for this test set has ended. Purchase access again to take it again.",
         )
 
     return StartAttemptResponse(
@@ -288,6 +299,7 @@ def submit_answers_batch(
     ):
         session.status = "AUTO_SUBMITTED"
         session.submitted_at = now.replace(tzinfo=None)
+        consume_paid_exam_set_access(db, session.user_id, session.set_id)
         db.commit()
         return {"saved": 0, "expired": True}
 
@@ -391,6 +403,7 @@ def submit_answer(
     if started_at and started_at.timestamp() + int(session.exam.duration_minutes) * 60 <= now.timestamp():
         session.status = "AUTO_SUBMITTED"
         session.submitted_at = now.replace(tzinfo=None)
+        consume_paid_exam_set_access(db, session.user_id, session.set_id)
         db.commit()
         raise HTTPException(status_code=400, detail="Attempt has expired.")
 
@@ -492,6 +505,7 @@ def get_attempt_status(
     if session.status == "IN_PROGRESS" and remaining == 0:
         session.status = "AUTO_SUBMITTED"
         session.submitted_at = now.replace(tzinfo=None)
+        consume_paid_exam_set_access(db, session.user_id, session.set_id)
         db.commit()
         status_value = AttemptStatus.EXPIRED.value
 
@@ -651,6 +665,7 @@ def submit_attempt(
         session.status = "SUBMITTED"
         response_status = AttemptStatus.SUBMITTED.value
     session.submitted_at = now.replace(tzinfo=None)
+    consume_paid_exam_set_access(db, session.user_id, session.set_id)
     db.commit()
 
     return SubmitAttemptResponse(

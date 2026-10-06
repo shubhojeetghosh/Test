@@ -83,6 +83,9 @@ html[data-theme="dark"] :is(.question-head small, .student-info span, .profile-r
 html[data-theme="dark"] :is(.overlay, .login-modal) { background-color: rgba(3, 8, 18, .76); }
 html[data-theme="dark"] :is(.exam, .set-page, .auth-body, .review-page, .payment-page) { background-color: #0b1220; }
 html[data-theme="dark"] .topbar { background-color: #101a2a; border-color: #2a3850; }
+html[data-theme="dark"] .set-btn:not(.completed) { background: #17253a; border-color: #35445d; color: #e5ebf7; }
+html[data-theme="dark"] .set-btn.completed { background: #101a2a; border-color: #35445d; color: #b7c3d8; }
+html[data-theme="dark"] .set-btn .set-used-note { color: #a8b4c9; }
 html[data-theme="dark"] .subscription-card { background: linear-gradient(155deg, #131e30, #18263b); border-color: #2a3850; color: #e5ebf7; }
 
 /* Admin dashboard panels and tables */

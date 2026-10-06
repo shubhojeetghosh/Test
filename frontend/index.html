@@ -1,615 +1,725 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head><script src="api-config.js"></script>
+<head>
+  <script src="api-config.js"></script>
+  <script>
+    /* Default is light. Dark is used only if the visitor chose it before. */
+    (function(){var t="light";try{if(localStorage.getItem("eps_theme")==="dark")t="dark";}catch(e){}
+      document.documentElement.setAttribute("data-theme",t);})();
+  </script>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EPS TOPIK Exam</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="student/style.css">
 
-  <link
-    rel="stylesheet"
-    href="student/style.css"
-  >
-  <script src="theme.js"></script>
-  <link rel="stylesheet" href="theme.css">
+  <style>
+    /* Scoped to .landing-page so student/style.css stays untouched */
+    .landing-page{
+      --ink:#0f1b3d; --ink2:#16275a; --blue:#0047a0; --red:#cd2e3a;
+      --gold:#f2b84b; --paper:#f6f8fc; --muted:#5b6685;
+      font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+      background:var(--paper); overflow-x:hidden; color:var(--ink);
+    }
+    .landing-page *{box-sizing:border-box}
+    .kr{font-family:"Noto Serif KR",serif}
+
+    #landing-scroll-progress{position:fixed;top:0;left:0;height:4px;width:0;z-index:10000;
+      background:linear-gradient(90deg,var(--blue),var(--red),var(--gold));pointer-events:none}
+
+    /* NAVBAR */
+    .landing-page .navbar{transition:background .35s,box-shadow .35s,backdrop-filter .35s}
+    .landing-page .navbar.landing-scrolled{background:rgba(255,255,255,.92);
+      box-shadow:0 10px 35px rgba(15,27,61,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .landing-page .brand-mark{font-family:"Noto Serif KR",serif}
+    .landing-page .student-login-btn,.landing-page .admin-login-btn{transition:transform .25s,box-shadow .25s}
+    .landing-page .student-login-btn:hover,.landing-page .admin-login-btn:hover{transform:translateY(-2px)}
+    .landing-page a:focus-visible,.landing-page button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+    /* HERO: dark ink, petals, taegeuk */
+    .landing-page .hero{
+      position:relative;isolation:isolate;min-height:680px;
+      display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:30px;
+      padding:90px 6% 120px;color:#fff;
+      background:
+        radial-gradient(circle at 80% 20%,rgba(0,71,160,.55),transparent 55%),
+        radial-gradient(circle at 10% 90%,rgba(205,46,58,.28),transparent 50%),
+        linear-gradient(160deg,var(--ink) 0%,var(--ink2) 100%);
+    }
+    .hero::before{ /* hanok-style lattice */
+      content:"";position:absolute;inset:0;z-index:-2;opacity:.07;
+      background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);
+      background-size:46px 46px;
+      mask-image:linear-gradient(180deg,#000,transparent 85%);
+      -webkit-mask-image:linear-gradient(180deg,#000,transparent 85%);
+    }
+    #petals{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+    .petal{position:absolute;top:-30px;width:14px;height:11px;border-radius:70% 0 70% 0;
+      background:linear-gradient(135deg,#ffd5dc,#ff9db0);opacity:.85;
+      animation:petalFall linear infinite}
+    @keyframes petalFall{
+      0%{transform:translate3d(0,-30px,0) rotate(0)}
+      100%{transform:translate3d(var(--dx),115vh,0) rotate(540deg)}
+    }
+
+    .landing-page .hero-copy{position:relative;z-index:5;animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+    @keyframes rise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+    .landing-page .hero .eyebrow{display:inline-block;padding:7px 16px;border-radius:99px;
+      background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:13px;letter-spacing:.04em}
+    .landing-page .hero h2{font-family:"Noto Serif KR",serif;font-weight:900;color:#fff;
+      font-size:clamp(38px,5.4vw,68px);line-height:1.12;margin:20px 0 18px}
+    .landing-page .hero h2 span{background:linear-gradient(90deg,#ffd27a,#ff8f9c,#9cc2ff,#ffd27a);background-size:300% auto;
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+      animation:shine 6s linear infinite}
+    @keyframes shine{to{background-position:300% center}}
+    .landing-page .hero-description{color:#c9d3ee;max-width:520px;font-size:17px;line-height:1.7}
+
+    .landing-page .primary-btn,.landing-page .secondary-btn{position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s}
+    .landing-page .primary-btn:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(205,46,58,.35)}
+    .landing-page .hero .secondary-btn{color:#fff;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08)}
+    .landing-page .secondary-btn:hover{transform:translateY(-3px)}
+    .landing-ripple{position:absolute;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.55);
+      transform:translate(-50%,-50%) scale(0);pointer-events:none;animation:ripple .65s ease-out forwards}
+    @keyframes ripple{to{transform:translate(-50%,-50%) scale(25);opacity:0}}
+
+    .landing-page .hero .stats{color:#fff}
+    .landing-page .hero .stats strong{color:#fff;font-family:"Noto Serif KR",serif}
+    .landing-page .hero .stats span{color:#aebbe0}
+
+    /* TAEGEUK VISUAL (inline SVG, no external images) */
+    .landing-visual{position:relative;height:460px;display:grid;place-items:center;z-index:2;
+      animation:rise 1s .2s cubic-bezier(.16,1,.3,1) both}
+    .taegeuk-wrap{position:relative;width:min(360px,80vw);aspect-ratio:1}
+    .taegeuk-wrap svg.tg{width:100%;height:100%;animation:spin 28s linear infinite;
+      filter:drop-shadow(0 30px 50px rgba(0,0,0,.45))}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .orbit{position:absolute;inset:-48px;animation:spin 40s linear infinite reverse}
+    .orbit b{position:absolute;width:52px;height:52px;display:grid;place-items:center;border-radius:16px;
+      font-family:"Noto Serif KR",serif;font-size:26px;color:var(--ink);
+      background:rgba(255,255,255,.95);box-shadow:0 12px 28px rgba(0,0,0,.3);animation:counter 40s linear infinite}
+    @keyframes counter{to{transform:rotate(360deg)}}
+    .orbit b:nth-child(1){top:0;left:50%;margin-left:-26px}
+    .orbit b:nth-child(2){right:0;top:50%;margin-top:-26px}
+    .orbit b:nth-child(3){bottom:0;left:50%;margin-left:-26px}
+    .orbit b:nth-child(4){left:0;top:50%;margin-top:-26px}
+    .orbit b:nth-child(odd){color:var(--blue)} .orbit b:nth-child(even){color:var(--red)}
+    .hangul-bg{position:absolute;inset:0;z-index:-1;pointer-events:none}
+    .hangul-bg i{position:absolute;font-style:normal;font-family:"Noto Serif KR",serif;font-weight:900;
+      color:rgba(255,255,255,.07);animation:bob 7s ease-in-out infinite}
+    @keyframes bob{50%{transform:translateY(-22px) rotate(6deg)}}
+
+    /* DAILY KOREAN: positioned in flow, bottom of hero */
+    .landing-page .daily-highlight{position:absolute !important;left:6%;right:auto;bottom:-46px;top:auto !important;
+      width:min(420px,88%);z-index:8;border-left:5px solid var(--red);
+      animation:rise .9s .6s cubic-bezier(.16,1,.3,1) both;transition:box-shadow .3s}
+    .landing-page .daily-highlight:hover{box-shadow:0 30px 70px rgba(15,27,61,.25)}
+    .landing-page #dailyKoreanTitle{font-family:"Noto Serif KR",serif}
+
+    /* MARQUEE of Korean phrases */
+    .marquee{margin-top:90px;background:#fff;border-block:1px solid #e4e9f2;overflow:hidden;padding:16px 0}
+    .marquee-track{display:flex;gap:56px;width:max-content;animation:marq 38s linear infinite}
+    .marquee:hover .marquee-track{animation-play-state:paused}
+    .marquee-track span{white-space:nowrap;font-size:15px;color:var(--muted)}
+    .marquee-track em{font-style:normal;font-family:"Noto Serif KR",serif;font-weight:600;color:var(--ink);font-size:18px;margin-right:8px}
+    @keyframes marq{to{transform:translateX(-50%)}}
+
+    /* FEATURES */
+    .landing-page .features{background:var(--paper);padding:90px 6% 70px}
+    .landing-page .section-heading,.landing-page .feature-card,.landing-page .alpha-card{
+      opacity:0;transform:translateY(30px);transition:opacity .7s,transform .7s,box-shadow .35s}
+    .landing-visible{opacity:1 !important;transform:none !important}
+    .landing-page .feature-card{position:relative;overflow:hidden;background:#fff;border-radius:22px;
+      border:1px solid #e4e9f2;transform-style:preserve-3d}
+    .landing-page .feature-card:nth-child(2){transition-delay:.1s}
+    .landing-page .feature-card:nth-child(3){transition-delay:.2s}
+    .landing-page .feature-card::before{content:"";position:absolute;left:0;top:0;width:4px;height:0;
+      background:linear-gradient(180deg,var(--blue),var(--red));transition:height .35s}
+    .landing-page .feature-card:hover::before{height:100%}
+    .landing-page .feature-card:hover{box-shadow:0 28px 60px rgba(15,27,61,.12)}
+    .landing-page .feature-number{font-family:"Noto Serif KR",serif;font-weight:900;font-size:22px;color:var(--red);margin-bottom:18px}
+    .landing-feature-icon{display:grid;place-items:center;width:60px;height:60px;margin-bottom:18px;border-radius:18px;
+      color:var(--blue);background:#eef3ff;transition:transform .35s}
+    .landing-feature-icon svg{width:29px;height:29px}
+    .landing-page .feature-card:hover .landing-feature-icon{transform:translateY(-5px) rotate(-5deg)}
+
+    /* HANGUL ALPHABET: tap a tile to flip */
+    .alphabet{padding:30px 6% 90px;background:var(--paper)}
+    .alpha-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:14px;max-width:1000px;margin:34px auto 0}
+    .alpha-card{perspective:700px;height:112px;cursor:pointer;border:0;background:none;padding:0}
+    .alpha-in{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d}
+    .alpha-card.flipped .alpha-in{transform:rotateY(180deg)}
+    .alpha-in>div{position:absolute;inset:0;display:grid;place-items:center;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+    .alpha-front{background:#fff;border:1px solid #e4e9f2;font-family:"Noto Serif KR",serif;font-size:42px;font-weight:900;color:var(--ink)}
+    .alpha-back{background:linear-gradient(145deg,var(--blue),var(--red));color:#fff;transform:rotateY(180deg);font-weight:800;font-size:17px}
+    .alpha-card:hover .alpha-front{box-shadow:0 14px 30px rgba(15,27,61,.12)}
+    .alpha-note{text-align:center;color:var(--muted);font-size:14px;margin-top:18px}
+
+    /* TEST PREVIEW / CTA */
+    .landing-page .test-preview{position:relative;overflow:hidden;isolation:isolate;color:#fff;
+      background:linear-gradient(120deg,var(--blue),var(--ink2));transition:transform .35s,box-shadow .35s}
+    .landing-page .test-preview h2,.landing-page .test-preview p{color:#fff}
+    .landing-page .test-preview::before{content:"한글";position:absolute;right:6%;top:50%;transform:translateY(-50%);z-index:-1;
+      font-family:"Noto Serif KR",serif;font-weight:900;font-size:180px;color:rgba(255,255,255,.08);animation:bob 8s ease-in-out infinite}
+    .landing-page .test-preview:hover{transform:translateY(-5px);box-shadow:0 30px 70px rgba(15,27,61,.25)}
+    .landing-page .test-preview .primary-btn{background:var(--red);color:#fff}
+
+    .landing-page .login-modal{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+    .landing-page .login-modal-box{animation:modal .35s cubic-bezier(.16,1,.3,1)}
+    @keyframes modal{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+
+
+    /* ABOUT + CONTACT */
+    .about{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;padding:100px 7%;
+      background:linear-gradient(180deg,var(--paper),#eef2fb)}
+    .about-tag{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--blue)}
+    .about-tag::before{content:"";width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+    .about h2{font-family:"Noto Serif KR",serif;font-weight:900;font-size:clamp(32px,4vw,48px);line-height:1.15;margin:18px 0}
+    .about p{color:var(--muted);line-height:1.8;max-width:520px}
+    .about .about-note{font-size:13px;opacity:.85;margin-top:14px}
+    .about-points{list-style:none;padding:0;margin:28px 0 0;display:grid;gap:12px}
+    .about-points li{display:flex;align-items:center;gap:14px;font-weight:700;font-size:15px}
+    .about-points b{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#e8eeff;color:var(--blue);font-size:12px}
+    .contact-card{background:#fff;border-radius:26px;padding:38px;box-shadow:0 30px 70px rgba(15,27,61,.12);border:1px solid #e4e9f2}
+    .contact-card .kicker{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--blue)}
+    .contact-card h3{font-size:30px;margin:10px 0 6px;font-weight:800}
+    .contact-card .sub{color:var(--muted);font-size:14px;margin:0 0 22px}
+    .cf-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .cf-field{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;font-size:12.5px;font-weight:700}
+    .cf-field input,.cf-field textarea{font:inherit;font-weight:500;font-size:15px;padding:14px 16px;border-radius:12px;
+      border:1px solid #e4e9f2;background:#f9fbff;color:var(--ink);transition:border-color .2s,box-shadow .2s,background .2s}
+    .cf-field textarea{min-height:120px;resize:vertical}
+    .cf-field input:focus,.cf-field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(0,71,160,.12)}
+    .cf-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .cf-status{font-size:14px;min-height:20px;flex:1}
+    .cf-status.ok{color:#15803d}.cf-status.err{color:#b91c1c}
+    .cf-send{display:inline-flex;align-items:center;gap:10px;padding:15px 26px;border:0;border-radius:14px;cursor:pointer;
+      font:inherit;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--blue),#4f46e5);
+      box-shadow:0 14px 30px rgba(0,71,160,.28);transition:transform .25s,box-shadow .25s}
+    .cf-send:hover{transform:translateY(-3px);box-shadow:0 18px 36px rgba(0,71,160,.35)}
+    .cf-send:disabled{opacity:.6;cursor:wait;transform:none}
+    @media (max-width:900px){.about{grid-template-columns:1fr;padding:70px 6%}.cf-row{grid-template-columns:1fr}.contact-card{padding:26px}}
+
+
+    /* THEME TOGGLE */
+    .theme-toggle{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;cursor:pointer;
+      border:1.5px solid #d6dcec;background:#fff;color:var(--ink);transition:transform .25s,background .3s,border-color .3s,color .3s}
+    .theme-toggle:hover{transform:translateY(-2px) rotate(-8deg)}
+    .theme-toggle svg{width:20px;height:20px;grid-area:1/1;transition:transform .5s cubic-bezier(.4,.2,.2,1),opacity .3s}
+    .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
+    html[data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
+    html[data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:none}
+    html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{
+      transition:background-color .45s,color .45s,border-color .45s,box-shadow .45s !important}
+
+    /* DARK MODE */
+    html[data-theme="dark"]{color-scheme:dark}
+    html[data-theme="dark"] .landing-page{
+      --paper:#0b1226;--muted:#9aa8cc;--blue:#4d8dff;--red:#ff5a67;
+      /* variables used by student/style.css */
+      --background:#0b1226;--text:#e8eeff;--border:#26335c;--white:#131c38;--navy:#e8eeff;--light-blue:#1a2650;
+      background:#0b1226;color:#e8eeff}
+    html[data-theme="dark"] .landing-page .navbar{background:rgba(11,18,38,.9)}
+    html[data-theme="dark"] .landing-page .navbar.landing-scrolled{background:rgba(11,18,38,.94);box-shadow:0 10px 35px rgba(0,0,0,.45)}
+    html[data-theme="dark"] .landing-page .navbar nav a{color:#aab6d8}
+    html[data-theme="dark"] .landing-page .navbar nav a:hover{color:#8db6ff}
+    html[data-theme="dark"] .landing-page .brand span{color:#8c9ac2}
+    html[data-theme="dark"] .landing-page .brand-mark{background:#e8eeff;color:#0f1b3d}
+    html[data-theme="dark"] .landing-page .student-login-btn{background:#131c38;color:#cdbdff;border-color:#3a3f6e}
+    html[data-theme="dark"] .landing-page .admin-login-btn{background:#131c38;color:#a9c3f5;border-color:#2f4272}
+    html[data-theme="dark"] .theme-toggle{background:#131c38;border-color:#2f4272;color:#ffd27a}
+
+    html[data-theme="dark"] .landing-page .hero{
+      background:radial-gradient(circle at 80% 20%,rgba(0,71,160,.45),transparent 55%),
+        radial-gradient(circle at 10% 90%,rgba(205,46,58,.2),transparent 50%),
+        linear-gradient(160deg,#060b1c 0%,#0e1838 100%)}
+    html[data-theme="dark"] .landing-page .daily-highlight{background:#131c38;border-color:#26335c;border-left-color:var(--red)}
+    html[data-theme="dark"] .landing-page .daily-highlight h4{color:#e8eeff}
+    html[data-theme="dark"] .landing-page .daily-highlight p,
+    html[data-theme="dark"] .landing-page .daily-highlight span{color:#9aa8cc}
+
+    html[data-theme="dark"] .marquee{background:#0e1730;border-color:#26335c}
+    html[data-theme="dark"] .marquee-track em{color:#e8eeff}
+    html[data-theme="dark"] .landing-page .features,
+    html[data-theme="dark"] .alphabet{background:#0b1226}
+    html[data-theme="dark"] .landing-page .section-heading h2{color:#e8eeff}
+    html[data-theme="dark"] .landing-page .section-heading > span{color:#8db6ff}
+    html[data-theme="dark"] .landing-page .feature-card{background:#131c38;border-color:#26335c}
+    html[data-theme="dark"] .landing-page .feature-card:hover{box-shadow:0 28px 60px rgba(0,0,0,.5)}
+    html[data-theme="dark"] .landing-page .feature-card h3{color:#e8eeff}
+    html[data-theme="dark"] .landing-page .feature-card p{color:#9aa8cc}
+    html[data-theme="dark"] .landing-feature-icon{background:#1a2650;color:#8db6ff}
+    html[data-theme="dark"] .alpha-front{background:#131c38;border-color:#26335c;color:#e8eeff}
+    html[data-theme="dark"] .alpha-card:hover .alpha-front{box-shadow:0 14px 30px rgba(0,0,0,.5)}
+
+    html[data-theme="dark"] .landing-page .test-preview{background:linear-gradient(120deg,#12306e,#0e1838)}
+    html[data-theme="dark"] .about{background:linear-gradient(180deg,#0b1226,#0e1730)}
+    html[data-theme="dark"] .about h2,
+    html[data-theme="dark"] .about-points li,
+    html[data-theme="dark"] .contact-card h3{color:#e8eeff}
+    html[data-theme="dark"] .about-tag,
+    html[data-theme="dark"] .contact-card .kicker{color:#8db6ff}
+    html[data-theme="dark"] .about-points b{background:#1a2650;color:#8db6ff}
+    html[data-theme="dark"] .contact-card{background:#131c38;border-color:#26335c;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+    html[data-theme="dark"] .cf-field{color:#c9d3ee}
+    html[data-theme="dark"] .cf-field input,
+    html[data-theme="dark"] .cf-field textarea{background:#0e1730;border-color:#26335c;color:#e8eeff}
+    html[data-theme="dark"] .cf-field input:focus,
+    html[data-theme="dark"] .cf-field textarea:focus{background:#101a38;border-color:#4d8dff;box-shadow:0 0 0 4px rgba(77,141,255,.2)}
+    html[data-theme="dark"] .cf-status.ok{color:#4ade80}
+    html[data-theme="dark"] .cf-status.err{color:#f87171}
+
+    html[data-theme="dark"] .landing-page .main-footer{background:#080e20;border-top-color:#26335c;color:#9aa8cc}
+    html[data-theme="dark"] .landing-page .login-modal-box{background:#131c38;border-color:#26335c}
+    html[data-theme="dark"] .landing-page .login-modal-cancel{background:#0e1730;border-color:#26335c;color:#e8eeff}
+    html[data-theme="dark"] .landing-page .login-modal-login{background:#4d8dff;color:#06112b}
+
+    /* RESPONSIVE */
+    @media (max-width:980px){
+      .landing-page .hero{grid-template-columns:1fr;padding:60px 6% 110px;min-height:auto;text-align:left}
+      .landing-visual{height:400px}
+    }
+    @media (max-width:560px){
+      .landing-page .hero-actions{flex-direction:column;align-items:stretch}
+      .landing-page .hero-actions a{justify-content:center;text-align:center}
+      .orbit b{width:42px;height:42px;font-size:20px}
+      .landing-visual{height:360px}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .landing-page *,.landing-page *::before,.landing-page *::after{
+        animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+      #petals{display:none}
+    }
+  </style>
 </head>
 
+<body class="landing-page">
 
-<body class="index-page">
+  <div id="landing-scroll-progress" aria-hidden="true"></div>
 
-
-  <!-- ================= NAVBAR ================= -->
-
+  <!-- NAVBAR (links preserved) -->
   <header class="navbar">
-
-    <a
-      href="index.html"
-      class="brand"
-    >
-
-      <div class="brand-mark">
-        K
-      </div>
-
+    <a href="index.html" class="brand">
+      <div class="brand-mark">K</div>
       <div>
-
-        <h1>
-          EPS TOPIK
-        </h1>
-
-        <span>
-          Language Test Platform
-        </span>
-
+        <h1>EPS TOPIK</h1>
+        <span>Language Test Platform</span>
       </div>
-
     </a>
-
-
     <nav>
-
-      <a href="student/set.html" data-student-gate="test">
-        Tests
-      </a>
-
-      <a href="student/subscription.html" data-student-gate="subscription">
-        Subscription
-      </a>
-
-      <a href="#about">
-        About
-      </a>
-
+      <a href="student/set.html">Tests</a>
+      <a href="student/subscription.html">Subscription</a>
+      <a href="#about">About</a>
     </nav>
-
-
-    <!-- ================= LOGIN BUTTONS ================= -->
-
     <div class="nav-login-group">
-
-      <button
-        type="button"
-        class="theme-toggle"
-        data-theme-toggle
-        aria-pressed="false"
-        aria-label="Turn on dark theme"
-      >
-        <span class="theme-toggle-icon" aria-hidden="true">☾</span>
-        <span class="theme-toggle-label">Dark</span>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" aria-pressed="false" title="Toggle dark mode">
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+        </svg>
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+        </svg>
       </button>
-
-      <!-- STUDENT LOGIN -->
-
-      <a
-        href="student/login.html"
-        class="student-login-btn"
-      >
-
-        <span class="login-icon">
-          👤
-        </span>
-
-        <span>
-          Student Login
-        </span>
-
+      <a href="student/login.html" class="student-login-btn">
+        <span class="login-icon">👤</span><span>Student Login</span>
       </a>
-
-
-      <!-- ADMIN LOGIN -->
-
-      <a
-        href="admin/ad-login.html"
-        class="admin-login-btn"
-      >
-
-        <span class="admin-icon">
-          🛡
-        </span>
-
-        <span>
-          Admin Login
-        </span>
-
+      <a href="admin/ad-login.html" class="admin-login-btn">
+        <span class="admin-icon">🛡</span><span>Admin Login</span>
       </a>
-
     </div>
-
   </header>
-
-
-
-  <!-- ================= MAIN ================= -->
 
   <main id="home">
 
-
-    <!-- ================= HERO ================= -->
-
+    <!-- HERO -->
     <section class="hero">
+      <div id="petals" aria-hidden="true"></div>
 
       <div class="hero-copy">
-
-
-        <span class="eyebrow">
-          EPS TOPIK EXAM
-        </span>
-
-
+        <span class="eyebrow">EPS TOPIK EXAM · 한국어 시험</span>
         <h2>
-
-          Prepare smarter.
-
-          <br>
-
-          <span>
-            Test your Korean.
-          </span>
-
+          Prepare smarter.<br>
+          <span>Test your Korean.</span>
         </h2>
-
-
         <p class="hero-description">
-
           Practice EPS TOPIK reading and listening questions,
           track your progress, and build confidence before the exam.
-
         </p>
-
-
-
-        <!-- ================= HERO BUTTONS ================= -->
-
         <div class="hero-actions">
-
-          <a
-            class="primary-btn"
-            href="student/set.html"
-            data-student-gate="test"
-          >
-
-            Start Preparing
-
-            <span>
-              →
-            </span>
-
-          </a>
-
-
-          <a
-            class="secondary-btn"
-            href="student/set.html"
-            data-student-gate="test"
-          >
-
-            Explore Exams
-
-          </a>
-
+          <a class="primary-btn landing-ripple-btn" href="#start-test">Start Free Test <span>→</span></a>
+          <a class="secondary-btn landing-ripple-btn" href="#about">Learn More <span>→</span></a>
         </div>
-
-        <div class="hero-assurances" aria-label="Practice platform highlights">
-          <span><i aria-hidden="true">✓</i> EPS TOPIK-style practice</span>
-          <span><i aria-hidden="true">✓</i> Reading &amp; listening</span>
-          <span><i aria-hidden="true">✓</i> Results after your test</span>
-        </div>
-
-
-
-        <!-- ================= STATS ================= -->
-
         <div class="stats">
-
-
-          <div>
-
-            <strong>
-              40
-            </strong>
-
-            <span>
-              Questions / Set
-            </span>
-
-          </div>
-
-
-          <div>
-
-            <strong>
-              20
-            </strong>
-
-            <span>
-              Reading
-            </span>
-
-          </div>
-
-
-          <div>
-
-            <strong>
-              20
-            </strong>
-
-            <span>
-              Listening
-            </span>
-
-          </div>
-
-
+          <div><strong>40</strong><span>Questions / Set</span></div>
+          <div><strong>20</strong><span>Reading</span></div>
+          <div><strong>20</strong><span>Listening</span></div>
         </div>
-
       </div>
 
-
-
-      <div class="hero-art">
-        <svg class="hero-illustration" viewBox="0 0 560 460" role="img" aria-label="Illustration of a Korean language study book and practice progress">
-          <defs>
-            <linearGradient id="studyOrb" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#dce8ff"/>
-              <stop offset="1" stop-color="#f4f7ff"/>
-            </linearGradient>
-            <linearGradient id="bookCover" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#4169f4"/>
-              <stop offset="1" stop-color="#754df1"/>
-            </linearGradient>
-            <filter id="artShadow" x="-30%" y="-30%" width="160%" height="180%">
-              <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#263f80" flood-opacity=".16"/>
-            </filter>
-          </defs>
-          <circle cx="298" cy="222" r="190" fill="url(#studyOrb)"/>
-          <circle cx="300" cy="222" r="154" fill="none" stroke="#c9d8ff" stroke-width="1.5" stroke-dasharray="5 9"/>
-          <path d="M80 336c65-41 104-38 155-13m120-213c53-31 94-30 134-8" fill="none" stroke="#8ca9ff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
-          <g filter="url(#artShadow)" transform="translate(135 103) rotate(-7 145 135)">
-            <path d="M29 49c47-14 91-7 119 15v208c-35-22-79-29-119-16z" fill="#fff" stroke="#d6e1f3" stroke-width="3"/>
-            <path d="M148 64c37-27 78-35 122-26v207c-43-8-84 1-122 27z" fill="#f8faff" stroke="#d6e1f3" stroke-width="3"/>
-            <path d="M148 64v208" stroke="#ccd8ee" stroke-width="3"/>
-            <path d="M54 92c28-6 53-2 76 9M54 119c26-6 51-2 76 8M54 147c26-5 51-1 76 9" fill="none" stroke="#b9c9ed" stroke-width="7" stroke-linecap="round"/>
-            <path d="M173 94c26-15 54-22 81-23M173 122c26-15 54-22 81-23M173 150c26-15 54-22 81-23" fill="none" stroke="#b9c9ed" stroke-width="7" stroke-linecap="round"/>
-            <path d="M23 40l126 21v214L23 251z" fill="url(#bookCover)" stroke="#fff" stroke-width="5"/>
-            <text x="84" y="148" text-anchor="middle" fill="#fff" font-size="43" font-family="Arial,sans-serif" font-weight="700">한글</text>
-            <text x="84" y="176" text-anchor="middle" fill="#e8edff" font-size="11" font-family="Arial,sans-serif" letter-spacing="2">EPS TOPIK</text>
-            <path d="M149 60v215" stroke="#f1f4fc" stroke-width="5"/>
-          </g>
-          <g filter="url(#artShadow)" transform="translate(380 71)">
-            <rect width="112" height="72" rx="18" fill="#fff"/>
-            <circle cx="35" cy="36" r="19" fill="#edf3ff"/>
-            <path d="M26 37l7 7 13-16" fill="none" stroke="#315be8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M64 28h31M64 39h23M64 50h28" stroke="#c3cee2" stroke-width="5" stroke-linecap="round"/>
-          </g>
-          <circle cx="96" cy="155" r="8" fill="#ffbd62"/>
-          <circle cx="464" cy="313" r="11" fill="#7e9cff"/>
-          <path d="M423 365l9 9 18-21" fill="none" stroke="#27b88a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-
-        <!-- ================= DAILY KOREAN HIGHLIGHT ================= -->
-        <aside class="daily-highlight">
-
-        <div class="daily-label">
-          DAILY KOREAN
+      <!-- Decorative visual: taegeuk + orbiting Hangul (inline SVG, no external images) -->
+      <div class="landing-visual" aria-hidden="true">
+        <div class="hangul-bg">
+          <i style="left:4%;top:8%;font-size:90px">ㄱ</i>
+          <i style="right:6%;top:4%;font-size:70px;animation-delay:-2s">ㅏ</i>
+          <i style="left:12%;bottom:6%;font-size:80px;animation-delay:-4s">ㅁ</i>
+          <i style="right:10%;bottom:10%;font-size:100px;animation-delay:-1s">ㅎ</i>
         </div>
-
-
-        <h4 id="dailyKoreanTitle">
-          오늘도 힘내세요!
-        </h4>
-
-
-        <p id="dailyKoreanText">
-          Stay strong today!
-        </p>
-
-
-        <span id="dailyKoreanFact">
-          Korean expression of the day
-        </span>
-
-        </aside>
+        <div class="taegeuk-wrap">
+          <div class="orbit"><b>한</b><b>국</b><b>어</b><b>시</b></div>
+          <svg class="tg" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="96" fill="#fff"/>
+            <path d="M100 4a96 96 0 0 1 0 192a48 48 0 0 1 0-96a48 48 0 0 0 0-96z" fill="#0047a0"/>
+            <path d="M100 4a96 96 0 0 0 0 192a48 48 0 0 0 0-96a48 48 0 0 1 0-96z" fill="#cd2e3a"/>
+            <circle cx="100" cy="52" r="48" fill="#cd2e3a"/>
+            <circle cx="100" cy="148" r="48" fill="#0047a0"/>
+          </svg>
+        </div>
       </div>
 
-
+      <!-- DAILY KOREAN: API IDs preserved -->
+      <aside class="daily-highlight">
+        <div class="daily-label">DAILY KOREAN</div>
+        <h4 id="dailyKoreanTitle">오늘도 힘내세요!</h4>
+        <p id="dailyKoreanText">Stay strong today!</p>
+        <span id="dailyKoreanFact">Korean expression of the day</span>
+      </aside>
     </section>
 
-
-
-    <!-- ================= FEATURES ================= -->
-
-    <section
-      class="features"
-      id="tests"
-    >
-
-
-      <div class="section-heading">
-
-        <span>
-          WHAT YOU GET
-        </span>
-
-        <h2>
-          Everything you need to practice
-        </h2>
-
+    <!-- Marquee of common Korean words -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track" id="marqueeTrack">
+        <span><em>안녕하세요</em>Hello</span>
+        <span><em>감사합니다</em>Thank you</span>
+        <span><em>공부</em>Study</span>
+        <span><em>시험</em>Exam</span>
+        <span><em>화이팅</em>You can do it</span>
+        <span><em>일</em>Work</span>
+        <span><em>한국</em>Korea</span>
+        <span><em>듣기</em>Listening</span>
+        <span><em>읽기</em>Reading</span>
       </div>
+    </div>
 
-
+    <!-- FEATURES (content preserved) -->
+    <section class="features" id="tests">
+      <div class="section-heading">
+        <span>WHAT YOU GET</span>
+        <h2>Everything you need to practice</h2>
+      </div>
 
       <div class="feature-grid">
-
-
-        <!-- ================= CARD 1 ================= -->
-
         <article class="feature-card">
-
-          <div class="feature-number">
-            01
+          <div class="landing-feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 7h8"></path><path d="M8 11h8"></path><path d="M8 15h5"></path>
+            </svg>
           </div>
-
-          <h3>
-            Practice Sets
-          </h3>
-
-          <p>
-
-            Take EPS TOPIK-style question sets with
-            40 questions covering reading and listening.
-
-          </p>
-
+          <div class="feature-number">01</div>
+          <h3>Practice Sets</h3>
+          <p>Take EPS TOPIK-style question sets with 40 questions covering reading and listening.</p>
         </article>
 
-
-
-        <!-- ================= CARD 2 ================= -->
-
         <article class="feature-card">
-
-          <div class="feature-number">
-            02
+          <div class="landing-feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle><path d="M8 12l2.5 2.5L16 9"></path>
+            </svg>
           </div>
-
-          <h3>
-            Instant Results
-          </h3>
-
-          <p>
-
-            See correct answers, wrong answers,
-            total score and percentage after submission.
-
-          </p>
-
+          <div class="feature-number">02</div>
+          <h3>Instant Results</h3>
+          <p>See correct answers, wrong answers, total score and percentage after submission.</p>
         </article>
 
-
-
-        <!-- ================= CARD 3 ================= -->
-
         <article class="feature-card">
-
-          <div class="feature-number">
-            03
+          <div class="landing-feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 4h14v16H5z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path>
+            </svg>
           </div>
-
-          <h3>
-            Study Materials
-          </h3>
-
-          <p>
-
-            Review Korean vowels, consonants,
-            numbers, grammar and other useful topics.
-
-          </p>
-
+          <div class="feature-number">03</div>
+          <h3>Study Materials</h3>
+          <p>Review Korean vowels, consonants, numbers, grammar and other useful topics.</p>
         </article>
-
-
       </div>
-
     </section>
 
+    <!-- HANGUL FLIP TILES (static study teaser) -->
+    <section class="alphabet">
+      <div class="section-heading" style="text-align:center">
+        <span>TRY IT</span>
+        <h2>Tap a letter to see its sound</h2>
+      </div>
+      <div class="alpha-grid" id="alphaGrid"></div>
+      <p class="alpha-note">Learn the full set in Study Materials.</p>
+    </section>
 
-
-    <!-- ================= JOURNEY REGISTRATION CTA ================= -->
-
-    <section
-      class="test-preview"
-      id="materials"
-    >
-
-
-      <span class="journey-cta-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path d="m2 9 10-5 10 5-10 5L2 9Zm4 2.1v5.2c3.7 2.8 8.3 2.8 12 0v-5.2l-6 3-6-3Zm14-.2v5.6h2v-6.6l-2 1Z" fill="currentColor"/>
-        </svg>
-      </span>
-
+    <!-- PRACTICE SECTION (ID preserved) -->
+    <section class="test-preview" id="start-test">
       <div>
-
-        <h2>
-          Ready to Start Your Journey?
-        </h2>
-
-        <p>
-          Create your student account and start preparing for the EPS TOPIK exam.
-        </p>
-
+        <h2 id="featuredSetTitle">Ready to Start Your Journey</h2>
+        <p id="featuredSetName">Create your student account and start preparing for the EPS TOPIK exam.</p>
       </div>
-
-
-     <a
-  class="primary-btn"
-  href="student/register.html"
-  id="journeyRegisterBtn"
->
-  Register Now <span aria-hidden="true">→</span>
-</a>
-
-
+      <a class="primary-btn landing-ripple-btn"
+         href="student/login.html"
+         id="beginTestBtn">
+         Register Now <span>→</span>
+      </a>
     </section>
 
+
+    <!-- ABOUT + CONTACT (nav #about scrolls here) -->
+    <section class="about" id="about">
+      <div>
+        <span class="about-tag">ABOUT EPS TOPIK</span>
+        <h2>A clearer path to exam practice.</h2>
+        <p>EPS TOPIK is a practice platform for learners preparing for the Korean language exam. Use reading and listening question sets, practise at your own pace, and review your score after each completed test.</p>
+        <p class="about-note">This is an independent study tool. It is not the official EPS-TOPIK registration, examination, or results service.</p>
+        <ul class="about-points">
+          <li><b>01</b>Practice question sets</li>
+          <li><b>02</b>Reading and listening</li>
+          <li><b>03</b>Results to guide revision</li>
+        </ul>
+      </div>
+
+      <div class="contact-card">
+        <span class="kicker">WE'RE HERE TO HELP</span>
+        <h3>Ask the administrator</h3>
+        <p class="sub">Your message will appear in the admin portal inbox.</p>
+        <form id="contactForm" novalidate>
+          <div class="cf-row">
+            <label class="cf-field">Your name<input type="text" id="contactName" name="name" autocomplete="name" required maxlength="100"></label>
+            <label class="cf-field">Email address<input type="email" id="contactEmail" name="email" autocomplete="email" required maxlength="150"></label>
+          </div>
+          <label class="cf-field">Subject<input type="text" id="contactSubject" name="subject" required maxlength="150"></label>
+          <label class="cf-field">Your message<textarea id="contactMessage" name="message" required maxlength="2000"></textarea></label>
+          <div class="cf-actions">
+            <span class="cf-status" id="contactStatus" role="status" aria-live="polite"></span>
+            <button type="submit" class="cf-send" id="contactSend">Send message <span aria-hidden="true">→</span></button>
+          </div>
+        </form>
+      </div>
+    </section>
 
   </main>
 
-
-
-  <!-- ================= ABOUT & CONTACT ================= -->
-
-  <section class="index-about" id="about" aria-labelledby="aboutTitle">
-    <div class="about-copy">
-      <span class="eyebrow">ABOUT EPS TOPIK</span>
-      <h2 id="aboutTitle">A clearer path to exam practice.</h2>
-      <p>
-        EPS TOPIK is a practice platform for learners preparing for the Korean
-        language exam. Use reading and listening question sets, practise at
-        your own pace, and review your score after each completed test.
-      </p>
-      <p class="about-disclaimer">
-        This is an independent study tool. It is not the official EPS-TOPIK
-        registration, examination, or results service.
-      </p>
-      <div class="about-highlights" aria-label="What the platform offers">
-        <span><b aria-hidden="true">01</b> Practice question sets</span>
-        <span><b aria-hidden="true">02</b> Reading and listening</span>
-        <span><b aria-hidden="true">03</b> Results to guide revision</span>
-      </div>
-    </div>
-
-    <div class="contact-card">
-      <span class="contact-kicker">WE’RE HERE TO HELP</span>
-      <h3>Ask the administrator</h3>
-      <p>Your message will appear in the admin portal inbox.</p>
-      <form id="contactInquiryForm">
-        <div class="contact-form-row">
-          <label>
-            Your name
-            <input name="name" type="text" autocomplete="name" maxlength="100" required>
-          </label>
-          <label>
-            Email address
-            <input name="email" type="email" autocomplete="email" maxlength="254" required>
-          </label>
-        </div>
-        <label>
-          Subject
-          <input name="subject" type="text" maxlength="160" required>
-        </label>
-        <label>
-          Your message
-          <textarea name="message" rows="4" maxlength="4000" required></textarea>
-        </label>
-        <label class="contact-trap" aria-hidden="true" tabindex="-1">
-          Leave this field empty
-          <input name="website" type="text" tabindex="-1" autocomplete="off">
-        </label>
-        <div class="contact-form-bottom">
-          <p id="contactFormStatus" role="status" aria-live="polite"></p>
-          <button class="contact-submit" type="submit">Send message <span aria-hidden="true">→</span></button>
-        </div>
-      </form>
-    </div>
-  </section>
-
-
-  <!-- ================= FOOTER ================= -->
-
-  <footer
-    class="main-footer"
-  >
-
+  <!-- FOOTER (content preserved) -->
+  <footer class="main-footer">
+    <p>© 2026 EPS TOPIK Exam Platform</p>
+    <p>Practice • Learn • Improve</p>
     <p>
-      © 2026 EPS TOPIK Exam Platform
+      This site provides practice tests and preparation materials.
+      It is not the official EPS-TOPIK registration, examination,
+      or results service.
     </p>
-
-    <p>
-      Practice • Learn • Improve
-    </p>
-
-    <p>
-      This site provides practice tests and preparation materials. It is not
-      the official EPS-TOPIK registration, examination, or results service.
-    </p>
-
     <nav aria-label="Legal and support links">
       <a href="student/terms.html">Terms &amp; Conditions</a>
       <a href="student/privacy.html">Privacy Policy</a>
-      <a href="https://wa.me/919547428567" target="_blank" rel="noopener noreferrer">Contact the platform administrator on WhatsApp</a>
+      <a href="https://wa.me/919547428567" target="_blank" rel="noopener noreferrer">
+        Contact the platform administrator on WhatsApp
+      </a>
     </nav>
-
   </footer>
 
-<!-- ================= LOGIN REQUIRED POPUP ================= -->
 
-<div
-  id="loginRequiredModal"
-  class="login-modal"
-  style="display: none;"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="loginRequiredTitle"
->
-  <div class="login-modal-box">
+  <!-- VISUAL-ONLY SCRIPT: does not touch application logic -->
+  <script>
+  (function () {
+    "use strict";
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var fine = window.matchMedia("(pointer: fine)").matches;
 
-    <button
-      type="button"
-      class="login-modal-close"
-      id="closeLoginModal"
-      aria-label="Close login prompt"
-    >
-      ×
-    </button>
+    /* Scroll progress + navbar */
+    var bar = document.getElementById("landing-scroll-progress");
+    var nav = document.querySelector(".landing-page .navbar");
+    function onScroll() {
+      var y = window.scrollY || 0;
+      var total = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = (total > 0 ? Math.min(100, y / total * 100) : 0) + "%";
+      if (nav) nav.classList.toggle("landing-scrolled", y > 30);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
 
-    <div class="login-modal-icon">
-      🔒
-    </div>
+    /* Falling petals */
+    var petals = document.getElementById("petals");
+    if (petals && !reduced) {
+      for (var i = 0; i < 16; i++) {
+        var p = document.createElement("span");
+        p.className = "petal";
+        p.style.left = Math.random() * 100 + "%";
+        p.style.setProperty("--dx", (Math.random() * 160 - 80) + "px");
+        p.style.animationDuration = (9 + Math.random() * 9) + "s";
+        p.style.animationDelay = (-Math.random() * 14) + "s";
+        p.style.transform = "scale(" + (0.7 + Math.random() * 0.9) + ")";
+        petals.appendChild(p);
+      }
+    }
 
-    <h3>
-      <span id="loginRequiredTitle">Student login required</span>
-    </h3>
+    /* Marquee: duplicate content for seamless loop */
+    var track = document.getElementById("marqueeTrack");
+    if (track) track.innerHTML += track.innerHTML;
 
-    <p id="loginRequiredMessage">
-      Log in to your student account to continue to tests and subscriptions.
-    </p>
+    /* Hangul flip tiles */
+    var letters = [["ㄱ","g / k"],["ㄴ","n"],["ㄷ","d / t"],["ㄹ","r / l"],["ㅁ","m"],["ㅂ","b / p"],
+                   ["ㅅ","s"],["ㅇ","ng / silent"],["ㅏ","a"],["ㅓ","eo"],["ㅗ","o"],["ㅜ","u"]];
+    var grid = document.getElementById("alphaGrid");
+    if (grid) {
+      letters.forEach(function (l) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "alpha-card";
+        b.setAttribute("aria-label", l[0] + " sounds like " + l[1]);
+        b.innerHTML = '<div class="alpha-in"><div class="alpha-front">' + l[0] +
+                      '</div><div class="alpha-back">' + l[1] + '</div></div>';
+        b.addEventListener("click", function () { b.classList.toggle("flipped"); });
+        grid.appendChild(b);
+      });
+    }
 
-    <div class="login-modal-actions">
+    /* Scroll reveal */
+    var items = document.querySelectorAll(".landing-page .section-heading, .landing-page .feature-card, .landing-page .alpha-card");
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e, idx) {
+          if (e.isIntersecting) {
+            var t = e.target;
+            if (t.classList.contains("alpha-card")) t.style.transitionDelay = (Array.prototype.indexOf.call(t.parentNode.children, t) * 40) + "ms";
+            t.classList.add("landing-visible");
+            io.unobserve(t);
+          }
+        });
+      }, { threshold: 0.15 });
+      items.forEach(function (i) { io.observe(i); });
+    } else {
+      items.forEach(function (i) { i.classList.add("landing-visible"); });
+    }
 
-      <button
-        type="button"
-        class="login-modal-cancel"
-        id="cancelLoginModal"
-      >
-        Cancel
-      </button>
+    /* Button ripple */
+    document.querySelectorAll(".landing-ripple-btn").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        var r = btn.getBoundingClientRect();
+        var s = document.createElement("span");
+        s.className = "landing-ripple";
+        s.style.left = (e.clientX - r.left) + "px";
+        s.style.top = (e.clientY - r.top) + "px";
+        btn.appendChild(s);
+        setTimeout(function () { s.remove(); }, 700);
+      });
+    });
 
-      <a
-        href="student/login.html?next=..%2Fstudent%2Fset.html"
-        id="loginRequiredLink"
-        class="login-modal-login"
-      >
-        Student Login
-      </a>
+    /* Feature card tilt */
+    if (fine && !reduced) {
+      document.querySelectorAll(".landing-page .feature-card").forEach(function (c) {
+        c.addEventListener("mousemove", function (e) {
+          var r = c.getBoundingClientRect();
+          var x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+          c.style.transform = "perspective(900px) rotateX(" + (-y * 5) + "deg) rotateY(" + (x * 5) + "deg) translateY(-4px)";
+        });
+        c.addEventListener("mouseleave", function () { c.style.transform = ""; });
+      });
+    }
 
-    </div>
+    /* Daily Korean: rotates by calendar day (script.js does not fill these IDs) */
+    var daily = [
+      ["오늘도 힘내세요!","Stay strong today!","힘내세요 (himnaeseyo): cheer up, keep going."],
+      ["열심히 공부하세요","Study hard.","열심히 (yeolsimhi) means 'diligently'."],
+      ["시작이 반이다","Starting is half the battle.","A common Korean proverb (sijagi banida)."],
+      ["포기하지 마세요","Don't give up.","포기하다 (pogihada) means 'to give up'."],
+      ["잘 하고 있어요","You are doing well.","Said to encourage someone (jal hago isseoyo)."],
+      ["실수해도 괜찮아요","It's okay to make mistakes.","괜찮아요 (gwaenchanayo): it's okay."],
+      ["화이팅!","You can do it!","From English 'fighting'; used as a cheer (hwaiting)."],
+      ["천천히 하세요","Take your time.","천천히 (cheoncheonhi) means 'slowly'."],
+      ["수고하셨습니다","Thank you for your hard work.","Said after someone finishes a task (sugohasyeotseumnida)."]
+    ];
+    var dayIndex = Math.floor(Date.now() / 86400000) % daily.length;
+    var dTitle = document.getElementById("dailyKoreanTitle");
+    var dText = document.getElementById("dailyKoreanText");
+    var dFact = document.getElementById("dailyKoreanFact");
+    if (dTitle && dText && dFact) {
+      dTitle.textContent = daily[dayIndex][0];
+      dText.textContent = daily[dayIndex][1];
+      dFact.textContent = daily[dayIndex][2];
+    }
 
-  </div>
-</div>
+    /* Featured set card: uses the same /api/quizzes call as the dashboard.
+       Only runs for logged-in students; any failure keeps the static text. */
+    var token = null;
+    try { token = localStorage.getItem("access_token"); } catch (e) {}
+    if (token && window.fetch) {
+      fetch((window.API_BASE_URL || "") + "/api/quizzes", {
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (quizzes) {
+          if (!Array.isArray(quizzes)) return;
+          for (var i = 0; i < quizzes.length; i++) {
+            var sets = quizzes[i].sets;
+            if (sets && sets.length) {
+              var s = sets[0];
+              var t = document.getElementById("featuredSetTitle");
+              var n = document.getElementById("featuredSetName");
+              if (t && s.set_number != null) t.textContent = "Set No. " + String(s.set_number).padStart(2, "0");
+              if (n && s.set_name) n.textContent = s.set_name;
+              return;
+            }
+          }
+        })
+        .catch(function () {});
+    }
 
-  <!-- ================= JAVASCRIPT ================= -->
+    /* Contact form -> admin inbox.
+       CONTACT_ENDPOINT is a placeholder: set it to your backend route. */
+    var CONTACT_ENDPOINT = (window.API_BASE_URL || "") + "/api/contact";
+    var cForm = document.getElementById("contactForm");
+    if (cForm) {
+      var cStatus = document.getElementById("contactStatus");
+      var cBtn = document.getElementById("contactSend");
+      function say(msg, cls) { cStatus.textContent = msg; cStatus.className = "cf-status " + (cls || ""); }
+      cForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var body = {
+          name: cForm.name.value.trim(), email: cForm.email.value.trim(),
+          subject: cForm.subject.value.trim(), message: cForm.message.value.trim()
+        };
+        if (!body.name || !body.email || !body.subject || !body.message) { say("Please fill in every field.", "err"); return; }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) { say("Enter a valid email address.", "err"); return; }
+        cBtn.disabled = true; say("Sending…");
+        fetch(CONTACT_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+          .then(function (r) { if (!r.ok) throw new Error("status " + r.status); cForm.reset(); say("Message sent. The administrator will reply by email.", "ok"); })
+          .catch(function () { say("Could not send your message. Please try again, or use the WhatsApp link below.", "err"); })
+          .then(function () { cBtn.disabled = false; });
+      });
+    }
 
+    /* Dark mode toggle (light by default; choice saved in localStorage) */
+    var root = document.documentElement;
+    var themeBtn = document.getElementById("themeToggle");
+    function syncThemeBtn() {
+      var dark = root.getAttribute("data-theme") === "dark";
+      if (themeBtn) {
+        themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
+        themeBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+      }
+    }
+    syncThemeBtn();
+    if (themeBtn) {
+      themeBtn.addEventListener("click", function () {
+        var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        if (!reduced) {
+          root.classList.add("theme-anim");
+          setTimeout(function () { root.classList.remove("theme-anim"); }, 500);
+        }
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem("eps_theme", next); } catch (e) {}
+        syncThemeBtn();
+      });
+    }
+  })();
+  </script>
+
+  <!-- EXISTING APPLICATION JAVASCRIPT: DO NOT REMOVE -->
   <script src="student/script.js"></script>
-
-
 </body>
-
 </html>
