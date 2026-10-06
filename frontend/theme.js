@@ -126,6 +126,16 @@
     if (label) label.textContent = isDark ? "Light" : "Dark";
   }
 
+  // Keep already-open student and admin tabs in step with the index toggle.
+  window.addEventListener("storage", function (event) {
+    if (event.key !== storageKey) return;
+
+    document.documentElement.dataset.theme =
+      event.newValue === "dark" ? "dark" : "light";
+    refreshThemeContrast();
+    document.querySelectorAll("[data-theme-toggle]").forEach(syncThemeButton);
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
       syncThemeButton(button);

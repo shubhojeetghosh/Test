@@ -734,6 +734,14 @@
         syncThemeBtn();
       });
     }
+
+    // Update this page if another open tab changes the shared site theme.
+    window.addEventListener("storage", function (event) {
+      if (event.key !== "eps-topik-theme" && event.key !== "eps_theme") return;
+      var next = event.newValue === "dark" ? "dark" : "light";
+      root.setAttribute("data-theme", next);
+      syncThemeBtn();
+    });
   })();
   </script>
 
