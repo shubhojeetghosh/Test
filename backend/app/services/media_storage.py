@@ -21,8 +21,23 @@ def _configuration() -> tuple[str, str, str]:
             "SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_MEDIA_BUCKET to the backend "
             "deployment environment, then redeploy the backend."
         )
+    # SUPABASE_URL must be the project root (https://<ref>.supabase.co).
+    # Be forgiving if the Storage or REST API path was pasted into Vercel by
+    # mistake; otherwise the generated URL can route to PostgREST and return
+    # PGRST125: "Invalid path specified in request URL".
+    parsed_url = urlsplit(settings.SUPABASE_URL.strip())
+    base_path = parsed_url.path.rstrip("/")
+    for api_suffix in ("/storage/v1", "/rest/v1"):
+        if base_path.endswith(api_suffix):
+            base_path = base_path[:-len(api_suffix)]
+            break
+    if not parsed_url.scheme or not parsed_url.netloc or base_path:
+        raise RuntimeError(
+            "SUPABASE_URL must be the Supabase project URL, such as "
+            "https://your-project.supabase.co, without /rest/v1 or /storage/v1."
+        )
     return (
-        settings.SUPABASE_URL.rstrip("/"),
+        urlunsplit((parsed_url.scheme, parsed_url.netloc, "", "", "")),
         settings.SUPABASE_SERVICE_ROLE_KEY,
         settings.SUPABASE_MEDIA_BUCKET,
     )
@@ -82,7 +97,7 @@ def create_signed_upload(filename: str) -> tuple[str, str]:
     try:
         response = httpx.post(
             endpoint,
-            json={"upsert": False},
+            json={},
             headers=_auth_headers(service_key),
             timeout=15.0,
         )
