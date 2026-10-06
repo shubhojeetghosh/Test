@@ -85,14 +85,18 @@ class InMemoryAudioTracker:
     MAX_PLAYS: int = 2
 
     def __init__(self) -> None:
-        # key: (attempt_id, question_id) → play count
-        self._plays: dict[tuple[str, str], int] = {}
+        # key: (attempt_id, question_id, option_id) → play count
+        self._plays: dict[tuple[str, str, Optional[str]], int] = {}
 
-    def get_plays(self, attempt_id: str, question_id: str) -> int:
-        return self._plays.get((attempt_id, question_id), 0)
+    def get_plays(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> int:
+        return self._plays.get((attempt_id, question_id, option_id), 0)
 
-    def record_play(self, attempt_id: str, question_id: str) -> int:
-        key = (attempt_id, question_id)
+    def record_play(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> int:
+        key = (attempt_id, question_id, option_id)
         current = self._plays.get(key, 0)
 
         if current >= self.MAX_PLAYS:
@@ -104,8 +108,12 @@ class InMemoryAudioTracker:
         self._plays[key] = current + 1
         return self._plays[key]
 
-    def plays_remaining(self, attempt_id: str, question_id: str) -> int:
-        return self.MAX_PLAYS - self.get_plays(attempt_id, question_id)
+    def plays_remaining(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> int:
+        return self.MAX_PLAYS - self.get_plays(attempt_id, question_id, option_id)
 
-    def can_play(self, attempt_id: str, question_id: str) -> bool:
-        return self.get_plays(attempt_id, question_id) < self.MAX_PLAYS
+    def can_play(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> bool:
+        return self.get_plays(attempt_id, question_id, option_id) < self.MAX_PLAYS

@@ -917,6 +917,7 @@ def log_audio_play(
         plays_used = audio_tracker.record_play(
             attempt_id=attempt_id,
             question_id=audio_data.question_id,
+            option_id=audio_data.option_id,
         )
     except ValueError as exc:
         raise HTTPException(

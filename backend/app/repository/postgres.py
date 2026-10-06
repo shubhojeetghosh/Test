@@ -606,38 +606,52 @@ class PostgresAudioTracker:
         pass
 
     def _db_ids(
-        self, attempt_id: str, question_id: str, db: Session
-    ) -> tuple[Optional[int], Optional[int]]:
+        self, attempt_id: str, question_id: str, option_id: Optional[str], db: Session
+    ) -> tuple[Optional[int], Optional[int], Optional[int]]:
         """Resolve string attempt/question IDs to integer DB ids."""
         db_attempt_id = PostgresAttemptRepository._db_id(attempt_id)
         if db_attempt_id is None:
-            return None, None
+            return None, None, None
         try:
             db_question_id = int(question_id)
+            db_option_id = int(option_id) if option_id is not None else None
         except ValueError:
-            return None, None
-        return db_attempt_id, db_question_id
+            return None, None, None
+        return db_attempt_id, db_question_id, db_option_id
 
-    def get_plays(self, attempt_id: str, question_id: str) -> int:
+    def get_plays(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> int:
         db: Session = SessionLocal()
         try:
-            db_attempt_id, db_question_id = self._db_ids(attempt_id, question_id, db)
+            db_attempt_id, db_question_id, db_option_id = self._db_ids(
+                attempt_id, question_id, option_id, db
+            )
             if db_attempt_id is None:
                 return 0
-            row = db.query(AudioPlayLogModel).filter_by(
-                attempt_id=db_attempt_id,
-                question_id=db_question_id,
-            ).first()
+            query = db.query(AudioPlayLogModel).filter_by(
+                attempt_id=db_attempt_id, question_id=db_question_id
+            )
+            query = query.filter(
+                AudioPlayLogModel.option_id.is_(None)
+                if db_option_id is None
+                else AudioPlayLogModel.option_id == db_option_id
+            )
+            row = query.first()
             return row.play_count if row else 0
         finally:
             db.close()
 
-    def record_play(self, attempt_id: str, question_id: str) -> int:
+    def record_play(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> int:
         db: Session = SessionLocal()
         try:
-            db_attempt_id, db_question_id = self._db_ids(attempt_id, question_id, db)
+            db_attempt_id, db_question_id, db_option_id = self._db_ids(
+                attempt_id, question_id, option_id, db
+            )
             if db_attempt_id is None:
-                raise ValueError("Invalid attempt or question ID.")
+                raise ValueError("Invalid attempt, question, or option ID.")
 
             # Serialize play-count changes per attempt, including serverless
             # requests routed to separate function instances.
@@ -662,22 +676,26 @@ class PostgresAudioTracker:
             question_row = question_query.first()
             if question_row is None:
                 raise ValueError("Question does not belong to this exam set.")
-            has_audio = bool(question_row.audio_url) or db.query(OptionModel.id).filter(
-                OptionModel.question_id == db_question_id,
-                OptionModel.audio_url.is_not(None),
-            ).first() is not None
+            if db_option_id is None:
+                has_audio = bool(question_row.audio_url)
+            else:
+                has_audio = db.query(OptionModel.id).filter(
+                    OptionModel.id == db_option_id,
+                    OptionModel.question_id == db_question_id,
+                    OptionModel.audio_url.is_not(None),
+                ).first() is not None
             if not has_audio:
-                raise ValueError("This question has no audio to play.")
+                raise ValueError("This question or option has no audio to play.")
 
-            row = (
-                db.query(AudioPlayLogModel)
-                .filter_by(
-                    attempt_id=db_attempt_id,
-                    question_id=db_question_id,
-                )
-                .with_for_update()
-                .first()
+            query = db.query(AudioPlayLogModel).filter_by(
+                attempt_id=db_attempt_id, question_id=db_question_id
             )
+            query = query.filter(
+                AudioPlayLogModel.option_id.is_(None)
+                if db_option_id is None
+                else AudioPlayLogModel.option_id == db_option_id
+            )
+            row = query.with_for_update().first()
             current = row.play_count if row else 0
             if current >= self.MAX_PLAYS:
                 raise ValueError(
@@ -703,8 +721,12 @@ class PostgresAudioTracker:
         finally:
             db.close()
 
-    def plays_remaining(self, attempt_id: str, question_id: str) -> int:
-        return self.MAX_PLAYS - self.get_plays(attempt_id, question_id)
+    def plays_remaining(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> int:
+        return self.MAX_PLAYS - self.get_plays(attempt_id, question_id, option_id)
 
-    def can_play(self, attempt_id: str, question_id: str) -> bool:
-        return self.get_plays(attempt_id, question_id) < self.MAX_PLAYS
+    def can_play(
+        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+    ) -> bool:
+        return self.get_plays(attempt_id, question_id, option_id) < self.MAX_PLAYS

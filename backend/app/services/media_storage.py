@@ -16,12 +16,26 @@ SIGNED_URL_SECONDS = 6 * 60 * 60
 
 def _configuration() -> tuple[str, str, str]:
     if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
-        raise RuntimeError("Supabase Storage is not configured on the backend.")
+        raise RuntimeError(
+            "Media uploads are not configured on the backend. Add SUPABASE_URL, "
+            "SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_MEDIA_BUCKET to the backend "
+            "deployment environment, then redeploy the backend."
+        )
     return (
         settings.SUPABASE_URL.rstrip("/"),
         settings.SUPABASE_SERVICE_ROLE_KEY,
         settings.SUPABASE_MEDIA_BUCKET,
     )
+
+
+def _auth_headers(api_key: str) -> dict[str, str]:
+    """Build headers for both current secret keys and legacy service-role JWTs."""
+    headers = {"apikey": api_key}
+    # Supabase's current sb_secret_* keys are not JWTs and belong in apikey
+    # only. Legacy service_role keys are JWTs and also work as Bearer tokens.
+    if not api_key.startswith("sb_secret_"):
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
 
 
 def upload_media(content: bytes, content_type: str, filename: str) -> str:
@@ -41,8 +55,7 @@ def upload_media(content: bytes, content_type: str, filename: str) -> str:
             endpoint,
             content=content,
             headers={
-                "apikey": service_key,
-                "Authorization": f"Bearer {service_key}",
+                **_auth_headers(service_key),
                 "Content-Type": content_type,
                 "x-upsert": "false",
                 "cache-control": "public, max-age=31536000, immutable",
@@ -70,10 +83,7 @@ def create_signed_upload(filename: str) -> tuple[str, str]:
         response = httpx.post(
             endpoint,
             json={"upsert": False},
-            headers={
-                "apikey": service_key,
-                "Authorization": f"Bearer {service_key}",
-            },
+            headers=_auth_headers(service_key),
             timeout=15.0,
         )
         response.raise_for_status()
@@ -106,7 +116,7 @@ def sign_media_urls(values: list[str | None]) -> dict[str, str]:
     base_url, service_key, bucket = _configuration()
     signed: dict[str, str] = {}
     endpoint = f"{base_url}/storage/v1/object/sign/{quote(bucket, safe='')}"
-    headers = {"apikey": service_key, "Authorization": f"Bearer {service_key}"}
+    headers = _auth_headers(service_key)
     try:
         with httpx.Client(timeout=20.0) as client:
             for offset in range(0, len(keys), 500):

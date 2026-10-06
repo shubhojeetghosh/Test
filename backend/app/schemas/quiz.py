@@ -112,6 +112,7 @@ class SubmitAnswerResponse(BaseModel):
 
 class AudioPlayRequest(BaseModel):
     question_id: str
+    option_id: Optional[str] = None
 
 
 class AudioPlayResponse(BaseModel):

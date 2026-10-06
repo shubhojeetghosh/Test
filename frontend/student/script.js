@@ -3658,7 +3658,7 @@ function resolveStudentMediaUrl(value) {
 let activeExamAudioElement = null;
 let activeExamAudioQuestionId = null;
 
-async function playExamAudio(questionId, audioElement, button, statusElement) {
+async function playExamAudio(questionId, audioElement, button, statusElement, optionId = null) {
     if (!audioElement?.src) return;
 
     if (activeExamAudioElement === audioElement && !audioElement.paused) {
@@ -3699,7 +3699,10 @@ async function playExamAudio(questionId, audioElement, button, statusElement) {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ question_id: String(questionId) })
+                body: JSON.stringify({
+                    question_id: String(questionId),
+                    option_id: optionId == null ? null : String(optionId)
+                })
             }
         );
         const data = await response.json().catch(() => ({}));
@@ -3713,10 +3716,17 @@ async function playExamAudio(questionId, audioElement, button, statusElement) {
         activeExamAudioElement = audioElement;
         activeExamAudioQuestionId = String(questionId);
         audioElement._authorizedPlayback = true;
+        audioElement._playsRemaining = Number(data.plays_remaining);
         audioElement.onended = function () {
             audioElement._authorizedPlayback = false;
             button.textContent = "▶";
-            if (statusElement) statusElement.textContent = "Audio finished";
+            if (audioElement._playsRemaining === 0) {
+                audioElement._playLimitReached = true;
+                button.disabled = true;
+                if (statusElement) statusElement.textContent = "Audio limit reached (2 plays).";
+            } else if (statusElement) {
+                statusElement.textContent = "Audio finished";
+            }
         };
         await audioElement.play();
         button.textContent = "⏸";
@@ -3726,9 +3736,19 @@ async function playExamAudio(questionId, audioElement, button, statusElement) {
     } catch (error) {
         audioElement._authorizedPlayback = false;
         button.textContent = "▶";
-        if (statusElement) statusElement.textContent = error.message || "Unable to play this audio.";
+        const limitReached = audioElement._playsRemaining === 0
+            || /maximum audio plays.*reached/i.test(error.message || "");
+        if (limitReached) {
+            audioElement._playLimitReached = true;
+            button.disabled = true;
+        }
+        if (statusElement) {
+            statusElement.textContent = limitReached
+                ? "Audio limit reached (2 plays)."
+                : error.message || "Unable to play this audio.";
+        }
     } finally {
-        button.disabled = false;
+        button.disabled = Boolean(audioElement._playLimitReached);
     }
 }
 
@@ -4080,7 +4100,7 @@ function renderStudentExamOptions(question) {
                 optionAudio.src = resolveStudentMediaUrl(option.audio_url);
                 audioButton.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    playExamAudio(question.id, optionAudio, audioButton, audioStatus);
+                    playExamAudio(question.id, optionAudio, audioButton, audioStatus, option.id);
                 });
                 audioControls.append(audioButton, audioStatus, optionAudio);
                 optionItem.appendChild(audioControls);
