@@ -644,9 +644,15 @@ class PostgresAudioTracker:
             db.close()
 
     def record_play(
-        self, attempt_id: str, question_id: str, option_id: Optional[str] = None
+        self,
+        attempt_id: str,
+        question_id: str,
+        option_id: Optional[str] = None,
+        db: Optional[Session] = None,
     ) -> int:
-        db: Session = SessionLocal()
+        owns_session = db is None
+        if db is None:
+            db = SessionLocal()
         try:
             db_attempt_id, db_question_id, db_option_id = self._db_ids(
                 attempt_id, question_id, option_id, db
@@ -709,6 +715,7 @@ class PostgresAudioTracker:
                 db.add(AudioPlayLogModel(
                     attempt_id=db_attempt_id,
                     question_id=db_question_id,
+                    option_id=db_option_id,
                     play_count=new_count,
                 ))
             else:
@@ -720,7 +727,8 @@ class PostgresAudioTracker:
             db.rollback()
             raise
         finally:
-            db.close()
+            if owns_session:
+                db.close()
 
     def plays_remaining(
         self, attempt_id: str, question_id: str, option_id: Optional[str] = None

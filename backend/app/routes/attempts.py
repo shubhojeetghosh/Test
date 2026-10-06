@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -877,26 +877,36 @@ def log_audio_play(
     attempt_id: str,
     audio_data: AudioPlayRequest,
     request: Request,
+    db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
 
-    attempt_repo = request.app.state.attempt_repo
     audio_tracker = request.app.state.audio_tracker
 
-    attempt = attempt_repo.get(attempt_id)
-
-    if attempt is None:
-
+    prefix, separator, raw_id = attempt_id.partition("_")
+    if prefix != "attempt" or not separator or not raw_id.isdecimal():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Attempt not found.",
         )
 
+    attempt_record = db.execute(
+        select(ExamSessionModel, ExamModel.duration_minutes)
+        .join(ExamModel, ExamModel.id == ExamSessionModel.exam_id)
+        .where(ExamSessionModel.id == int(raw_id))
+    ).first()
+    if attempt_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attempt not found.",
+        )
+    attempt, duration_minutes = attempt_record
+
     # --------------------------------------------------------
     # OWNERSHIP CHECK
     # --------------------------------------------------------
 
-    if str(attempt.student_id) != str(current_user_id):
+    if attempt.user_id != current_user_id:
 
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -907,7 +917,22 @@ def log_audio_play(
     # RECORD AUDIO PLAY
     # --------------------------------------------------------
 
-    if attempt.status != AttemptStatus.IN_PROGRESS or attempt.is_expired():
+    if attempt.status != "IN_PROGRESS":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Audio can only be played during an active attempt.",
+        )
+
+    started_at = attempt.started_at
+    if started_at.tzinfo is not None:
+        started_at = started_at.astimezone(timezone.utc).replace(tzinfo=None)
+    expires_at = started_at + timedelta(minutes=int(duration_minutes))
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if now >= expires_at:
+        attempt.status = "AUTO_SUBMITTED"
+        attempt.submitted_at = now
+        consume_paid_exam_set_access(db, attempt.user_id, attempt.set_id)
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Audio can only be played during an active attempt.",
@@ -918,6 +943,7 @@ def log_audio_play(
             attempt_id=attempt_id,
             question_id=audio_data.question_id,
             option_id=audio_data.option_id,
+            db=db,
         )
     except ValueError as exc:
         raise HTTPException(

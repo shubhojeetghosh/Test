@@ -3706,7 +3706,14 @@ async function playExamAudio(questionId, audioElement, button, statusElement, op
             }
         );
         const data = await response.json().catch(() => ({}));
-        if (!response.ok || data.allowed === false) {
+        if (!response.ok) {
+            throw new Error(
+                data.detail || (response.status >= 500
+                    ? "Audio access is temporarily unavailable. Please try again."
+                    : "Could not authorize audio playback.")
+            );
+        }
+        if (data.allowed === false) {
             throw new Error(data.detail || "The allowed audio plays for this question have been used.");
         }
 
