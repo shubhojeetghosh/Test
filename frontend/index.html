@@ -4,7 +4,7 @@
   <script src="api-config.js"></script>
   <script>
     /* Default is light. Dark is used only if the visitor chose it before. */
-    (function(){var t="light";try{if(localStorage.getItem("eps_theme")==="dark")t="dark";}catch(e){}
+    (function(){var t="light";try{var saved=localStorage.getItem("eps-topik-theme");if(!saved){saved=localStorage.getItem("eps_theme");if(saved)localStorage.setItem("eps-topik-theme",saved);}if(saved==="dark")t="dark";}catch(e){}
       document.documentElement.setAttribute("data-theme",t);})();
   </script>
   <meta charset="UTF-8">
@@ -730,7 +730,7 @@
           setTimeout(function () { root.classList.remove("theme-anim"); }, 500);
         }
         root.setAttribute("data-theme", next);
-        try { localStorage.setItem("eps_theme", next); } catch (e) {}
+        try { localStorage.setItem("eps-topik-theme", next); } catch (e) {}
         syncThemeBtn();
       });
     }

@@ -234,3 +234,58 @@ html[data-theme="dark"] .theme-toggle { background: #17253a; border-color: #3544
   .theme-toggle { min-height: 38px; padding: 0 10px; }
   .theme-toggle-label { display: none; }
 }
+
+/* Keep form controls dark even when page-specific styles use stronger
+   light-mode selectors (notably the admin and student authentication forms). */
+html[data-theme="dark"] body :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),
+  select,
+  textarea
+) {
+  color-scheme: dark;
+  background-color: #0d1727 !important;
+  border-color: #35445d !important;
+  color: #e5ebf7 !important;
+}
+
+html[data-theme="dark"] body :is(input, textarea)::placeholder {
+  color: #8997af !important;
+  opacity: 1;
+}
+
+html[data-theme="dark"] body :is(input, select, textarea):focus {
+  border-color: #7f9aff !important;
+  box-shadow: 0 0 0 3px rgba(103, 140, 255, .2);
+}
+
+html[data-theme="dark"] .admin-login-body {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(74, 101, 159, .28) 0, transparent 32%),
+    radial-gradient(circle at 80% 80%, rgba(48, 75, 137, .2) 0, transparent 30%),
+    #0b1220 !important;
+  color: #e5ebf7;
+}
+
+html[data-theme="dark"] .admin-login-card {
+  background-color: #131e30 !important;
+  border-color: #2a3850 !important;
+  color: #e5ebf7;
+}
+
+html[data-theme="dark"] .admin-login-logo h1,
+html[data-theme="dark"] .admin-login-heading h2,
+html[data-theme="dark"] .admin-login-card .form-group label {
+  color: #e5edff;
+}
+
+html[data-theme="dark"] .admin-login-logo span,
+html[data-theme="dark"] .admin-login-heading > p:last-child,
+html[data-theme="dark"] .admin-remember {
+  color: #a8b4c9;
+}
+
+html[data-theme="dark"] .admin-login-card :is(.admin-security-note, .admin-password-requirement) {
+  background-color: #0d1727;
+  border-color: #35445d;
+  color: #d5deef;
+}
