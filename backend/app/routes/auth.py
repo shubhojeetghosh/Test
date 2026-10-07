@@ -29,7 +29,7 @@ from app.core.security import (
 
 from app.core.email import send_otp_email, send_registration_otp_email
 
-from app.models import PasswordResetOTP, User
+from app.models import PasswordResetOTP, PendingStudentRegistration, User
 
 security = HTTPBearer()
 
@@ -76,7 +76,7 @@ def get_current_user_id(
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email before logging in.",
+            detail="Please verify your email first. Open Register and enter this email to receive a verification code.",
         )
     return user_id
 
@@ -147,6 +147,13 @@ def register(
     db: Session = Depends(get_db)
 ):
 
+    name = data.name.strip()
+    if len(name) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Please enter your full name.",
+        )
+
     normalized_email = str(data.email).strip().lower()
     enforce_rate_limit(
         db,
@@ -156,20 +163,16 @@ def register(
         window_seconds=3600,
     )
 
-    # An unverified registration is a pending account. Repeated registration
-    # requests resend its code and never overwrite the original credentials.
-    existing_user = (
-        db.query(User)
-        .filter(User.email == normalized_email)
-        .first()
-    )
-
+    existing_user = db.scalar(select(User).where(User.email == normalized_email))
     if existing_user and existing_user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
 
+    # Legacy pending accounts used to be inserted into `users` before email
+    # verification. Keep their existing OTPs usable, but never create new
+    # unverified rows in the registered-users table.
     if existing_user:
         _send_registration_code(db, existing_user)
         return {
@@ -178,41 +181,37 @@ def register(
             "requires_verification": True,
         }
 
-    # 2. Hash password
-    hashed_password = hash_password(data.password)
-
-    # 3. Create user
-    new_user = User(
-        name=data.name,
-        email=normalized_email,
-        password_hash=hashed_password,
-        role="student",
-        email_verified=False,
+    pending = db.scalar(
+        select(PendingStudentRegistration)
+        .where(PendingStudentRegistration.email == normalized_email)
+        .with_for_update()
     )
-
-    # 4. Save user
-    try:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-
-    except IntegrityError as exc:
-        db.rollback()
+    if pending is None:
+        pending = PendingStudentRegistration(
+            name=name,
+            email=normalized_email,
+            password_hash=hash_password(data.password),
+            otp_hash="pending",
+            expires_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            attempts=0,
+        )
+        db.add(pending)
+        db.flush()
+    elif (datetime.now(timezone.utc).replace(tzinfo=None) - pending.created_at).total_seconds() < REGISTRATION_OTP_COOLDOWN_SECONDS:
+        wait = max(
+            1,
+            int(REGISTRATION_OTP_COOLDOWN_SECONDS - (datetime.now(timezone.utc).replace(tzinfo=None) - pending.created_at).total_seconds()),
+        )
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        ) from exc
-    except Exception as exc:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not create the account. Please try again.",
-        ) from exc
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Please wait before requesting another verification code.",
+            headers={"Retry-After": str(wait)},
+        )
 
-    _send_registration_code(db, new_user)
+    _send_pending_registration_code(db, pending)
     return {
         "message": "A verification code has been sent to your email.",
-        "email": new_user.email,
+        "email": normalized_email,
         "requires_verification": True,
     }
 
@@ -221,6 +220,33 @@ REGISTRATION_OTP_PURPOSE = "student_registration"
 REGISTRATION_OTP_MINUTES = max(1, settings.OTP_EXPIRE_MINUTES)
 REGISTRATION_OTP_COOLDOWN_SECONDS = max(1, settings.OTP_RESEND_COOLDOWN_SECONDS)
 REGISTRATION_OTP_MAX_ATTEMPTS = max(1, settings.OTP_MAX_ATTEMPTS)
+
+
+def _send_pending_registration_code(
+    db: Session, pending: PendingStudentRegistration
+) -> None:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    enforce_rate_limit(
+        db,
+        scope="student-registration-resend",
+        subject=pending.email,
+        limit=5,
+        window_seconds=3600,
+    )
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    pending.otp_hash = hash_otp(code)
+    pending.expires_at = now + timedelta(minutes=REGISTRATION_OTP_MINUTES)
+    pending.attempts = 0
+    pending.created_at = now
+    db.add(pending)
+    db.commit()
+    if not send_registration_otp_email(pending.email, code):
+        db.delete(pending)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We could not send the verification email. Please check the address and try again.",
+        )
 
 
 def _send_registration_code(db: Session, user: User) -> None:
@@ -286,6 +312,57 @@ def verify_registration_otp(
         limit=10,
         window_seconds=3600,
     )
+    pending = db.scalar(
+        select(PendingStudentRegistration)
+        .where(PendingStudentRegistration.email == email)
+        .with_for_update()
+    )
+    if pending is not None:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        if pending.expires_at <= now or pending.attempts >= REGISTRATION_OTP_MAX_ATTEMPTS:
+            db.delete(pending)
+            db.commit()
+            raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+        if not verify_otp(data.otp, pending.otp_hash):
+            pending.attempts += 1
+            if pending.attempts >= REGISTRATION_OTP_MAX_ATTEMPTS:
+                db.delete(pending)
+            db.commit()
+            raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+        user = User(
+            name=pending.name,
+            email=pending.email,
+            password_hash=pending.password_hash,
+            role="student",
+            email_verified=True,
+        )
+        try:
+            db.add(user)
+            db.flush()
+            db.delete(pending)
+            db.commit()
+            db.refresh(user)
+        except IntegrityError as exc:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered. Please log in.",
+            ) from exc
+
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        return {
+            "message": "Email verified successfully.",
+            "access_token": token,
+            "token_type": "bearer",
+            "user_id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+        }
+
+    # Complete older pending registrations that were stored as users before
+    # this change. New registrations always use the pending table above.
     user = db.scalar(select(User).where(User.email == email).with_for_update())
     if user is None or str(user.role).strip().lower() != "student":
         raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
@@ -344,6 +421,24 @@ def resend_registration_otp(
         limit=5,
         window_seconds=3600,
     )
+    pending = db.scalar(
+        select(PendingStudentRegistration)
+        .where(PendingStudentRegistration.email == email)
+        .with_for_update()
+    )
+    if pending is not None:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        elapsed = (now - pending.created_at).total_seconds()
+        if elapsed < REGISTRATION_OTP_COOLDOWN_SECONDS:
+            wait = max(1, int(REGISTRATION_OTP_COOLDOWN_SECONDS - elapsed))
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Please wait before requesting another verification code.",
+                headers={"Retry-After": str(wait)},
+            )
+        _send_pending_registration_code(db, pending)
+        return {"message": "A new verification code has been sent to your email."}
+
     user = db.scalar(select(User).where(User.email == email))
     if user is None or str(user.role).strip().lower() != "student" or user.email_verified:
         # Avoid disclosing account state to unauthenticated callers.
@@ -412,7 +507,7 @@ def login(
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email before logging in.",
+            detail="Please verify your email first. Open Register and enter this email to receive a verification code.",
         )
 
     # --------------------------------------------------------
@@ -874,4 +969,3 @@ def reset_password(
         "message": "Password reset successfully",
         "email": data.email
     }
-

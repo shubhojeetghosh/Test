@@ -31,7 +31,8 @@ def dashboard(
 ):
     total_students = db.scalar(
         select(func.count(User.id)).where(
-            User.role == "student"
+            func.lower(User.role) == "student",
+            User.email_verified.is_(True),
         )
     ) or 0
 
@@ -85,7 +86,8 @@ def get_users(
     students = db.scalars(
         select(User)
         .where(
-            func.lower(User.role) == "student"
+            func.lower(User.role) == "student",
+            User.email_verified.is_(True),
         )
         .order_by(User.created_at.desc(), User.id.desc())
         .offset(offset)

@@ -825,7 +825,7 @@ if (registerForm) {
         registerButton.disabled = true;
 
         registerButton.textContent =
-          "Creating Account...";
+          "Sending code...";
 
       }
 
@@ -953,7 +953,7 @@ if (registerForm) {
         registerButton.disabled = false;
 
         registerButton.textContent =
-          "Create Account";
+          "Send verification code";
 
       }
 

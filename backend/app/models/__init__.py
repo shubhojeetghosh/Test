@@ -2,6 +2,7 @@
 
 from .user import User, UserModel
 from .password_reset_otp import PasswordResetOTP
+from .pending_student_registration import PendingStudentRegistration
 from .orm import (
     AudioPlayLogModel,
     ExamModel,
@@ -16,6 +17,6 @@ from .orm import (
 
 __all__ = [
     "AudioPlayLogModel", "ExamModel", "ExamSessionModel", "ExamSetModel",
-    "ImageModel", "OptionModel", "PasswordResetOTP", "QuestionModel",
+    "ImageModel", "OptionModel", "PasswordResetOTP", "PendingStudentRegistration", "QuestionModel",
     "ResultModel", "StudentAnswerModel", "User", "UserModel",
 ]

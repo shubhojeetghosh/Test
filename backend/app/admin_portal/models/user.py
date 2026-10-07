@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.database import Base
@@ -33,6 +33,13 @@ class User(Base):
     role: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
+    )
+
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=true(),
     )
 
     created_at: Mapped[datetime | None] = mapped_column(

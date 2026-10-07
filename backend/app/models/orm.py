@@ -550,6 +550,21 @@ class AudioPlayLogModel(Base):
             "attempt_id",
             "question_id",
         ),
+        Index(
+            "uq_audio_play_logs_question_audio",
+            "attempt_id",
+            "question_id",
+            unique=True,
+            postgresql_where=text("option_id IS NULL"),
+        ),
+        Index(
+            "uq_audio_play_logs_option_audio",
+            "attempt_id",
+            "question_id",
+            "option_id",
+            unique=True,
+            postgresql_where=text("option_id IS NOT NULL"),
+        ),
         CheckConstraint(
             "play_count >= 0 AND play_count <= 2",
             name="valid_play_count"
