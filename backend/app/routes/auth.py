@@ -504,11 +504,16 @@ def login(
             detail="Invalid email or password"
         )
 
+    # Accounts already stored in `users` are registered accounts. The current
+    # signup flow only creates a user after OTP verification, so an unverified
+    # flag here identifies an older account from before that flow. Correct
+    # password authentication is sufficient to restore that account; new
+    # registrations remain in PendingStudentRegistration until OTP succeeds.
     if not user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email first. Open Register and enter this email to receive a verification code.",
-        )
+        user.email_verified = True
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     # --------------------------------------------------------
     # 3. Create JWT
