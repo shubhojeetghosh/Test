@@ -28,6 +28,10 @@ Back up the database first. Open [`migrations/2026_10_set_scoped_attempts_and_qu
 
 The migration adds set IDs to attempts and replaces the old exam-wide question-number uniqueness rule with a per-set rule. Existing attempts remain set-less and retain legacy behavior; newly started attempts are set-scoped.
 
+For student set purchase requests and admin set unlocks, apply
+[`migrations/2026_10_student_set_access_requests.sql`](migrations/2026_10_student_set_access_requests.sql)
+to the production database before using checkout or the admin access controls.
+
 ## Existing image/audio migration
 
 After Storage and the database are configured, run a dry run from the `backend` directory:
