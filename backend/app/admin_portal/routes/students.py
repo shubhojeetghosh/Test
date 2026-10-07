@@ -63,8 +63,7 @@ def get_students(
     students = db.scalars(
         select(User)
         .where(
-            func.lower(User.role) == "student",
-            User.email_verified.is_(True),
+            func.lower(func.trim(User.role)) == "student",
         )
         .order_by(User.id)
         .offset(offset)
@@ -90,8 +89,7 @@ def get_student(
     student = db.scalar(
         select(User).where(
             User.id == student_id,
-            func.lower(User.role) == "student",
-            User.email_verified.is_(True),
+            func.lower(func.trim(User.role)) == "student",
         )
     )
 

@@ -2902,34 +2902,39 @@ if (viewResultModal) {
             }
 
 
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/admin/users`,
+            const users = [];
+            const pageSize = 500;
+            let offset = 0;
+
+            while (true) {
+                const response = await fetch(
+                    `${API_BASE_URL}/admin/users?limit=${pageSize}&offset=${offset}`,
                     {
                         method: "GET",
-
                         headers: {
-                            "Authorization":
-                                `Bearer ${adminToken}`,
-
-                            "Content-Type":
-                                "application/json"
+                            "Authorization": `Bearer ${adminToken}`,
+                            "Content-Type": "application/json"
                         }
                     }
                 );
 
+                if (!response.ok) {
+                    throw new Error(
+                        `Failed to load users: ${response.status}`
+                    );
+                }
 
-            if (!response.ok) {
+                const page = await response.json();
+                if (!Array.isArray(page)) {
+                    throw new Error("The users API returned an invalid response.");
+                }
 
-                throw new Error(
-                    `Failed to load users: ${response.status}`
-                );
-
+                users.push(...page);
+                if (page.length < pageSize) {
+                    break;
+                }
+                offset += page.length;
             }
-
-
-            const users =
-                await response.json();
 
 
             console.log(
