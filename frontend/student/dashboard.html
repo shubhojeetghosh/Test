@@ -4,7 +4,7 @@
 <head><script src="../api-config.js"></script>
   <script>
     /* Theme: light by default; dark only if the visitor chose it (shared with the home page) */
-    (function(){var t="light";try{if(localStorage.getItem("eps_theme")==="dark")t="dark";}catch(e){}
+    (function(){var t="light";try{var saved=localStorage.getItem("eps-topik-theme")||localStorage.getItem("eps_theme");if(saved){t=saved==="dark"?"dark":"light";localStorage.setItem("eps-topik-theme",t);}}catch(e){}
       document.documentElement.setAttribute("data-theme",t);})();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -982,7 +982,13 @@
       var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
       if (!reduced) { root.classList.add("theme-anim"); setTimeout(function () { root.classList.remove("theme-anim"); }, 500); }
       root.setAttribute("data-theme", next);
-      try { localStorage.setItem("eps_theme", next); } catch (e) {}
+      try { localStorage.setItem("eps-topik-theme", next); localStorage.setItem("eps_theme", next); } catch (e) {}
+      syncBtn();
+    });
+    window.addEventListener("storage", function (event) {
+      if (event.key !== "eps-topik-theme" && event.key !== "eps_theme") return;
+      var next = event.newValue === "dark" ? "dark" : "light";
+      root.setAttribute("data-theme", next);
       syncBtn();
     });
   })();

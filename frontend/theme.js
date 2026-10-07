@@ -2,7 +2,10 @@
   const storageKey = "eps-topik-theme";
   let savedTheme = "light";
   try {
-    savedTheme = localStorage.getItem(storageKey) || "light";
+    savedTheme = localStorage.getItem(storageKey) || localStorage.getItem("eps_theme") || "light";
+    if (savedTheme === "dark" || savedTheme === "light") {
+      localStorage.setItem(storageKey, savedTheme);
+    }
   } catch (error) {
     // Keep the page usable when browser storage is disabled.
   }
@@ -128,10 +131,13 @@
 
   // Keep already-open student and admin tabs in step with the index toggle.
   window.addEventListener("storage", function (event) {
-    if (event.key !== storageKey) return;
+    if (event.key !== storageKey && event.key !== "eps_theme") return;
 
     document.documentElement.dataset.theme =
       event.newValue === "dark" ? "dark" : "light";
+    if (event.key === "eps_theme") {
+      try { localStorage.setItem(storageKey, event.newValue === "dark" ? "dark" : "light"); } catch (error) {}
+    }
     refreshThemeContrast();
     document.querySelectorAll("[data-theme-toggle]").forEach(syncThemeButton);
   });
@@ -146,6 +152,7 @@
         refreshThemeContrast();
         try {
           localStorage.setItem(storageKey, nextTheme);
+          localStorage.setItem("eps_theme", nextTheme);
         } catch (error) {
           // The current page still changes theme even if persistence is blocked.
         }
