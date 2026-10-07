@@ -9,6 +9,8 @@ const SET_PRICE = 50;
 // No +, spaces, or hyphens.
 
 const WHATSAPP_BUSINESS_NUMBER = "919547428567";
+const STUDENT_ACCESS_REQUEST_URL =
+  `${(window.EPS_API?.baseUrl || window.API_BASE_URL || "").replace(/\/+$/, "")}/api/student/access-requests`;
 
 function escapePaymentHtml(value) {
   return String(value ?? "")
@@ -302,10 +304,42 @@ if (cartItems.length > 0) {
 
   whatsappButton.addEventListener(
     "click",
-    () => {
+    async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        window.location.href = "login.html?next=" + encodeURIComponent("payment.html?mode=cart");
+        return;
+      }
+      if (!STUDENT_ACCESS_REQUEST_URL.startsWith("http")) {
+        alert("The payment request service is not configured. Please contact the administrator.");
+        return;
+      }
 
-      openWhatsApp(cartItems);
-
+      whatsappButton.disabled = true;
+      const originalLabel = whatsappButton.textContent;
+      whatsappButton.textContent = "Sending set request…";
+      try {
+        const response = await fetch(STUDENT_ACCESS_REQUEST_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            exam_set_ids: cartItems.map(item => Number(item.set))
+          })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.detail || "Could not send your selected sets to the administrator.");
+        }
+        openWhatsApp(cartItems);
+      } catch (error) {
+        console.error("Could not create set purchase request:", error);
+        alert(error.message || "Could not send your set request. Please try again.");
+        whatsappButton.disabled = false;
+        whatsappButton.textContent = originalLabel;
+      }
     }
   );
 

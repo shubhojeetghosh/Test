@@ -1,4 +1,44 @@
 const API_BASE_URL = window.API_BASE_URL || "";
+
+function showAuthError(messageBox, message, fields = []) {
+  fields.forEach(function (field) {
+    if (!field) return;
+    field.classList.add("is-invalid");
+    field.setAttribute("aria-invalid", "true");
+  });
+  if (messageBox) {
+    messageBox.className = "message-box error";
+    messageBox.textContent = message;
+  }
+}
+
+function clearAuthErrors(form) {
+  if (!form) return;
+  form.querySelectorAll(".is-invalid").forEach(function (field) {
+    field.classList.remove("is-invalid");
+    field.removeAttribute("aria-invalid");
+  });
+  const messageBox = form.querySelector(".message-box") || document.getElementById("messageBox");
+  if (messageBox) {
+    messageBox.className = "message-box";
+    messageBox.textContent = "";
+  }
+}
+
+document.querySelectorAll("#loginForm, #registerForm").forEach(function (form) {
+  form.addEventListener("input", function (event) {
+    if (event.target.matches("input")) {
+      event.target.classList.remove("is-invalid");
+      event.target.removeAttribute("aria-invalid");
+      const messageBox = form.querySelector(".message-box") || document.getElementById("messageBox");
+      if (messageBox) {
+        messageBox.className = "message-box";
+        messageBox.textContent = "";
+      }
+    }
+  });
+});
+
 function escapeStudentHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -801,6 +841,17 @@ if (registerForm) {
     const registerButton =
       document.getElementById("registerButton");
 
+    clearAuthErrors(registerForm);
+    const emailInput = document.getElementById("registerEmail");
+    const passwordInput = document.getElementById("registerPassword");
+    const confirmPasswordInput = document.getElementById("confirmPassword");
+
+    if (!emailInput.checkValidity()) {
+      showAuthError(messageBox, "Enter a valid email address.", [emailInput]);
+      emailInput.focus();
+      return;
+    }
+
 
     // ==========================================
     // CHECK PASSWORDS
@@ -808,10 +859,8 @@ if (registerForm) {
 
     if (password !== confirmPassword) {
 
-      if (messageBox) {
-        messageBox.textContent =
-          "Passwords do not match.";
-      }
+      showAuthError(messageBox, "Passwords do not match.", [passwordInput, confirmPasswordInput]);
+      confirmPasswordInput.focus();
 
       return;
     }
@@ -901,22 +950,20 @@ if (registerForm) {
         }
 
 
-        if (messageBox) {
-
-          messageBox.textContent =
-            errorMessage;
-
-        } else {
-
-          alert(errorMessage);
-
-        }
+        const lowerError = String(errorMessage).toLowerCase();
+        const invalidFields = lowerError.includes("email")
+          ? [emailInput]
+          : lowerError.includes("password")
+            ? [passwordInput]
+            : [];
+        showAuthError(messageBox, errorMessage, invalidFields);
 
         return;
       }
 
 
       if (messageBox) {
+        messageBox.className = "message-box success";
         messageBox.textContent =
           "Verification code sent. Check your email to finish creating your account.";
       }
@@ -934,8 +981,7 @@ if (registerForm) {
 
       if (messageBox) {
 
-        messageBox.textContent =
-          "Could not connect to backend. Check whether the backend server is running.";
+        showAuthError(messageBox, "Could not connect to backend. Check whether the backend server is running.");
 
       } else {
 
@@ -1314,6 +1360,8 @@ if (loginForm) {
       const messageBox =
         document.getElementById("messageBox");
 
+      clearAuthErrors(loginForm);
+
 
       if (!email || !password) {
 
@@ -1377,12 +1425,11 @@ if (loginForm) {
             data.message ||
             "Invalid email or password.";
 
-          if (messageBox) {
-            messageBox.textContent =
-              errorMessage;
-          }
-
-          alert(errorMessage);
+          showAuthError(
+            messageBox,
+            errorMessage,
+            [document.getElementById("loginPassword")]
+          );
 
           return;
         }
@@ -1536,7 +1583,8 @@ else {
         );
 
 
-        alert(
+        showAuthError(
+          document.getElementById("messageBox"),
           "Could not connect to backend. Check whether the backend server is running."
         );
 

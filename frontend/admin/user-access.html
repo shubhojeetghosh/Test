@@ -386,7 +386,7 @@
 
             <div class="page-heading">
                 <h1>Manage User Access</h1>
-                <p>Manage paid quiz access for this user</p>
+                <p>Review this student’s requested sets and unlock after payment is confirmed</p>
             </div>
 
             <div class="topbar-right">
@@ -429,8 +429,7 @@
                     <h2>Paid Quiz Access</h2>
 
                     <p>
-                        Control which paid quizzes this user can
-                        access from the student portal.
+                        Only sets requested by this student appear here. Confirm payment before unlocking.
                     </p>
 
                 </div>
@@ -480,15 +479,14 @@
                 <div class="panel-header">
 
                     <div>
-                        <h3>Paid Quizzes</h3>
+                        <h3>Requested Sets</h3>
                         <p>
-                            Unlock or lock individual paid quizzes
-                            for this student.
+                            Unlock only the sets this student selected at checkout.
                         </p>
                     </div>
 
                     <span class="access-count" id="accessCount">
-                        0 unlocked
+                        0 pending
                     </span>
 
                 </div>
@@ -506,9 +504,9 @@
                         <thead>
                             <tr>
                                 <th>QUIZ</th>
-                                <th>SET</th>
-                                <th>ACCESS</th>
-                                <th>LAST UPDATED</th>
+                                <th>REQUESTED SET</th>
+                                <th>STUDENT</th>
+                                <th>REQUESTED</th>
                                 <th>ACTION</th>
                             </tr>
                         </thead>
@@ -518,7 +516,7 @@
                             <tr>
                                 <td colspan="5">
                                     <div class="access-loading">
-                                        Loading paid quizzes...
+                                        Loading requested sets...
                                     </div>
                                 </td>
                             </tr>
@@ -543,9 +541,8 @@
                     <strong>Access control</strong>
 
                     <p>
-                        Locked quizzes will not be available to this
-                        student through the paid quiz access system.
-                        Set 1 is free and is not managed from this page.
+                        A set becomes available to the student after an admin confirms payment and unlocks it.
+                        Students can request paid sets individually at checkout.
                     </p>
 
                 </div>
@@ -943,480 +940,81 @@ document.addEventListener("DOMContentLoaded", () => {
        ========================================================= */
 
     async function loadAccessPage() {
-
         showLoading();
         hideMessage();
-
-
         try {
-
-            const [
-                examsResponse,
-                accessResponse
-            ] = await Promise.all([
-
-                apiFetch(
-                    `${API_BASE_URL}/admin/exams`
-                ),
-
-                apiFetch(
-                    `${API_BASE_URL}/admin/student-access`
-                )
-
-            ]);
-
-
-            const examsData =
-                await readJson(examsResponse);
-
-            const accessData =
-                await readJson(accessResponse);
-
-
-            if (!examsResponse.ok) {
-
-                throw new Error(
-                    examsData.detail ||
-                    "Unable to load quizzes."
-                );
-
-            }
-
-
-            if (!accessResponse.ok) {
-
-                throw new Error(
-                    accessData.detail ||
-                    "Unable to load access information."
-                );
-
-            }
-
-
-            const exams =
-                Array.isArray(examsData)
-                    ? examsData
-                    : Array.isArray(examsData.exams)
-                        ? examsData.exams
-                        : [];
-
-
-            const allAccessRecords =
-                Array.isArray(accessData.records)
-                    ? accessData.records
-                    : [];
-
-
-            const userAccess =
-                allAccessRecords.filter(
-                    record =>
-                        String(record.student_id) ===
-                        String(studentId)
-                );
-
-
-            /*
-             * Load all sets belonging to all exams.
-             */
-
-            const setResults =
-                await Promise.all(
-                    exams.map(
-                        async exam => {
-
-                            try {
-
-                                const response =
-                                    await apiFetch(
-                                        `${API_BASE_URL}/admin/exams/${exam.id}/sets`
-                                    );
-
-
-                                if (!response.ok) {
-                                    return [];
-                                }
-
-
-                                const sets =
-                                    await readJson(response);
-
-
-                                if (!Array.isArray(sets)) {
-                                    return [];
-                                }
-
-
-                                return sets.map(
-                                    set => ({
-                                        ...set,
-                                        exam_title:
-                                            exam.title
-                                    })
-                                );
-
-                            } catch (error) {
-
-                                console.error(
-                                    `Failed to load sets for exam ${exam.id}:`,
-                                    error
-                                );
-
-                                return [];
-
-                            }
-
-                        }
-                    )
-                );
-
-
-            const allSets =
-                setResults.flat();
-
-
-            /*
-             * Set 1 is free.
-             * Existing backend explicitly prevents
-             * Set 1 from being unlocked.
-             */
-
-            const paidSets =
-                allSets.filter(
-                    set =>
-                        Number(set.set_number) !== 1
-                );
-
-
-            renderAccessTable(
-                paidSets,
-                userAccess
+            const response = await apiFetch(
+                `${API_BASE_URL}/admin/student-access/requests?student_id=${encodeURIComponent(studentId)}`
             );
-
-
+            const data = await readJson(response);
+            if (!response.ok) {
+                throw new Error(data.detail || "Unable to load set requests.");
+            }
+            renderAccessTable(Array.isArray(data.requests) ? data.requests : []);
         } catch (error) {
-
-            console.error(
-                "Access page error:",
-                error
-            );
-
-
+            console.error("Set request page error:", error);
             showEmpty(
-                "Unable to load quiz access",
-                error.message ||
-                "Something went wrong while loading the access data."
+                "Unable to load set requests",
+                error.message || "Something went wrong while loading this student's requests."
             );
-
         }
-
     }
 
-
-    /* =========================================================
-       RENDER ACCESS TABLE
-       ========================================================= */
-
-    function renderAccessTable(
-        paidSets,
-        userAccess
-    ) {
-
+    function renderAccessTable(requests) {
         accessTableBody.innerHTML = "";
-
-
-        const unlockedIds =
-            new Set(
-                userAccess.map(
-                    record =>
-                        String(record.exam_set_id)
-                )
-            );
-
-
-        accessCount.textContent =
-            `${unlockedIds.size} unlocked`;
-
-
-        if (!paidSets.length) {
-
+        accessCount.textContent = `${requests.length} pending`;
+        if (!requests.length) {
             showEmpty(
-                "No paid quizzes found",
-                "Paid exam sets will appear here when they are available."
+                "No set requests yet",
+                "This student’s selected paid sets will appear here after checkout."
             );
-
             return;
         }
 
-
-        paidSets.forEach(set => {
-
-            const unlocked =
-                unlockedIds.has(
-                    String(set.id)
-                );
-
-
-            const record =
-                userAccess.find(
-                    item =>
-                        String(item.exam_set_id) ===
-                        String(set.id)
-                );
-
-
-            const updatedAt =
-                record && record.unlocked_at
-                    ? formatDate(record.unlocked_at)
-                    : "—";
-
-
-            const row =
-                document.createElement("tr");
-
-
+        requests.forEach(request => {
+            const row = document.createElement("tr");
             row.innerHTML = `
-
+                <td><strong>${escapeHtml(request.exam_title || "Untitled Quiz")}</strong></td>
                 <td>
-
-                    <strong>
-                        ${escapeHtml(
-                            set.exam_title ||
-                            "Untitled Quiz"
-                        )}
-                    </strong>
-
-                    <div class="muted-small">
-                        ${escapeHtml(
-                            set.set_name || ""
-                        )}
-                    </div>
-
+                    <strong>Set ${escapeHtml(String(request.set_number))}</strong>
+                    <div class="muted-small">${escapeHtml(request.exam_set_title || "")}</div>
                 </td>
-
                 <td>
-                    Set ${escapeHtml(
-                        String(set.set_number)
-                    )}
+                    ${escapeHtml(request.student_name || "Student")}
+                    <div class="muted-small">${escapeHtml(request.student_email || "")}</div>
                 </td>
-
+                <td>${escapeHtml(formatDate(request.requested_at))}</td>
                 <td>
-
-                    <span
-                        class="access-status ${
-                            unlocked
-                                ? "unlocked"
-                                : "locked"
-                        }">
-
-                        ${
-                            unlocked
-                                ? "Unlocked"
-                                : "Locked"
-                        }
-
-                    </span>
-
-                </td>
-
-                <td>
-                    ${escapeHtml(updatedAt)}
-                </td>
-
-                <td>
-
-                    <button
-                        class="access-action-btn ${
-                            unlocked
-                                ? "lock"
-                                : "unlock"
-                        }"
-                        data-set-id="${escapeHtml(
-                            String(set.id)
-                        )}"
-                        data-unlocked="${unlocked}">
-
-                        ${
-                            unlocked
-                                ? "Lock"
-                                : "Unlock"
-                        }
-
+                    <button class="access-action-btn unlock" data-request-id="${escapeHtml(String(request.request_id))}">
+                        Approve &amp; Unlock
                     </button>
-
                 </td>
-
             `;
-
-
             accessTableBody.appendChild(row);
-
         });
-
     }
 
-
-    /* =========================================================
-       LOCK / UNLOCK BUTTON
-       ========================================================= */
-
-    accessTableBody.addEventListener(
-        "click",
-        async event => {
-
-            const button =
-                event.target.closest(
-                    ".access-action-btn"
-                );
-
-
-            if (!button) {
-                return;
+    accessTableBody.addEventListener("click", async event => {
+        const button = event.target.closest(".access-action-btn[data-request-id]");
+        if (!button || !button.dataset.requestId) return;
+        button.disabled = true;
+        try {
+            const response = await apiFetch(
+                `${API_BASE_URL}/admin/student-access/requests/${encodeURIComponent(button.dataset.requestId)}/unlock`,
+                { method: "POST" }
+            );
+            const data = await readJson(response);
+            if (!response.ok) {
+                throw new Error(data.detail || "Unable to approve and unlock this set.");
             }
-
-
-            const examSetId =
-                button.dataset.setId;
-
-            const currentlyUnlocked =
-                button.dataset.unlocked === "true";
-
-
-            if (!examSetId) {
-                return;
-            }
-
-
-            button.disabled = true;
-
-
-            try {
-
-                if (currentlyUnlocked) {
-
-                    await lockQuiz(examSetId);
-
-                } else {
-
-                    await unlockQuiz(examSetId);
-
-                }
-
-
-                await loadAccessPage();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Access update failed:",
-                    error
-                );
-
-                showMessage(
-                    error.message ||
-                    "Unable to update quiz access.",
-                    "error"
-                );
-
-                button.disabled = false;
-
-            }
-
+            showMessage("Set approved and unlocked for this student.", "success");
+            await loadAccessPage();
+        } catch (error) {
+            console.error("Set approval failed:", error);
+            showMessage(error.message || "Unable to update this set request.", "error");
+            button.disabled = false;
         }
-    );
-
-
-    /* =========================================================
-       UNLOCK
-       Existing backend endpoint:
-       POST /admin/student-access/unlock
-       ========================================================= */
-
-    async function unlockQuiz(examSetId) {
-
-        const response =
-            await apiFetch(
-                `${API_BASE_URL}/admin/student-access/unlock`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        student_id:
-                            Number(studentId),
-
-                        exam_set_ids: [
-                            Number(examSetId)
-                        ]
-                    })
-                }
-            );
-
-
-        const data =
-            await readJson(response);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                "Unable to unlock quiz."
-            );
-
-        }
-
-
-        showMessage(
-            "Paid quiz unlocked successfully.",
-            "success"
-        );
-
-    }
-
-
-    /* =========================================================
-       LOCK
-       This requires the DELETE endpoint shown below.
-       DELETE /admin/student-access/{student_id}/{exam_set_id}
-       ========================================================= */
-
-    async function lockQuiz(examSetId) {
-
-        const response =
-            await apiFetch(
-                `${API_BASE_URL}/admin/student-access/${encodeURIComponent(studentId)}/${encodeURIComponent(examSetId)}`,
-                {
-                    method: "DELETE"
-                }
-            );
-
-
-        const data =
-            await readJson(response);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                "Unable to lock quiz."
-            );
-
-        }
-
-
-        showMessage(
-            "Paid quiz locked successfully.",
-            "success"
-        );
-
-    }
-
+    });
 
     /* =========================================================
        UI HELPERS
@@ -1431,7 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td colspan="5">
 
                     <div class="access-loading">
-                        Loading paid quizzes...
+                        Loading requested sets...
                     </div>
 
                 </td>

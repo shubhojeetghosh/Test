@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -9,12 +10,72 @@ from app.routes.auth import get_current_user_id
 from app.admin_portal.models.exam_set import ExamSet
 from app.admin_portal.models.student_exam_access import StudentExamAccess
 from app.models.orm import ExamSessionModel
+from app.models.student_set_purchase_request import StudentSetPurchaseRequest
+
+
+class SetPurchaseRequestBody(BaseModel):
+    exam_set_ids: list[int] = Field(min_length=1, max_length=50)
 
 
 router = APIRouter(
     prefix="/api/student",
     tags=["Student Access"],
 )
+
+
+@router.post("/access-requests", status_code=201)
+def request_paid_set_access(
+    request: SetPurchaseRequestBody,
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    requested_ids = set(request.exam_set_ids)
+    if len(requested_ids) != len(request.exam_set_ids):
+        raise HTTPException(status_code=400, detail="Duplicate exam sets were selected")
+
+    exam_sets = db.scalars(select(ExamSet).where(ExamSet.id.in_(requested_ids))).all()
+    if len(exam_sets) != len(requested_ids):
+        raise HTTPException(status_code=404, detail="One or more selected sets were not found")
+    if any(exam_set.set_number == 1 for exam_set in exam_sets):
+        raise HTTPException(status_code=400, detail="Set 1 is free and cannot be purchased")
+
+    active_access_ids = set(db.scalars(
+        select(StudentExamAccess.exam_set_id).where(
+            StudentExamAccess.student_id == current_user_id,
+            StudentExamAccess.exam_set_id.in_(requested_ids),
+        )
+    ).all())
+    if active_access_ids:
+        raise HTTPException(
+            status_code=409,
+            detail="You already have access to one or more selected sets. Refresh the set list and try again.",
+        )
+
+    existing_requests = {
+        item.exam_set_id: item
+        for item in db.scalars(select(StudentSetPurchaseRequest).where(
+            StudentSetPurchaseRequest.student_id == current_user_id,
+            StudentSetPurchaseRequest.exam_set_id.in_(requested_ids),
+        )).all()
+    }
+    for exam_set in exam_sets:
+        existing = existing_requests.get(exam_set.id)
+        if existing is None:
+            db.add(StudentSetPurchaseRequest(
+                student_id=current_user_id,
+                exam_set_id=exam_set.id,
+            ))
+        elif existing.status != "PENDING":
+            existing.status = "PENDING"
+            existing.requested_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            existing.handled_by = None
+            existing.handled_at = None
+
+    db.commit()
+    return {
+        "message": "Selected sets were sent to the administrator for payment review.",
+        "requested_exam_set_ids": sorted(requested_ids),
+    }
 
 
 @router.get("/access")
