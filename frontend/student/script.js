@@ -48,6 +48,10 @@ function escapeStudentHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function studentLoginHistoryKey(email) {
+  return `eps_student_login_seen:${String(email || "").trim().toLowerCase()}`;
+}
+
 const API_ENDPOINTS = {
 
   login:
@@ -1100,6 +1104,8 @@ if (registrationOtpForm) {
           role: data.role,
         }));
         localStorage.setItem("login_type", "student");
+        localStorage.setItem("student_dashboard_greeting", "welcome");
+        localStorage.setItem(studentLoginHistoryKey(data.email || email), "true");
         sessionStorage.removeItem("pending_registration_email");
         window.location.replace("dashboard.html");
       } catch (error) {
@@ -1212,8 +1218,10 @@ function switchLoginType(type) {
     }
 
     if (loginTitle) {
-      loginTitle.textContent =
-        "Welcome back";
+      const loginEmail = document.getElementById("loginEmail")?.value || "";
+      const hasLoggedInBefore = loginEmail
+        && localStorage.getItem(studentLoginHistoryKey(loginEmail)) === "true";
+      loginTitle.textContent = hasLoggedInBefore ? "Welcome back" : "Welcome";
     }
 
     if (loginDescription) {
@@ -1306,6 +1314,17 @@ function switchLoginType(type) {
   }
 
 }
+
+const studentLoginEmailInput = document.getElementById("loginEmail");
+studentLoginEmailInput?.addEventListener("input", () => {
+  if (selectedLoginType !== "student") return;
+  const title = document.getElementById("loginTitle");
+  if (!title) return;
+  const hasLoggedInBefore = studentLoginEmailInput.value.trim()
+    && localStorage.getItem(studentLoginHistoryKey(studentLoginEmailInput.value)) === "true";
+  title.textContent = hasLoggedInBefore ? "Welcome back" : "Welcome";
+});
+studentLoginEmailInput?.dispatchEvent(new Event("input", { bubbles: true }));
 /* =========================================================
    LOGIN RETURN URL
    ========================================================= */
@@ -1505,6 +1524,14 @@ if (loginForm) {
           );
 
           return;
+        }
+
+        if (backendRole === "student") {
+          const accountEmail = String(data.email || email).trim().toLowerCase();
+          const historyKey = studentLoginHistoryKey(accountEmail);
+          const isFirstLogin = localStorage.getItem(historyKey) !== "true";
+          localStorage.setItem("student_dashboard_greeting", isFirstLogin ? "welcome" : "welcome_back");
+          localStorage.setItem(historyKey, "true");
         }
 
 
@@ -2175,6 +2202,16 @@ async function loadDashboardProfile() {
 
     const welcomeNameElement =
         document.getElementById("dashboardUserName");
+
+    const dashboardGreetingElement =
+        document.getElementById("dashboardGreeting");
+
+    if (dashboardGreetingElement) {
+        dashboardGreetingElement.textContent =
+            localStorage.getItem("student_dashboard_greeting") === "welcome"
+                ? "Welcome,"
+                : "Welcome back,";
+    }
 
 
     // Make sure this code only runs on the dashboard
