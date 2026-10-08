@@ -44,6 +44,52 @@ router = APIRouter(
 )
 
 
+def _questions_from_exam(exam):
+    """Serialize an already-loaded exam and sign all of its media in one call."""
+    media_values = [
+        value
+        for question in exam.questions
+        for value in (question.image_url, question.audio_url)
+    ] + [
+        value
+        for question in exam.questions
+        for option in question.options
+        for value in (option.image_url, option.audio_url)
+    ]
+    try:
+        signed_media = resolve_media_urls(media_values)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Exam media is temporarily unavailable.",
+        ) from exc
+
+    return [
+        QuestionResponse(
+            id=str(question.id),
+            question_number=question.question_number,
+            question_type=(
+                question.question_type.value
+                if hasattr(question.question_type, "value")
+                else str(question.question_type).lower()
+            ),
+            text=question.text or "",
+            image_url=signed_media.get(question.image_url, question.image_url),
+            audio_url=signed_media.get(question.audio_url, question.audio_url),
+            options=[
+                OptionResponse(
+                    id=str(option.id),
+                    text=option.text or "",
+                    image_url=signed_media.get(option.image_url, option.image_url),
+                    audio_url=signed_media.get(option.audio_url, option.audio_url),
+                )
+                for option in question.options
+            ],
+        )
+        for question in exam.questions
+    ]
+
+
 # ============================================================
 # START ATTEMPT
 # ============================================================
@@ -172,6 +218,7 @@ def start_attempt(
         expires_at=attempt.expires_at,
         status=attempt.status.value,
         duration_minutes=exam.duration_minutes,
+        questions=_questions_from_exam(exam),
     )
 
 
@@ -219,55 +266,9 @@ def get_attempt_questions(
             detail="Exam not found.",
         )
 
-    media_values = [
-        value
-        for question in exam.questions
-        for value in (question.image_url, question.audio_url)
-    ] + [
-        value
-        for question in exam.questions
-        for option in question.options
-        for value in (option.image_url, option.audio_url)
-    ]
-    try:
-        signed_media = resolve_media_urls(media_values)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail="Exam media is temporarily unavailable.") from exc
-
-    questions = []
-
-    for question in exam.questions:
-
-        options = []
-
-        for option in question.options:
-
-            options.append(
-                OptionResponse(
-                    id=str(option.id),
-                    text=option.text or "",
-                    image_url=signed_media.get(option.image_url, option.image_url),
-                    audio_url=signed_media.get(option.audio_url, option.audio_url),
-                )
-            )
-
-        questions.append(
-            QuestionResponse(
-                id=str(question.id),
-                question_number=question.question_number,
-                question_type=str(
-                    question.question_type
-                ).lower(),
-                text=question.text or "",
-                image_url=signed_media.get(question.image_url, question.image_url),
-                audio_url=signed_media.get(question.audio_url, question.audio_url),
-                options=options,
-            )
-        )
-
     return QuestionsResponse(
         attempt_id=attempt.id,
-        questions=questions,
+        questions=_questions_from_exam(exam),
     )
 
 

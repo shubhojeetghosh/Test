@@ -72,6 +72,7 @@ class StartAttemptResponse(BaseModel):
     started_at: datetime
     expires_at: float
     duration_minutes: int
+    questions: list[QuestionResponse] = Field(default_factory=list)
 
 
 class AttemptStatusResponse(BaseModel):

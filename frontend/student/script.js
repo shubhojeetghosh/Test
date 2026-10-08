@@ -3647,8 +3647,15 @@ const fetchQuestionPage = async (offset) => {
     };
 };
 
+let allQuestions = Array.isArray(started.questions)
+    ? [...started.questions]
+    : [];
+
+// Newer backends return the questions with the started attempt, avoiding an
+// extra network round trip. Keep the endpoint fallback for older deployments.
+if (allQuestions.length === 0) {
 const firstQuestionPage = await fetchQuestionPage(0);
-const allQuestions = Array.isArray(firstQuestionPage.questions)
+allQuestions = Array.isArray(firstQuestionPage.questions)
     ? [...firstQuestionPage.questions]
     : (firstQuestionPage.questions.questions || []);
 const questionCount = Number.isFinite(firstQuestionPage.total)
@@ -3707,6 +3714,7 @@ if (Number.isFinite(questionCount)) {
         if (questions.length < questionPageSize) break;
         offset += questions.length;
     }
+}
 }
 
         console.log(
