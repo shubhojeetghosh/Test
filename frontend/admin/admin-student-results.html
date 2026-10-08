@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="../api-config.js"></script>
+  <script src="session-guard.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Exam Results | EPS TOPIK Admin</title>
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="../theme.css">
+  <script src="../theme.js"></script>
+  <style>
+    .student-results-page { padding: 28px 32px; }
+    .student-results-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; }
+    .student-results-heading h2 { margin:0 0 6px; }
+    .student-results-heading p { margin:0; color:#64748b; }
+    .student-results-card { overflow-x:auto; background:#fff; border:1px solid #e2e8f0; border-radius:14px; }
+    .student-results-table { width:100%; border-collapse:collapse; min-width:720px; }
+    .student-results-table th,.student-results-table td { padding:14px 16px; border-bottom:1px solid #e8edf4; text-align:left; }
+    .student-results-table th { background:#f8fafc; color:#64748b; font-size:12px; text-transform:uppercase; }
+    .student-results-table tr:last-child td { border-bottom:0; }
+    .student-results-message { padding:22px 18px; color:#64748b; }
+    .student-back-link { color:#2563eb; text-decoration:none; font-weight:600; }
+    @media(max-width:700px) { .student-results-page { padding:20px 14px; } .student-results-heading { align-items:flex-start; flex-direction:column; } }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo"><div class="logo-icon">E</div><div><h2>EPS TOPIK</h2><span>Admin Panel</span></div></div>
+      <nav class="sidebar-nav">
+        <p class="nav-title">MAIN</p>
+        <a href="admin.html#dashboard" class="nav-item"><span class="nav-icon">▦</span>Dashboard</a>
+        <a href="admin.html#users" class="nav-item active"><span class="nav-icon">♙</span>Users</a>
+        <a href="admin.html#results" class="nav-item"><span class="nav-icon">◒</span>Results</a>
+      </nav>
+      <div class="sidebar-bottom"><button class="logout-btn" id="logoutBtn">↪ Logout</button></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div class="page-heading"><h1>Student Results</h1><p id="studentSubtitle">Exam history for this student</p></div></header>
+      <section class="student-results-page">
+        <div class="student-results-heading">
+          <div><h2 id="studentName">Loading student…</h2><p id="studentEmail"></p></div>
+          <a class="student-back-link" href="admin.html#users">← Back to users</a>
+        </div>
+        <div class="student-results-card">
+          <table class="student-results-table">
+            <thead><tr><th>Exam</th><th>Set</th><th>Score</th><th>Percentage</th><th>Correct</th><th>Status</th><th>Submitted</th></tr></thead>
+            <tbody id="studentResultsBody"><tr><td colspan="7" class="student-results-message">Loading exam history…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="admin-student-results.js"></script>
+</body>
+</html>

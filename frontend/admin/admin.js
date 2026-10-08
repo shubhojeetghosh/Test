@@ -2935,6 +2935,13 @@ if (viewResultModal) {
                         </button>
 
                         <button
+                            type="button"
+                            class="table-action student-results-btn"
+                            data-user-id="${escapeAdminHtml(user.id)}">
+                            Results
+                        </button>
+
+                        <button
                             class="table-action edit-user-btn"
                             data-user-id="${escapeAdminHtml(user.id)}">
                             Edit
@@ -4650,6 +4657,15 @@ if (editUserForm) {
                         selectedUser
                     );
 
+                }
+
+                if (
+                    button.classList.contains(
+                        "student-results-btn"
+                    )
+                ) {
+                    window.location.href =
+                        `admin-student-results.html?user_id=${encodeURIComponent(userId)}`;
                 }
 
 

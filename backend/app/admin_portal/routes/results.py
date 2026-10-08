@@ -239,6 +239,7 @@ def build_attempt_responses(db: Session, attempts: list[ExamSession]):
             "started_at": attempt.started_at,
             "submitted_at": attempt.submitted_at,
             "status": attempt.status,
+            "set_id": attempt.set_id,
             "result": result_summary,
         })
     return responses
@@ -300,7 +301,43 @@ def build_attempt_response(
 
         "status": attempt.status,
 
+        "set_id": attempt.set_id,
+
         "result": attempt_result,
+    }
+
+
+# ============================================================
+# GET ALL EXAM ATTEMPTS
+# ============================================================
+
+@router.get("/users/{user_id}/attempts")
+def get_student_attempts(
+    user_id: int,
+    current_admin=Depends(get_current_admin),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Return paginated exam attempts/results for one student to admins."""
+    student = db.scalar(select(User).where(User.id == user_id))
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    attempts = db.scalars(
+        select(ExamSession)
+        .where(ExamSession.user_id == user_id)
+        .order_by(ExamSession.id.desc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
+    return {
+        "student": {
+            "id": student.id,
+            "name": student.name,
+            "email": student.email,
+        },
+        "attempts": build_attempt_responses(db, attempts),
     }
 
 

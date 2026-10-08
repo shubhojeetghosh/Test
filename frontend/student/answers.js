@@ -315,6 +315,23 @@ document.addEventListener(
                     data.percentage || 0
                 );
 
+            const scoreCircle =
+                document.querySelector(
+                    ".result-score-circle"
+                );
+
+            if (scoreCircle) {
+                const boundedPercentage = Math.min(
+                    100,
+                    Math.max(0, Number.isFinite(percentage) ? percentage : 0)
+                );
+
+                scoreCircle.style.setProperty(
+                    "--score-progress",
+                    `${boundedPercentage}%`
+                );
+            }
+
 
             const questions =
                 Array.isArray(
@@ -850,6 +867,10 @@ document.addEventListener(
         // =========================================================
 
         function showError() {
+
+            document.querySelector(
+                ".result-score-circle"
+            )?.style.setProperty("--score-progress", "0%");
 
             setText(
                 "resultPercentage",
