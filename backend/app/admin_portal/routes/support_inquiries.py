@@ -1,4 +1,5 @@
 from datetime import timezone
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -10,9 +11,12 @@ from sqlalchemy.orm import Session
 from app.admin_portal.models.support_inquiry import SupportInquiry
 from app.admin_portal.models.user import User
 from app.admin_portal.routes.auth import get_current_admin
+from app.admin_portal.services.email_service import send_support_inquiry_email
+from app.admin_portal.core.config import settings as admin_settings
 from app.core.rate_limit import enforce_rate_limit
 from app.database.database import get_db
 
+logger = logging.getLogger(__name__)
 
 public_router = APIRouter(prefix="/contact", tags=["Contact"])
 admin_router = APIRouter(prefix="/admin/inquiries", tags=["Admin Inquiries"])
@@ -84,7 +88,38 @@ def create_inquiry(
             detail="Your message could not be saved. Please try again later.",
         ) from exc
 
-    return {"message": "Your message has been received."}
+    # Persist first so the admin portal inbox remains authoritative even if
+    # SMTP is temporarily unavailable. Notify every active admin account.
+    admin_emails = db.scalars(
+        select(User.email).where(func.lower(User.role) == "admin")
+    ).all()
+    if not admin_emails and admin_settings.ADMIN_EMAIL:
+        admin_emails = [admin_settings.ADMIN_EMAIL]
+
+    email_sent = False
+    for recipient_email in dict.fromkeys(
+        str(address).strip().lower() for address in admin_emails if address
+    ):
+        try:
+            send_support_inquiry_email(
+                recipient_email,
+                name=inquiry.name,
+                sender_email=inquiry.email,
+                subject=inquiry.subject,
+                message=inquiry.message,
+            )
+            email_sent = True
+        except Exception:
+            logger.exception("Failed to send an administrator inquiry notification")
+
+    return {
+        "message": (
+            "Your message was sent to the administrator and saved in the admin portal."
+            if email_sent
+            else "Your message was saved in the admin portal, but its email notification could not be sent."
+        ),
+        "email_sent": email_sent,
+    }
 
 
 @admin_router.get("")

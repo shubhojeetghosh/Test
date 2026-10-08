@@ -12,6 +12,7 @@ def _send_email(
     recipient_email: str,
     subject: str,
     body: str,
+    reply_to: str | None = None,
 ) -> None:
     """
     Internal helper used to send an email through
@@ -28,6 +29,8 @@ def _send_email(
     )
 
     message["To"] = recipient_email
+    if reply_to:
+        message["Reply-To"] = reply_to
 
     message.set_content(body.strip())
 
@@ -44,6 +47,32 @@ def _send_email(
         )
 
         server.send_message(message)
+
+
+def send_support_inquiry_email(
+    recipient_email: str,
+    *,
+    name: str,
+    sender_email: str,
+    subject: str,
+    message: str,
+) -> None:
+    """Notify an administrator of a website inquiry; replies go to the sender."""
+    body = f"""A new message was submitted through the EPS-TOPIK website.
+
+From: {name}
+Email: {sender_email}
+Subject: {subject}
+
+Message:
+{message}
+"""
+    _send_email(
+        recipient_email=recipient_email,
+        subject=f"Website inquiry: {subject}",
+        body=body,
+        reply_to=sender_email,
+    )
 
 
 # =========================================================

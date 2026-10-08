@@ -687,9 +687,8 @@
         .catch(function () {});
     }
 
-    /* Contact form -> admin inbox.
-       CONTACT_ENDPOINT is a placeholder: set it to your backend route. */
-    var CONTACT_ENDPOINT = (window.API_BASE_URL || "") + "/api/contact";
+    /* Contact form -> saved admin inbox and administrator email notice. */
+    var CONTACT_ENDPOINT = (window.API_BASE_URL || "") + "/contact/inquiries";
     var cForm = document.getElementById("contactForm");
     if (cForm) {
       var cStatus = document.getElementById("contactStatus");
@@ -705,7 +704,8 @@
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) { say("Enter a valid email address.", "err"); return; }
         cBtn.disabled = true; say("Sending…");
         fetch(CONTACT_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-          .then(function (r) { if (!r.ok) throw new Error("status " + r.status); cForm.reset(); say("Message sent. The administrator will reply by email.", "ok"); })
+          .then(function (r) { return r.json().then(function (data) { if (!r.ok) throw new Error(data.detail || "Could not send your message."); return data; }); })
+          .then(function (data) { cForm.reset(); say(data.message || "Message sent. The administrator will reply by email.", "ok"); })
           .catch(function () { say("Could not send your message. Please try again, or use the WhatsApp link below.", "err"); })
           .then(function () { cBtn.disabled = false; });
       });
