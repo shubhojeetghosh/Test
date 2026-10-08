@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: Optional[str] = None
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
     SUPABASE_MEDIA_BUCKET: str = "exam-media"
+    ZEROBOUNCE_API_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=(

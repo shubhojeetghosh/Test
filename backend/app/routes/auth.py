@@ -5,8 +5,10 @@
 # ============================================================
 
 from datetime import datetime, timedelta, timezone
+import logging
 import secrets
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from email_validator import EmailNotValidError, validate_email
@@ -32,6 +34,7 @@ from app.core.email import send_otp_email, send_registration_otp_email
 
 from app.models import PasswordResetOTP, PendingStudentRegistration, User
 
+logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 def get_current_user_id(
@@ -141,8 +144,8 @@ class ResetPasswordRequest(BaseModel):
     )
 
 
-def _validate_registration_email_domain(email: str) -> str:
-    """Reject syntactically invalid addresses and domains that cannot accept mail."""
+def _validate_registration_email(email: str) -> str:
+    """Validate syntax, mail domain, and mailbox before any registration OTP is sent."""
     try:
         validated = validate_email(
             email,
@@ -157,6 +160,49 @@ def _validate_registration_email_domain(email: str) -> str:
                 "receive email."
             ),
         ) from exc
+
+    api_key = settings.ZEROBOUNCE_API_KEY
+    if not api_key:
+        logger.error("Registration blocked because mailbox validation is not configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Email verification is temporarily unavailable. Please try again later.",
+        )
+
+    try:
+        response = httpx.post(
+            "https://api.zerobounce.net/v2/validate",
+            data={
+                "api_key": api_key,
+                "email": validated.normalized,
+                "ip_address": "",
+                "timeout": 15,
+            },
+            timeout=httpx.Timeout(20.0, connect=5.0),
+        )
+        result = response.json()
+    except (httpx.HTTPError, ValueError):
+        logger.warning("Registration mailbox validation service is unavailable")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We could not verify this email right now. Please try again shortly.",
+        ) from None
+
+    if response.status_code != 200 or not isinstance(result, dict) or result.get("error"):
+        logger.warning(
+            "Registration mailbox validation failed with status %s",
+            response.status_code,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We could not verify this email right now. Please try again shortly.",
+        )
+
+    if str(result.get("status", "")).strip().lower() != "valid":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid email address. Please enter a working email address that you can access.",
+        )
 
     return validated.normalized
 
@@ -175,9 +221,7 @@ def register(
             detail="Please enter your full name.",
         )
 
-    normalized_email = _validate_registration_email_domain(
-        str(data.email).strip().lower()
-    )
+    normalized_email = str(data.email).strip().lower()
     enforce_rate_limit(
         db,
         scope="student-register",
@@ -192,6 +236,8 @@ def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
+
+    normalized_email = _validate_registration_email(normalized_email)
 
     # Legacy pending accounts used to be inserted into `users` before email
     # verification. Keep their existing OTPs usable, but never create new
@@ -436,9 +482,7 @@ def resend_registration_otp(
     data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    email = _validate_registration_email_domain(
-        str(data.email).strip().lower()
-    )
+    email = str(data.email).strip().lower()
     enforce_rate_limit(
         db,
         scope="student-registration-resend-request",
@@ -452,6 +496,7 @@ def resend_registration_otp(
         .with_for_update()
     )
     if pending is not None:
+        email = _validate_registration_email(email)
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         elapsed = (now - pending.created_at).total_seconds()
         if elapsed < REGISTRATION_OTP_COOLDOWN_SECONDS:
@@ -468,6 +513,7 @@ def resend_registration_otp(
     if user is None or str(user.role).strip().lower() != "student" or user.email_verified:
         # Avoid disclosing account state to unauthenticated callers.
         return {"message": "If registration is pending, a verification code will be sent."}
+    email = _validate_registration_email(email)
     _send_registration_code(db, user)
     return {"message": "A new verification code has been sent to your email."}
 
