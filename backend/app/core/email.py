@@ -3,6 +3,7 @@
 import logging
 import os
 import smtplib
+from email.utils import formataddr
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -17,6 +18,7 @@ OTP_EXPIRE_MINUTES = max(1, int(os.getenv("OTP_EXPIRE_MINUTES", "5")))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 MAIL_FROM = os.getenv("SMTP_FROM_EMAIL", os.getenv("MAIL_FROM", SMTP_USERNAME))
+MAIL_FROM_NAME = "EPS TOPIK EXAM"
 
 
 def _send_email(to_email: str, subject: str, body: str, purpose: str) -> bool:
@@ -25,7 +27,7 @@ def _send_email(to_email: str, subject: str, body: str, purpose: str) -> bool:
         return False
 
     message = MIMEMultipart()
-    message["From"] = MAIL_FROM
+    message["From"] = formataddr((MAIL_FROM_NAME, MAIL_FROM))
     message["To"] = to_email
     message["Subject"] = subject
     message.attach(MIMEText(body.strip(), "plain"))

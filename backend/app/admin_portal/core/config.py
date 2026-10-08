@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SMTP_FROM_EMAIL", "MAIL_FROM")
     )
 
-    SMTP_FROM_NAME: str = "EPS-TOPIK"
+    SMTP_FROM_NAME: str = "EPS TOPIK EXAM"
 
     # Recipients for the two-person approval step in admin onboarding.
     ADMIN_EMAIL: str = ""
