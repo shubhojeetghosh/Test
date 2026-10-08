@@ -99,7 +99,7 @@ function logout() {
   localStorage.removeItem("access_token");
   localStorage.removeItem("token_type");
 
-  window.location.href = "login.html";
+  window.location.replace("../index.html");
 }
 //////profile
 /* =========================================================
@@ -1764,8 +1764,7 @@ function logout() {
   );
 
 
-  window.location.href =
-    "login.html";
+  window.location.replace("../index.html");
 }
 /* =========================================================
    EXAM RESULT PAGE

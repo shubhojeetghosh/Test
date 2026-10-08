@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head><script src="../api-config.js"></script>
+<script src="session-guard.js"></script>
   <meta charset="UTF-8">
 
   <meta
@@ -3264,9 +3265,8 @@ if (logoutBtn) {
                 "adminProfilePicture"
             );
 
-            /* Redirect to admin login */
-            window.location.href =
-                "ad-login.html";
+            /* Replace the protected page so Back cannot reopen it. */
+            window.location.replace("../index.html");
         }
     );
 }

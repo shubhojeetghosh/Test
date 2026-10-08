@@ -4980,8 +4980,7 @@ if (saveAdminSettings) {
                  */
 
 
-                window.location.href =
-                    "ad-login.html";
+                window.location.replace("../index.html");
 
             }
         );
