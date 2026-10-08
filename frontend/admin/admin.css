@@ -1651,6 +1651,7 @@ td {
 .inquiries-summary span:last-child { color: #74819a; font-size: 11px; }
 .inquiries-feedback { min-height: 18px; margin-bottom: 9px; color: #64738e; font-size: 12px; }
 .inquiries-feedback[data-state="error"] { color: #c43f52; }
+.inquiries-feedback[data-state="success"] { color: #16784c; }
 .inquiries-list { display: grid; gap: 12px; }
 .inquiry-item { padding: 18px 20px; border: 1px solid #e2e8f2; border-radius: 12px; background: #fff; box-shadow: 0 4px 13px rgba(23,39,71,.035); }
 .inquiry-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
@@ -1666,6 +1667,14 @@ td {
 .inquiry-actions { display: flex; gap: 8px; }
 .inquiry-actions a, .inquiry-actions button { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0 11px; border: 1px solid #dce4f1; border-radius: 7px; background: #fff; color: #315be8; font: inherit; font-size: 10px; font-weight: 700; text-decoration: none; }
 .inquiry-actions button:hover, .inquiry-actions a:hover { background: #f4f7ff; border-color: #b8c8ef; }
+.inquiry-reply-form { margin-top: 16px; padding: 16px; border: 1px solid #dce4f1; border-radius: 10px; background: #f8faff; }
+.inquiry-reply-form[hidden] { display: none; }
+.inquiry-reply-form label { display: grid; gap: 8px; color: #263853; font-size: 12px; font-weight: 700; }
+.inquiry-reply-form textarea { width: 100%; min-height: 104px; resize: vertical; padding: 11px 12px; border: 1px solid #d4deed; border-radius: 8px; color: #263853; background: #fff; font: inherit; font-size: 13px; line-height: 1.6; }
+.inquiry-reply-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.inquiry-reply-actions button { min-height: 34px; padding: 0 13px; border: 1px solid #dce4f1; border-radius: 7px; background: #fff; color: #315be8; font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.inquiry-reply-actions button[type="submit"] { border-color: #315be8; background: #315be8; color: #fff; }
+.inquiry-reply-actions button:disabled { cursor: wait; opacity: .65; }
 .inquiries-empty { padding: 38px 20px; border: 1px dashed #d7dfeb; border-radius: 12px; background: #fff; color: #74819a; text-align: center; font-size: 12px; }
 @media (max-width: 650px) {
     .inquiry-item-header { flex-direction: column; }

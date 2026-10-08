@@ -58,6 +58,7 @@ def send_support_inquiry_email(
     message: str,
 ) -> None:
     """Notify an administrator of a website inquiry; replies go to the sender."""
+    safe_subject = " ".join(subject.splitlines()).strip()
     body = f"""A new message was submitted through the EPS-TOPIK website.
 
 From: {name}
@@ -69,9 +70,36 @@ Message:
 """
     _send_email(
         recipient_email=recipient_email,
-        subject=f"Website inquiry: {subject}",
+        subject=f"Website inquiry: {safe_subject}",
         body=body,
         reply_to=sender_email,
+    )
+
+
+def send_admin_inquiry_reply(
+    recipient_email: str,
+    *,
+    student_name: str,
+    admin_name: str,
+    admin_email: str,
+    subject: str,
+    reply: str,
+) -> None:
+    """Send an administrator's response to a student inquiry."""
+    safe_subject = " ".join(subject.splitlines()).strip()
+    body = f"""Hello {student_name},
+
+{reply.strip()}
+
+Regards,
+{admin_name}
+EPS-TOPIK Admin Team
+"""
+    _send_email(
+        recipient_email=recipient_email,
+        subject=f"Re: {safe_subject}",
+        body=body,
+        reply_to=admin_email,
     )
 
 

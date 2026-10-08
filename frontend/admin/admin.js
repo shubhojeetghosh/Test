@@ -247,9 +247,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     badge.textContent = isResolved ? "Resolved" : "New";
                     const actions = document.createElement("div");
                     actions.className = "inquiry-actions";
-                    const reply = document.createElement("a");
-                    reply.href = email.href;
-                    reply.textContent = "Reply by email";
+                    const reply = document.createElement("button");
+                    reply.type = "button";
+                    reply.dataset.replyInquiryId = String(inquiry.id);
+                    reply.textContent = "Reply to student";
                     reply.setAttribute("aria-label", `Reply to ${inquiry.name || inquiry.email}`);
                     const statusButton = document.createElement("button");
                     statusButton.type = "button";
@@ -258,7 +259,33 @@ document.addEventListener("DOMContentLoaded", () => {
                     statusButton.textContent = isResolved ? "Reopen" : "Mark resolved";
                     actions.append(reply, statusButton);
                     footer.append(badge, actions);
-                    card.append(header, subject, message, footer);
+
+                    const replyForm = document.createElement("form");
+                    replyForm.className = "inquiry-reply-form";
+                    replyForm.dataset.inquiryReplyForm = String(inquiry.id);
+                    replyForm.hidden = true;
+                    const replyLabel = document.createElement("label");
+                    replyLabel.textContent = `Email a reply to ${inquiry.email || "the student"}`;
+                    const replyInput = document.createElement("textarea");
+                    replyInput.name = "message";
+                    replyInput.required = true;
+                    replyInput.maxLength = 4000;
+                    replyInput.rows = 4;
+                    replyInput.placeholder = "Write your reply…";
+                    replyLabel.append(replyInput);
+                    const replyActions = document.createElement("div");
+                    replyActions.className = "inquiry-reply-actions";
+                    const cancelReply = document.createElement("button");
+                    cancelReply.type = "button";
+                    cancelReply.dataset.cancelInquiryReply = "true";
+                    cancelReply.textContent = "Cancel";
+                    const sendReply = document.createElement("button");
+                    sendReply.type = "submit";
+                    sendReply.textContent = "Send reply";
+                    replyActions.append(cancelReply, sendReply);
+                    replyForm.append(replyLabel, replyActions);
+
+                    card.append(header, subject, message, footer, replyForm);
                     adminInquiriesList.append(card);
                 });
             }
@@ -275,6 +302,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (adminInquiriesList) {
         adminInquiriesList.addEventListener("click", async event => {
+            const replyButton = event.target.closest("button[data-reply-inquiry-id]");
+            if (replyButton) {
+                const form = adminInquiriesList.querySelector(
+                    `form[data-inquiry-reply-form="${CSS.escape(replyButton.dataset.replyInquiryId)}"]`
+                );
+                if (form) {
+                    form.hidden = !form.hidden;
+                    if (!form.hidden) form.querySelector("textarea")?.focus();
+                }
+                return;
+            }
+
+            const cancelButton = event.target.closest("button[data-cancel-inquiry-reply]");
+            if (cancelButton) {
+                const form = cancelButton.closest("form");
+                if (form) {
+                    form.reset();
+                    form.hidden = true;
+                }
+                return;
+            }
+
             const button = event.target.closest("button[data-inquiry-id]");
             if (!button) return;
             button.disabled = true;
@@ -298,6 +347,48 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (error) {
                 button.disabled = false;
                 setInquiriesFeedback(error.message || "Unable to update this message.", "error");
+            }
+        });
+
+        adminInquiriesList.addEventListener("submit", async event => {
+            const form = event.target.closest("form[data-inquiry-reply-form]");
+            if (!form) return;
+            event.preventDefault();
+
+            const textarea = form.elements.message;
+            const sendButton = form.querySelector('button[type="submit"]');
+            const reply = textarea.value.trim();
+            if (!reply) {
+                textarea.focus();
+                setInquiriesFeedback("Write a reply before sending.", "error");
+                return;
+            }
+
+            sendButton.disabled = true;
+            sendButton.textContent = "Sending…";
+            setInquiriesFeedback("Sending reply to the student…");
+            try {
+                const adminToken = localStorage.getItem("admin_access_token");
+                const response = await fetch(
+                    `${API_BASE_URL}/admin/inquiries/${encodeURIComponent(form.dataset.inquiryReplyForm)}/reply`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${adminToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ message: reply })
+                    }
+                );
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.detail || "The reply could not be sent.");
+                await loadAdminInquiries();
+                setInquiriesFeedback(data.message || "Reply sent to the student.", "success");
+            } catch (error) {
+                setInquiriesFeedback(error.message || "The reply could not be sent.", "error");
+            } finally {
+                sendButton.disabled = false;
+                sendButton.textContent = "Send reply";
             }
         });
     }

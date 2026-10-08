@@ -96,6 +96,11 @@ html[data-theme="dark"] :is(.welcome-card, .panel, .stat-card, .activity-item,
   border-color: #2a3850;
   color: #e5ebf7;
 }
+html[data-theme="dark"] .inquiry-reply-form { background-color: #0d1727; border-color: #35445d; }
+html[data-theme="dark"] .inquiry-reply-form label { color: #dce6fa; }
+html[data-theme="dark"] .inquiry-reply-form textarea { background-color: #131e30; border-color: #35445d; color: #e5ebf7; }
+html[data-theme="dark"] .inquiry-reply-actions button:not([type="submit"]) { background-color: #17253a; border-color: #35445d; color: #dce6fa; }
+html[data-theme="dark"] .inquiries-feedback[data-state="success"] { color: #78d6a7; }
 html[data-theme="dark"] :is(.main-content, .content-section, .admin-panel-body) { background-color: #0b1220; }
 html[data-theme="dark"] .sidebar { background-color: #0a1120; }
 html[data-theme="dark"] .sidebar-hover, html[data-theme="dark"] .nav-item:hover { background-color: #22334c; }

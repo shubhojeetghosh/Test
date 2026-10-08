@@ -11,7 +11,10 @@ from sqlalchemy.orm import Session
 from app.admin_portal.models.support_inquiry import SupportInquiry
 from app.admin_portal.models.user import User
 from app.admin_portal.routes.auth import get_current_admin
-from app.admin_portal.services.email_service import send_support_inquiry_email
+from app.admin_portal.services.email_service import (
+    send_admin_inquiry_reply,
+    send_support_inquiry_email,
+)
 from app.admin_portal.core.config import settings as admin_settings
 from app.core.rate_limit import enforce_rate_limit
 from app.database.database import get_db
@@ -34,6 +37,12 @@ class InquiryCreate(BaseModel):
 
 class InquiryStatusUpdate(BaseModel):
     status: Literal["new", "resolved"]
+
+
+class InquiryReply(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    message: str = Field(min_length=1, max_length=4000)
 
 
 def _serialize(inquiry: SupportInquiry) -> dict:
@@ -170,3 +179,51 @@ def update_inquiry_status(
             detail="Unable to update this inquiry right now.",
         ) from exc
     return _serialize(inquiry)
+
+
+@admin_router.post("/{inquiry_id}/reply")
+def reply_to_inquiry(
+    inquiry_id: int,
+    request: InquiryReply,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    inquiry = db.get(SupportInquiry, inquiry_id)
+    if inquiry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Inquiry not found.",
+        )
+
+    try:
+        send_admin_inquiry_reply(
+            inquiry.email,
+            student_name=inquiry.name,
+            admin_name=current_admin.name,
+            admin_email=current_admin.email,
+            subject=inquiry.subject,
+            reply=request.message,
+        )
+    except Exception as exc:
+        logger.exception("Failed to send an admin reply to a student inquiry")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The reply could not be emailed. Check the email service configuration and try again.",
+        ) from exc
+
+    inquiry.status = "resolved"
+    try:
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.exception("Reply was sent but inquiry status could not be updated")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The reply was sent, but the inbox status could not be updated.",
+        ) from exc
+
+    return {
+        "message": f"Reply sent to {inquiry.email}.",
+        "email": inquiry.email,
+        "status": inquiry.status,
+    }
