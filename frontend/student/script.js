@@ -3491,6 +3491,21 @@ if (setNumberElement) {
         window.EPS_API?.baseUrl ||
         window.API_BASE_URL;
 
+    const readApiError = async (response) => {
+        const raw = await response.text();
+        let detail = raw;
+        try {
+            const payload = JSON.parse(raw);
+            detail = payload.detail || payload.message || raw;
+        } catch (_) {
+            // Keep a plain-text response as the diagnostic detail.
+        }
+        const error = new Error(String(detail || `Request failed (${response.status})`));
+        error.status = response.status;
+        error.detail = String(detail || "");
+        return error;
+    };
+
     try {
 
         /* =========================================
@@ -3526,19 +3541,15 @@ console.log("======================================");
 );
 
         if (!startResponse.ok) {
-
-            const errorText =
-                await startResponse.text();
+            const apiError = await readApiError(startResponse);
 
             console.error(
                 "Start attempt error:",
                 startResponse.status,
-                errorText
+                apiError.detail
             );
 
-            throw new Error(
-                `Unable to start exam (${startResponse.status})`
-            );
+            throw apiError;
         }
 
         const started =
@@ -3619,15 +3630,13 @@ const fetchQuestionPage = async (offset) => {
     );
 
     if (!pageResponse.ok) {
-        const errorText = await pageResponse.text();
+        const apiError = await readApiError(pageResponse);
         console.error(
             "Exam questions API error:",
             pageResponse.status,
-            errorText
+            apiError.detail
         );
-        throw new Error(
-            `Unable to load exam questions (${pageResponse.status})`
-        );
+        throw apiError;
     }
 
     const totalHeader = pageResponse.headers.get("X-Total-Count");
@@ -3725,11 +3734,48 @@ if (Number.isFinite(questionCount)) {
             error
         );
 
+        let heading = "We couldn't load this exam.";
+        let message = "Please try again in a moment.";
+        let action = "";
+
+        if (error.status === 403) {
+            const isLockedSet = /not been unlocked|not unlocked|locked/i.test(error.detail || error.message);
+            heading = isLockedSet ? "This test set is locked" : "You can’t access this test set yet";
+            message = isLockedSet
+                ? "The administrator hasn’t unlocked this set for your account yet. Go back to the test sets page and request access. You can start the exam after it’s approved."
+                : "Your account doesn’t currently have permission to start this set. Please return to the test sets page or contact the administrator.";
+            action = '<a class="exam-load-error-action" href="set.html">Go to test sets</a>';
+        } else if (error.status === 401) {
+            heading = "Please log in again";
+            message = "Your sign-in session may have expired. Log in, then open this test set again.";
+            action = `<a class="exam-load-error-action" href="login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}">Log in</a>`;
+        } else if (error.status === 404) {
+            heading = "This test set couldn’t be found";
+            message = "It may have been removed or is no longer available. Return to the test sets page to choose another set.";
+            action = '<a class="exam-load-error-action" href="set.html">Browse test sets</a>';
+        } else if (error.status >= 500) {
+            heading = "The exam service is temporarily unavailable";
+            message = "Your exam didn’t start. Please wait a moment and try again. If this keeps happening, contact the administrator.";
+            action = '<button class="exam-load-error-action" type="button" id="retryLoadExam">Try again</button>';
+        } else if (error instanceof TypeError || /failed to fetch|networkerror/i.test(error.message || "")) {
+            heading = "Couldn’t connect to the exam service";
+            message = "Check your internet connection and try again.";
+            action = '<button class="exam-load-error-action" type="button" id="retryLoadExam">Try again</button>';
+        } else {
+            message = error.message || message;
+        }
+
         optionsContainer.innerHTML = `
-            <p style="color:red;">
-                ${escapeStudentHtml(error.message)}
-            </p>
+            <div class="exam-load-error" role="alert">
+                <strong>${escapeStudentHtml(heading)}</strong>
+                <p>${escapeStudentHtml(message)}</p>
+                ${action}
+            </div>
         `;
+        document.getElementById("retryLoadExam")?.addEventListener("click", () => {
+            optionsContainer.innerHTML = "<p>Trying to load the exam…</p>";
+            loadStudentExamQuestions();
+        }, { once: true });
     }
 }
 

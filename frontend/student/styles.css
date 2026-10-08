@@ -2363,6 +2363,45 @@ body:has(#options) #options {
     gap: 11px !important;
 }
 
+body:has(#options) .exam-load-error {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 20px;
+    border: 1px solid #f3c5c5;
+    border-radius: 14px;
+    background: #fff7f7;
+    color: #26334d;
+    text-align: left;
+}
+
+body:has(#options) .exam-load-error strong {
+    display: block;
+    color: #a32222;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+body:has(#options) .exam-load-error p {
+    margin: 0 0 14px;
+    line-height: 1.55;
+}
+
+body:has(#options) .exam-load-error-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 9px;
+    background: #2563eb;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
 
 /* =========================================================
    ANSWER BUTTONS
