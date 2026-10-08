@@ -9,6 +9,7 @@ import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from email_validator import EmailNotValidError, validate_email
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -140,6 +141,26 @@ class ResetPasswordRequest(BaseModel):
     )
 
 
+def _validate_registration_email_domain(email: str) -> str:
+    """Reject syntactically invalid addresses and domains that cannot accept mail."""
+    try:
+        validated = validate_email(
+            email,
+            check_deliverability=True,
+            timeout=5,
+        )
+    except EmailNotValidError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Please use a valid email address with a domain that can "
+                "receive email."
+            ),
+        ) from exc
+
+    return validated.normalized
+
+
 @router.post("/register")
 def register(
     data: RegisterRequest,
@@ -154,7 +175,9 @@ def register(
             detail="Please enter your full name.",
         )
 
-    normalized_email = str(data.email).strip().lower()
+    normalized_email = _validate_registration_email_domain(
+        str(data.email).strip().lower()
+    )
     enforce_rate_limit(
         db,
         scope="student-register",
@@ -413,7 +436,9 @@ def resend_registration_otp(
     data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    email = str(data.email).strip().lower()
+    email = _validate_registration_email_domain(
+        str(data.email).strip().lower()
+    )
     enforce_rate_limit(
         db,
         scope="student-registration-resend-request",
