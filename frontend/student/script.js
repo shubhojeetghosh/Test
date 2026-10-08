@@ -817,10 +817,13 @@ function togglePassword(inputId, button) {
 const registerForm = document.getElementById("registerForm");
 
 if (registerForm) {
+  let registrationRequestInFlight = false;
+  let registrationRedirecting = false;
 
   registerForm.addEventListener("submit", async function (event) {
 
     event.preventDefault();
+    if (registrationRequestInFlight) return;
 
     // Get values from register.html
     const name =
@@ -865,6 +868,7 @@ if (registerForm) {
       return;
     }
 
+    registrationRequestInFlight = true;
 
     try {
 
@@ -969,7 +973,8 @@ if (registerForm) {
       }
       // Keep only the email temporarily; passwords and OTPs never enter storage or URLs.
       sessionStorage.setItem("pending_registration_email", email.toLowerCase());
-      window.location.href = "verify-registration.html";
+      registrationRedirecting = true;
+      window.location.replace("verify-registration.html");
 
     } catch (error) {
 
@@ -994,12 +999,13 @@ if (registerForm) {
 
     } finally {
 
-      if (registerButton) {
+      if (!registrationRedirecting) {
+        registrationRequestInFlight = false;
 
-        registerButton.disabled = false;
-
-        registerButton.textContent =
-          "Send verification code";
+        if (registerButton) {
+          registerButton.disabled = false;
+          registerButton.textContent = "Send verification code";
+        }
 
       }
 
@@ -1015,6 +1021,7 @@ if (registerForm) {
 
 const registrationOtpForm = document.getElementById("registrationOtpForm");
 if (registrationOtpForm) {
+  let verificationRequestInFlight = false;
   const email = sessionStorage.getItem("pending_registration_email") || "";
   const emailLabel = document.getElementById("registrationEmailLabel");
   const otpInput = document.getElementById("registrationOtp");
@@ -1064,11 +1071,13 @@ if (registrationOtpForm) {
 
     registrationOtpForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (verificationRequestInFlight) return;
       const otp = (otpInput?.value || "").trim();
       if (!/^\d{6}$/.test(otp)) {
         if (messageBox) messageBox.textContent = "Enter the 6-digit code from your email.";
         return;
       }
+      verificationRequestInFlight = true;
       verifyButton.disabled = true;
       verifyButton.textContent = "Verifying...";
       try {
@@ -1094,10 +1103,13 @@ if (registrationOtpForm) {
         sessionStorage.removeItem("pending_registration_email");
         window.location.replace("dashboard.html");
       } catch (error) {
+        verificationRequestInFlight = false;
         if (messageBox) messageBox.textContent = error.message || "Could not verify your email. Try again.";
       } finally {
-        verifyButton.disabled = false;
-        verifyButton.textContent = "Verify email";
+        if (!verificationRequestInFlight) {
+          verifyButton.disabled = false;
+          verifyButton.textContent = "Verify email";
+        }
       }
     });
 
