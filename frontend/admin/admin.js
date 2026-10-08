@@ -171,6 +171,102 @@ document.addEventListener("DOMContentLoaded", () => {
     const inquiriesFeedback = document.getElementById("inquiriesFeedback");
     const newInquiryCount = document.getElementById("newInquiryCount");
 
+    const notificationsButton = document.getElementById("adminNotificationsButton");
+    const notificationsPanel = document.getElementById("adminNotificationsPanel");
+    const notificationsList = document.getElementById("adminNotificationsList");
+    const notificationsDot = document.getElementById("adminNotificationsDot");
+    const notificationsCount = document.getElementById("adminNotificationsCount");
+
+    async function loadSetRequestNotifications() {
+        if (!notificationsList) return;
+        const adminToken = localStorage.getItem("admin_access_token");
+        if (!adminToken) {
+            notificationsList.innerHTML = '<p class="admin-notifications-empty">Sign in again to view set requests.</p>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/student-access/requests`, {
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.detail || "Could not load set requests.");
+            const requests = Array.isArray(data.requests) ? data.requests : [];
+
+            if (notificationsDot) notificationsDot.hidden = requests.length === 0;
+            if (notificationsCount) {
+                notificationsCount.hidden = requests.length === 0;
+                notificationsCount.textContent = requests.length > 99 ? "99+" : String(requests.length);
+            }
+            if (!requests.length) {
+                notificationsList.innerHTML = '<p class="admin-notifications-empty">No pending set requests.</p>';
+                return;
+            }
+
+            notificationsList.innerHTML = requests.map(request => `
+                <article class="admin-set-request">
+                    <strong>${escapeAdminHtml(request.student_name || "Student")}</strong>
+                    <p>${escapeAdminHtml(request.student_email || "")}</p>
+                    <p>${escapeAdminHtml(request.exam_title || "Exam")} · Set ${escapeAdminHtml(request.set_number ?? "—")}${request.exam_set_title ? ` — ${escapeAdminHtml(request.exam_set_title)}` : ""}</p>
+                    <div class="admin-set-request-actions">
+                        <button type="button" class="approve-request" data-set-request-action="unlock" data-request-id="${escapeAdminHtml(request.request_id)}">Approve &amp; unlock</button>
+                        <button type="button" class="reject-request" data-set-request-action="reject" data-request-id="${escapeAdminHtml(request.request_id)}">Decline</button>
+                    </div>
+                </article>
+            `).join("");
+        } catch (error) {
+            console.error("Unable to load set request notifications:", error);
+            notificationsList.innerHTML = `<p class="admin-notifications-empty">${escapeAdminHtml(error.message || "Could not load set requests.")}</p>`;
+        }
+    }
+
+    if (notificationsButton && notificationsPanel) {
+        notificationsButton.addEventListener("click", () => {
+            const opening = notificationsPanel.hidden;
+            notificationsPanel.hidden = !opening;
+            notificationsButton.setAttribute("aria-expanded", String(opening));
+            if (opening) loadSetRequestNotifications();
+        });
+
+        document.getElementById("refreshAdminNotifications")?.addEventListener(
+            "click", loadSetRequestNotifications
+        );
+
+        notificationsList?.addEventListener("click", async event => {
+            const button = event.target.closest("[data-set-request-action][data-request-id]");
+            if (!button) return;
+            const action = button.dataset.setRequestAction;
+            const requestId = button.dataset.requestId;
+            button.disabled = true;
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/admin/student-access/requests/${encodeURIComponent(requestId)}/${action}`,
+                    {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${localStorage.getItem("admin_access_token")}` }
+                    }
+                );
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.detail || "Could not update this request.");
+                await loadSetRequestNotifications();
+            } catch (error) {
+                console.error("Set request action failed:", error);
+                button.disabled = false;
+                button.textContent = error.message || "Please try again";
+            }
+        });
+
+        document.addEventListener("click", event => {
+            if (!notificationsPanel.hidden && !event.target.closest(".admin-notification-wrap")) {
+                notificationsPanel.hidden = true;
+                notificationsButton.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        loadSetRequestNotifications();
+        window.setInterval(loadSetRequestNotifications, 60000);
+    }
+
     function setInquiriesFeedback(message, state = "") {
         if (!inquiriesFeedback) return;
         inquiriesFeedback.textContent = message;

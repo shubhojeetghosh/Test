@@ -21,7 +21,7 @@ router = APIRouter(
 
 @router.get("/requests")
 def get_pending_set_purchase_requests(
-    student_id: int = Query(..., gt=0),
+    student_id: int | None = Query(default=None, gt=0),
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
@@ -42,8 +42,12 @@ def get_pending_set_purchase_requests(
         .join(Exam, Exam.id == ExamSet.exam_id)
         .where(
             User.role.ilike("student"),
-            StudentSetPurchaseRequest.student_id == student_id,
             StudentSetPurchaseRequest.status == "PENDING",
+        )
+        .where(
+            StudentSetPurchaseRequest.student_id == student_id
+            if student_id is not None
+            else True
         )
         .order_by(StudentSetPurchaseRequest.requested_at.asc())
     ).mappings().all()
@@ -66,6 +70,27 @@ def get_pending_set_purchase_requests(
             for row in records
         ],
     }
+
+
+@router.post("/requests/{request_id}/reject")
+def reject_set_purchase_request(
+    request_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    purchase_request = db.scalar(
+        select(StudentSetPurchaseRequest).where(
+            StudentSetPurchaseRequest.id == request_id
+        )
+    )
+    if purchase_request is None or purchase_request.status != "PENDING":
+        raise HTTPException(status_code=404, detail="Pending set request not found")
+
+    purchase_request.status = "REJECTED"
+    purchase_request.handled_by = current_admin.id
+    purchase_request.handled_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.commit()
+    return {"message": "Set request declined."}
 
 
 @router.post("/requests/{request_id}/unlock")

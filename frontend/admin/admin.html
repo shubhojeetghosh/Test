@@ -107,10 +107,22 @@
 
                 <div class="topbar-right">
 
-                    <button class="notification-btn" title="Notifications">
-                        ♢
-                        <span class="notification-dot"></span>
-                    </button>
+                    <div class="admin-notification-wrap">
+                        <button class="notification-btn" id="adminNotificationsButton" type="button" title="Set requests" aria-expanded="false" aria-controls="adminNotificationsPanel">
+                            ♢
+                            <span class="notification-dot" id="adminNotificationsDot" hidden></span>
+                            <span class="notification-count" id="adminNotificationsCount" hidden></span>
+                        </button>
+                        <section class="admin-notifications-panel" id="adminNotificationsPanel" hidden aria-label="Pending set requests">
+                            <div class="admin-notifications-heading">
+                                <strong>Set purchase requests</strong>
+                                <button type="button" id="refreshAdminNotifications">Refresh</button>
+                            </div>
+                            <div id="adminNotificationsList" class="admin-notifications-list">
+                                <p class="admin-notifications-empty">Loading requests…</p>
+                            </div>
+                        </section>
+                    </div>
 
                  <div class="top-profile">
     <div class="profile-avatar" id="topAdminAvatar"></div>
