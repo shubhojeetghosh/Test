@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import ensure_exam_set_access, get_current_user
+from app.admin_portal.models.exam import Exam as AdminExam
 from app.models.orm import QuestionModel, OptionModel
 from app.schemas.quiz import QuestionResponse, OptionResponse
 from app.services.media_storage import resolve_media_urls
@@ -12,6 +14,51 @@ router = APIRouter(
     prefix="/api/exam-sets",
     tags=["Student Exams"],
 )
+
+
+@router.get(
+    "/{set_id}/summary",
+    summary="Get accessible exam set details and question counts",
+)
+def get_exam_set_summary(
+    set_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Return backend-owned display metadata for one accessible exam set."""
+    exam_set = ensure_exam_set_access(db, current_user.id, set_id)
+    exam = db.scalar(select(AdminExam).where(AdminExam.id == exam_set.exam_id))
+    if exam is None:
+        raise HTTPException(status_code=404, detail="Exam not found.")
+
+    grouped_counts = db.execute(
+        select(
+            func.lower(QuestionModel.question_type),
+            func.count(QuestionModel.id),
+        )
+        .where(
+            QuestionModel.exam_id == exam_set.exam_id,
+            QuestionModel.set_id == set_id,
+            QuestionModel.status == "PUBLISHED",
+        )
+        .group_by(func.lower(QuestionModel.question_type))
+    ).all()
+    counts = {str(question_type or "").lower(): int(count) for question_type, count in grouped_counts}
+    total_questions = sum(counts.values())
+    listening_questions = counts.get("listening", 0)
+
+    return {
+        "exam_id": exam_set.exam_id,
+        "chapter_name": exam.title,
+        "set_id": exam_set.id,
+        "set_number": exam_set.set_number,
+        "set_name": exam_set.set_name,
+        "total_questions": total_questions,
+        "reading_visual_questions": total_questions - listening_questions,
+        "listening_questions": listening_questions,
+        "duration_minutes": exam.duration_minutes,
+        "total_marks": float(exam.total_marks or 0),
+    }
 
 
 @router.get(

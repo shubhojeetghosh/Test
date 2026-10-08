@@ -3457,12 +3457,13 @@ async function loadStudentExamQuestions() {
 
 const examId = params.get("exam");
 const setId = params.get("set");
+const actualSetNumber = params.get("set_number") || setId;
 const setNumberElement =
     document.getElementById("setNumber");
 
 if (setNumberElement) {
     setNumberElement.textContent =
-        setId ? String(setId).padStart(2, "0") : "--";
+        actualSetNumber ? String(actualSetNumber).padStart(2, "0") : "--";
 }
 
     if (!setId) {

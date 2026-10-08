@@ -983,7 +983,7 @@
             class="set-badge"
             id="setBadge"
           >
-            📋 &nbsp; Set No. 01
+            📋 &nbsp; Loading set details…
           </div>
 
 
@@ -1002,7 +1002,7 @@
           class="exam-subtitle"
           id="examSubtitle"
         >
-          Set No. 01 — Exam Instructions
+          Loading exam details…
         </div>
 
 
@@ -1018,9 +1018,7 @@
               Total Questions
             </span>
 
-            <strong>
-              40
-            </strong>
+            <strong id="totalQuestionCount">—</strong>
 
           </div>
 
@@ -1031,9 +1029,7 @@
               Reading &amp; Visuals
             </span>
 
-            <strong>
-              20 Questions
-            </strong>
+            <strong id="readingVisualQuestionCount">—</strong>
 
           </div>
 
@@ -1044,9 +1040,7 @@
               Listening
             </span>
 
-            <strong>
-              20 Questions
-            </strong>
+            <strong id="listeningQuestionCount">—</strong>
 
           </div>
 
@@ -1070,21 +1064,20 @@
           </li>
 
           <li>
-            The test contains a total of 40 questions.
+            The test contains a total of <span id="instructionTotalQuestionCount">—</span> questions.
           </li>
 
           <li>
-            There are 20 Reading questions and
-            20 Listening questions.
+            There are <span id="instructionReadingVisualCount">—</span> Reading &amp; Visual questions and
+            <span id="instructionListeningCount">—</span> Listening questions.
           </li>
 
           <li>
-            Each question carries 2.5 marks,
-            making the total score 100.
+            The total score for this test is <span id="instructionTotalMarks">—</span> marks.
           </li>
 
           <li>
-            The total time for the exam is 50 minutes.
+            The total time for the exam is <span id="instructionDuration">—</span> minutes.
           </li>
 
           <li>
@@ -1211,15 +1204,15 @@
 const examId = params.get("exam");
 const requestedSet = Number(params.get("set"));
 
-if (!examId || !Number.isInteger(requestedSet)) {
+if (!examId || !Number.isInteger(requestedSet) || requestedSet < 1) {
   alert("Exam information is missing. Please select the exam again.");
   window.location.href = "set.html";
   throw new Error("Missing exam or set ID");
 }
 
 const setId = requestedSet;
-
-const formattedSet = String(setId).padStart(2, "0");
+let actualSetNumber = null;
+let examSetSummaryLoaded = false;
 
 
     const categoryNames = {
@@ -1251,20 +1244,59 @@ const formattedSet = String(setId).padStart(2, "0");
     };
 
 
-   const categoryName = "EPS TOPIK";
+    const setBadge = document.getElementById("setBadge");
+    const examSubtitle = document.getElementById("examSubtitle");
+    const setSummaryApi = `${window.API_BASE_URL || ""}/api/exam-sets/${encodeURIComponent(setId)}/summary`;
 
-    /* Set information */
+    async function loadExamSetSummary() {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        window.location.replace(`login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+        return;
+      }
 
-    document
-      .getElementById("setBadge")
-      .innerHTML =
-        `📋 &nbsp; Set No. ${formattedSet}`;
+      try {
+        const response = await fetch(setSummaryApi, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const summary = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(summary.detail || `Could not load this set (${response.status}).`);
+        if (String(summary.exam_id) !== String(examId)) {
+          throw new Error("This set does not belong to the selected chapter.");
+        }
 
+        actualSetNumber = Number(summary.set_number);
+        const formattedSet = String(actualSetNumber).padStart(2, "0");
+        const totalQuestions = Number(summary.total_questions) || 0;
+        const readingVisualQuestions = Number(summary.reading_visual_questions) || 0;
+        const listeningQuestions = Number(summary.listening_questions) || 0;
 
-    document
-      .getElementById("examSubtitle")
-      .textContent =
-        `${categoryName} • Set No. ${formattedSet} — Exam Instructions`;
+        setBadge.textContent = `📋  Set No. ${formattedSet}`;
+        examSubtitle.textContent = `${summary.chapter_name || "EPS TOPIK"} • Set No. ${formattedSet} — Exam Instructions`;
+        document.getElementById("totalQuestionCount").textContent = totalQuestions;
+        document.getElementById("readingVisualQuestionCount").textContent = `${readingVisualQuestions} Questions`;
+        document.getElementById("listeningQuestionCount").textContent = `${listeningQuestions} Questions`;
+        document.getElementById("instructionTotalQuestionCount").textContent = totalQuestions;
+        document.getElementById("instructionReadingVisualCount").textContent = readingVisualQuestions;
+        document.getElementById("instructionListeningCount").textContent = listeningQuestions;
+        document.getElementById("instructionTotalMarks").textContent = Number(summary.total_marks || 0).toLocaleString();
+        document.getElementById("instructionDuration").textContent = Number(summary.duration_minutes || 0);
+
+        if (!totalQuestions) {
+          examSubtitle.textContent = `${summary.chapter_name || "EPS TOPIK"} • Set No. ${formattedSet} — No published questions yet`;
+          startBtn.disabled = true;
+          return;
+        }
+
+        examSetSummaryLoaded = true;
+        startBtn.disabled = !checkbox.checked;
+      } catch (error) {
+        console.error("Failed to load exam set details:", error);
+        setBadge.textContent = "Set details unavailable";
+        examSubtitle.textContent = error.message || "Could not load this exam set. Return to the set list and try again.";
+        startBtn.disabled = true;
+      }
+    }
 
 
 
@@ -1431,7 +1463,7 @@ const formattedSet = String(setId).padStart(2, "0");
       function () {
 
         startBtn.disabled =
-          !this.checked;
+          !this.checked || !examSetSummaryLoaded;
 
       }
     );
@@ -1445,11 +1477,15 @@ const formattedSet = String(setId).padStart(2, "0");
     startBtn.addEventListener(
   "click",
   function () {
+    if (!examSetSummaryLoaded || actualSetNumber === null) return;
     window.location.href =
       `exam.html?exam=${encodeURIComponent(examId)}` +
-      `&set=${encodeURIComponent(setId)}`;
+      `&set=${encodeURIComponent(setId)}` +
+      `&set_number=${encodeURIComponent(actualSetNumber)}`;
   }
 );
+
+    loadExamSetSummary();
 
 
 
