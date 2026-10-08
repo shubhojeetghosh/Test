@@ -495,7 +495,7 @@
             <label class="cf-field">Email address<input type="email" id="contactEmail" name="email" autocomplete="email" required maxlength="150"></label>
           </div>
           <label class="cf-field">Subject<input type="text" id="contactSubject" name="subject" required maxlength="150"></label>
-          <label class="cf-field">Your message<textarea id="contactMessage" name="message" required maxlength="2000"></textarea></label>
+          <label class="cf-field">Your message<textarea id="contactMessage" name="message" required minlength="10" maxlength="4000"></textarea></label>
           <div class="cf-actions">
             <span class="cf-status" id="contactStatus" role="status" aria-live="polite"></span>
             <button type="submit" class="cf-send" id="contactSend">Send message <span aria-hidden="true">→</span></button>
@@ -701,12 +701,13 @@
           subject: cForm.subject.value.trim(), message: cForm.message.value.trim()
         };
         if (!body.name || !body.email || !body.subject || !body.message) { say("Please fill in every field.", "err"); return; }
+        if (body.message.length < 10) { say("Please enter a message of at least 10 characters.", "err"); cForm.message.focus(); return; }
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) { say("Enter a valid email address.", "err"); return; }
         cBtn.disabled = true; say("Sending…");
         fetch(CONTACT_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
           .then(function (r) { return r.json().then(function (data) { if (!r.ok) throw new Error(data.detail || "Could not send your message."); return data; }); })
           .then(function (data) { cForm.reset(); say(data.message || "Message sent. The administrator will reply by email.", "ok"); })
-          .catch(function () { say("Could not send your message. Please try again, or use the WhatsApp link below.", "err"); })
+          .catch(function (error) { say(error && error.message ? error.message : "Could not reach the server. Please try again, or use the WhatsApp link below.", "err"); })
           .then(function () { cBtn.disabled = false; });
       });
     }
