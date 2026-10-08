@@ -138,11 +138,20 @@ def ensure_exam_set_access(db: Session, student_id: int, set_id: int) -> ExamSet
         )
         if now >= expires_at:
             active_session.status = "AUTO_SUBMITTED"
-            active_session.submitted_at = now
-            consume_paid_exam_set_access(db, student_id, set_id)
+            active_session.submitted_at = expires_at
+            # A repurchase made after this attempt expired belongs to the next
+            # attempt. Do not consume that newer entitlement while cleaning up
+            # the old expired session.
+            attempt_used_current_access = (
+                access is not None
+                and _utc_naive(active_session.started_at)
+                >= _utc_naive(access.unlocked_at)
+            )
+            if attempt_used_current_access:
+                consume_paid_exam_set_access(db, student_id, set_id)
+                access = None
             db.commit()
-            completed_at = now
-            access = None
+            completed_at = expires_at
 
     already_used = completed_at is not None and (
         exam_set.set_number == 1

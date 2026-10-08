@@ -51,16 +51,27 @@ class InMemoryAttemptRepository:
             None,
         )
 
-    def start_or_resume(self, attempt: Attempt, db=None) -> Attempt:
+    def start_or_resume(
+        self,
+        attempt: Attempt,
+        db=None,
+        allow_new_attempt: bool = False,
+    ) -> Attempt:
         """In-memory equivalent of the atomic PostgreSQL start operation."""
-        existing = self.get_by_exam_and_student(
-            attempt.exam_id,
-            attempt.student_id,
+        existing = next(
+            (
+                candidate
+                for candidate in reversed(list(self._attempts.values()))
+                if candidate.exam_id == attempt.exam_id
+                and candidate.student_id == attempt.student_id
+                and candidate.set_id == attempt.set_id
+            ),
+            None,
         )
         if existing is not None:
             if existing.status == AttemptStatus.IN_PROGRESS and not existing.is_expired():
                 return existing
-            if existing.status == AttemptStatus.SUBMITTED:
+            if existing.status == AttemptStatus.SUBMITTED and not allow_new_attempt:
                 return existing
             if existing.status == AttemptStatus.IN_PROGRESS:
                 existing.status = AttemptStatus.EXPIRED

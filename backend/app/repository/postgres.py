@@ -469,7 +469,10 @@ class PostgresAttemptRepository:
             db.close()
 
     def start_or_resume(
-        self, attempt: Attempt, db: Optional[Session] = None
+        self,
+        attempt: Attempt,
+        db: Optional[Session] = None,
+        allow_new_attempt: bool = False,
     ) -> Attempt:
         """Atomically resume or create an attempt across all app instances."""
         try:
@@ -506,7 +509,7 @@ class PostgresAttemptRepository:
                 .with_for_update()
                 .first()
             )
-            if submitted is not None:
+            if submitted is not None and not allow_new_attempt:
                 db.commit()
                 return self._session_to_attempt(submitted)
 
@@ -539,7 +542,7 @@ class PostgresAttemptRepository:
                     current.status = AttemptStatus.EXPIRED
                     db.commit()
                     return current
-                elif current.status == AttemptStatus.SUBMITTED:
+                elif current.status == AttemptStatus.SUBMITTED and not allow_new_attempt:
                     db.commit()
                     return current
 

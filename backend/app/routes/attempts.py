@@ -142,7 +142,14 @@ def start_attempt(
 
     # The production repository serializes simultaneous starts in PostgreSQL
     # and returns a database-backed ID that works on any Vercel instance.
-    attempt = attempt_repo.start_or_resume(attempt, db=db)
+    # A paid set is automatically locked after completion. If the access check
+    # above passed again, the student has a fresh unlock and may start a new
+    # attempt; keep the previous submitted attempt as historical data.
+    attempt = attempt_repo.start_or_resume(
+        attempt,
+        db=db,
+        allow_new_attempt=exam_set.set_number != 1,
+    )
 
     if attempt.status == AttemptStatus.SUBMITTED:
         raise HTTPException(
