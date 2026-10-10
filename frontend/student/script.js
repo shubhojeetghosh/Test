@@ -2577,11 +2577,15 @@ function renderRecentResults(results) {
         return;
     }
 
+    const viewAllLink = document.getElementById("recentResultsToggle");
+
 
     container.innerHTML = "";
 
 
     if (!results || results.length === 0) {
+
+        if (viewAllLink) viewAllLink.hidden = true;
 
         container.innerHTML = `
             <div class="result-row">
@@ -2603,13 +2607,30 @@ function renderRecentResults(results) {
     }
 
 
-    results.forEach(function (result) {
+    if (viewAllLink) {
+        viewAllLink.hidden = results.length <= 5;
+        viewAllLink.textContent = `View All (${results.length}) →`;
+        viewAllLink.setAttribute("aria-expanded", "false");
+        viewAllLink.onclick = function (event) {
+            event.preventDefault();
+            const showAll = viewAllLink.getAttribute("aria-expanded") !== "true";
+            container.querySelectorAll(".result-row[data-result-index]").forEach(function (row) {
+                row.hidden = !showAll && Number(row.dataset.resultIndex) >= 5;
+            });
+            viewAllLink.setAttribute("aria-expanded", String(showAll));
+            viewAllLink.textContent = showAll ? "Show Less ↑" : `View All (${results.length}) →`;
+        };
+    }
+
+    results.forEach(function (result, index) {
 
         const row =
             document.createElement("div");
 
         row.className =
             "result-row";
+        row.dataset.resultIndex = String(index);
+        row.hidden = index >= 5;
 
 
         const score =

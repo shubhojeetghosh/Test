@@ -181,5 +181,7 @@ def get_student_dashboard(
             "average_score": average_score,
         },
 
-        "recent_results": recent_results[:5],
+        # The dashboard initially shows five rows, but its View All control
+        # reveals the full history returned here.
+        "recent_results": recent_results,
     }
