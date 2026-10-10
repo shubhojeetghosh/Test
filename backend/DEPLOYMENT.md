@@ -2,13 +2,15 @@
 
 ## Supabase Storage
 
-Create a **private** Storage bucket named `exam-media` and set both the global and bucket maximum file size to 50 MB (subject to your Supabase plan). Keep the service-role key only in the backend environment; do not add it to frontend files or a `NEXT_PUBLIC_` variable. The backend issues short-lived signed links for private media and short-lived signed upload links so browser uploads go directly to Storage. See Supabase's [signed URL](https://supabase.com/docs/reference/python/storage-from-createsignedurls) and [signed upload URL](https://supabase.com/docs/reference/python/storage-from-createsigneduploadurl) documentation.
+Create a **private** Storage bucket named `exam-media` and set both the global and bucket maximum file size to 50 MB (subject to your Supabase plan). Apply `migrations/2026_10_lock_down_public_storage.sql` to enforce the private bucket, file size, and image/audio MIME allowlist in Storage itself. Keep the service-role key only in the backend environment; do not add it to frontend files or a `NEXT_PUBLIC_` variable. The backend issues short-lived signed links for private media and short-lived signed upload links so browser uploads go directly to Storage. See Supabase's [signed URL](https://supabase.com/docs/reference/python/storage-from-createsignedurls) and [signed upload URL](https://supabase.com/docs/reference/python/storage-from-createsigneduploadurl) documentation.
 
 Set these variables on the Vercel **backend** project (Root Directory: `backend`) and in a local `backend/.env`:
 
 ```text
 DATABASE_URL=postgresql+psycopg://...
-SECRET_KEY=<long random secret>
+SECRET_KEY=<unique random secret, at least 32 bytes>
+# Optional during JWT signing key rotation; remove after old sessions expire.
+SECRET_KEY_PREVIOUS=<previous secret during rotation only>
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<server-only key>
 SUPABASE_MEDIA_BUCKET=exam-media
@@ -20,6 +22,19 @@ SMTP_FROM_EMAIL=...
 ZEROBOUNCE_API_KEY=...
 CORS_ORIGINS=https://<frontend-project>.vercel.app
 ```
+
+Admin sign-in now requires the SMTP email OTP after the password check. Verify
+SMTP delivery to every admin account before deploying. Browser sessions use
+HttpOnly, Secure, SameSite cookies; the frontend Vercel project proxies API
+requests through `/backend/*` so these cookies stay first-party. Deploy the
+frontend rewrite and backend together. Never restore JWT access tokens to
+browser storage.
+
+Use a unique randomly generated `SECRET_KEY` of at least 32 bytes. To rotate it,
+set the new value in `SECRET_KEY` and the old value in `SECRET_KEY_PREVIOUS`,
+redeploy both backend instances together, wait at least three hours, then remove
+`SECRET_KEY_PREVIOUS` and redeploy. Keep the same secret across student and admin
+auth settings.
 
 Never commit `backend/.env`. The `.env.example` file contains placeholders only.
 Student registration uses ZeroBounce's real-time mailbox validation before sending an OTP. Set `ZEROBOUNCE_API_KEY` on the backend Vercel project; if it is missing or the validation service is unavailable, registration fails closed and no OTP is sent. Only addresses returned with status `valid` proceed to the OTP step.
@@ -38,6 +53,14 @@ For student profile photo uploads, apply
 [`migrations/2026_10_student_profile_photo.sql`](migrations/2026_10_student_profile_photo.sql)
 before deploying the profile API changes. Profile images use the existing private
 `exam-media` Supabase Storage bucket under the `profiles/` prefix.
+
+Apply [`migrations/2026_10_enable_public_rls.sql`](migrations/2026_10_enable_public_rls.sql)
+to the production database to deny direct Supabase Data API access to public
+tables. This project performs application-level student/admin authorization in
+FastAPI using a private database connection. Keep that connection string
+server-only and use a controlled database role that owns the app tables or has
+the required RLS bypass privileges; this migration intentionally does not force
+RLS on that backend role.
 
 ## Existing image/audio migration
 

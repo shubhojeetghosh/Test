@@ -9,8 +9,7 @@ import logging
 import secrets
 
 import httpx
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from email_validator import EmailNotValidError, validate_email
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
@@ -20,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
+from app.core.session_cookies import clear_student_session, set_student_session
 
 from app.core.security import (
     hash_password,
@@ -36,7 +36,6 @@ from app.models import PasswordResetOTP, PendingStudentRegistration, User
 from app.services.media_storage import resolve_media_urls, upload_media
 
 logger = logging.getLogger(__name__)
-security = HTTPBearer()
 MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024
 
 
@@ -46,13 +45,15 @@ class StudentProfileUpdateRequest(BaseModel):
 
 class StudentPasswordChangeRequest(BaseModel):
     current_password: str = Field(min_length=1, max_length=128)
-    new_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=72)
 
 def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
     db: Session = Depends(get_db),
 ) -> int:
-    token = credentials.credentials
+    token = request.cookies.get("student_session")
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Please sign in to continue.")
 
     try:
         payload = decode_access_token(token)
@@ -118,7 +119,8 @@ class RegisterRequest(BaseModel):
     email: EmailStr
 
     password: str = Field(
-        min_length=8
+        min_length=8,
+        max_length=72,
     )
 
 
@@ -151,7 +153,8 @@ class ResetPasswordRequest(BaseModel):
     )
 
     new_password: str = Field(
-        min_length=8
+        min_length=8,
+        max_length=72,
     )
 
 
@@ -226,6 +229,8 @@ def register(
 ):
 
     name = data.name.strip()
+    if len(data.password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=422, detail="Password must be at most 72 UTF-8 bytes.")
     if len(name) < 2:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -382,6 +387,7 @@ def _send_registration_code(db: Session, user: User) -> None:
 @router.post("/verify-registration-otp")
 def verify_registration_otp(
     data: VerifyRegistrationOTPRequest,
+    response: Response,
     db: Session = Depends(get_db),
 ):
     email = str(data.email).strip().lower()
@@ -434,9 +440,10 @@ def verify_registration_otp(
             {"sub": str(user.id), "email": user.email},
             expires_minutes=settings.STUDENT_ACCESS_TOKEN_EXPIRE_MINUTES,
         )
+        set_student_session(response, token)
         return {
             "message": "Email verified successfully.",
-            "access_token": token,
+            "access_token": "cookie-session",
             "token_type": "bearer",
             "user_id": user.id,
             "name": user.name,
@@ -483,9 +490,10 @@ def verify_registration_otp(
         {"sub": str(user.id), "email": user.email},
         expires_minutes=settings.STUDENT_ACCESS_TOKEN_EXPIRE_MINUTES,
     )
+    set_student_session(response, token)
     return {
         "message": "Email verified successfully.",
-        "access_token": token,
+        "access_token": "cookie-session",
         "token_type": "bearer",
         "user_id": user.id,
         "name": user.name,
@@ -542,6 +550,7 @@ def resend_registration_otp(
 def login(
     data: LoginRequest,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db)
 ):
 
@@ -614,19 +623,26 @@ def login(
         },
         expires_minutes=settings.STUDENT_ACCESS_TOKEN_EXPIRE_MINUTES,
     )
+    set_student_session(response, access_token)
 
     # --------------------------------------------------------
     # 4. Return token + user information
     # --------------------------------------------------------
 
     return {
-        "access_token": access_token,
+        "access_token": "cookie-session",
         "token_type": "bearer",
         "user_id": user.id,
         "name": user.name,
         "email": user.email,
         "role": user.role
     }
+
+
+@router.post("/logout")
+def student_logout(response: Response):
+    clear_student_session(response)
+    return {"message": "Signed out."}
 
 # ============================================================
 # GET CURRENT USER PROFILE
@@ -729,6 +745,8 @@ def change_student_password(
     user = db.scalar(select(User).where(User.id == current_user_id))
     if user is None or str(user.role).strip().lower() != "student":
         raise HTTPException(status_code=404, detail="Student account not found.")
+    if len(data.new_password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=422, detail="Password must be at most 72 UTF-8 bytes.")
     if not verify_password(data.current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect.")
     if verify_password(data.new_password, user.password_hash):
@@ -1001,6 +1019,9 @@ def reset_password(
     request: Request,
     db: Session = Depends(get_db)
 ):
+
+    if len(data.new_password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=422, detail="Password must be at most 72 UTF-8 bytes.")
 
     # --------------------------------------------------------
     # 1. Find user

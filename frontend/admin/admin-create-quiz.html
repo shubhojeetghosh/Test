@@ -2789,11 +2789,11 @@ quiz.status =
 
 async function loadAdminProfile() {
 
-    console.log("=== LOAD ADMIN PROFILE ===");
+
 
     const token = localStorage.getItem("admin_access_token");
 
-    console.log("Admin token exists:", !!token);
+
 
     if (!token) {
         console.error("No admin_access_token found.");
@@ -2816,7 +2816,7 @@ async function loadAdminProfile() {
                 ? window.API_BASE_URL
                 : window.API_BASE_URL;
 
-    console.log("API BASE URL:", API_BASE_URL);
+
 
 
     /* =================================================
@@ -2860,7 +2860,6 @@ async function loadAdminProfile() {
         );
     }
 
-    console.log("Saved admin:", savedAdmin);
 
 
     /* =================================================
@@ -2918,10 +2917,7 @@ async function loadAdminProfile() {
             );
 
 
-        console.log(
-            "Profile response status:",
-            response.status
-        );
+
 
 
         const data =
@@ -2929,10 +2925,7 @@ async function loadAdminProfile() {
                 .catch(() => ({}));
 
 
-        console.log(
-            "Profile API response:",
-            data
-        );
+
 
 
         /* =================================================
@@ -3040,10 +3033,7 @@ async function loadAdminProfile() {
         );
 
 
-        console.log(
-            "FINAL ADMIN DATA:",
-            adminData
-        );
+
 
 
         /* =================================================
@@ -3147,10 +3137,7 @@ async function loadAdminProfile() {
         }
 
 
-        console.log(
-            "Admin profile loaded successfully:",
-            adminName
-        );
+
 
         return true;
 
@@ -3226,10 +3213,7 @@ async function loadAdminProfile() {
         }
 
 
-        console.log(
-            "Using saved admin profile:",
-            fallbackName
-        );
+
 
         return true;
     }
@@ -3248,7 +3232,12 @@ if (logoutBtn) {
         "click",
         function () {
 
-            console.log("Admin logout clicked.");
+
+
+            fetch(`${window.API_BASE_URL}/auth/admin/logout`, {
+                method: "POST",
+                keepalive: true
+            }).catch(() => {});
 
             /* Remove admin session */
             localStorage.removeItem(

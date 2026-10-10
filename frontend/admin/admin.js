@@ -514,10 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         data = data || {};
 
-        console.log(
-            "Updating dashboard statistics:",
-            data
-        );
+
 
 
         /* =================================================
@@ -668,38 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
            DEBUG
         ================================================= */
 
-        console.log(
-            "Dashboard values updated:",
-            {
-                totalStudents: studentCount,
 
-                totalAdmins:
-                    Number(
-                        data.total_admins ?? 0
-                    ),
-
-                totalExams:
-                    Number(
-                        data.total_exams ??
-                        data.totalQuizzes ??
-                        0
-                    ),
-
-                totalQuestions:
-                    Number(
-                        data.total_questions ??
-                        data.totalQuestions ??
-                        0
-                    ),
-
-                totalAttempts:
-                    Number(
-                        data.total_attempts ??
-                        data.totalAttempts ??
-                        0
-                    )
-            }
-        );
 
     }
 
@@ -759,10 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await response.json();
 
 
-            console.log(
-                "Dashboard statistics:",
-                data
-            );
+
 
 
             updateDashboardStats(
@@ -885,17 +848,11 @@ const ADMIN_PASS_MARK = 40;
 
 async function loadAdminResults() {
 
-    console.log(
-        "================================="
-    );
 
-    console.log(
-        "LOADING ADMIN RESULTS"
-    );
 
-    console.log(
-        "================================="
-    );
+
+
+
 
 
     const accessToken =
@@ -923,10 +880,7 @@ async function loadAdminResults() {
         `${API_BASE_URL}/admin/attempts`;
 
 
-    console.log(
-        "Admin Results URL:",
-        url
-    );
+
 
 
     try {
@@ -949,10 +903,7 @@ async function loadAdminResults() {
             );
 
 
-        console.log(
-            "Admin Results Status:",
-            response.status
-        );
+
 
 
         if (!response.ok) {
@@ -975,23 +926,6 @@ async function loadAdminResults() {
         const data =
     await response.json();
 
-console.log(
-    "ADMIN RESULTS DATA:",
-    data
-);
-
-console.log(
-    "ADMIN RESULTS IS ARRAY:",
-    Array.isArray(data)
-);
-
-console.log(
-    "ADMIN RESULTS COUNT:",
-    Array.isArray(data)
-        ? data.length
-        : "NOT AN ARRAY"
-);
-
 
         /*
          * Backend returns a list of attempts.
@@ -1011,10 +945,7 @@ console.log(
                 );
 
 
-        console.log(
-            "Parsed Admin Results:",
-            currentAdminResults
-        );
+
 
 
         /*
@@ -1527,20 +1458,7 @@ function updateAdminResultStatistics(
     }
 
 
-    console.log(
-        "RESULT STATISTICS:",
-        {
-            totalAttempts,
-            completedAttempts:
-                completedAttempts.length,
-            averageScore:
-                average,
-            passRate:
-                passRateValue,
-            todayAttempts:
-                todayAttemptsCount
-        }
-    );
+
 
 }
 
@@ -2108,10 +2026,7 @@ if (
             }
 
 
-            console.log(
-                "Selected attempt:",
-                attemptId
-            );
+
 
 
             /* =================================================
@@ -2331,10 +2246,7 @@ if (
             );
 
 
-            console.log(
-                "View Result modal opened:",
-                attempt
-            );
+
 
         }
     );
@@ -2639,14 +2551,6 @@ if (viewResultModal) {
         }
 
 
-        console.log(
-            "Admin profile displayed:",
-            {
-                name: name,
-                email: email,
-                role: role
-            }
-        );
 
     }
 
@@ -2666,7 +2570,7 @@ if (viewResultModal) {
 
     function loadLoggedInAdmin() {
 
-    console.log("Loading logged-in admin...");
+
 
     const adminToken =
         localStorage.getItem("admin_access_token");
@@ -2749,10 +2653,6 @@ if (viewResultModal) {
     })
     .then(admin => {
 
-        console.log(
-            "Authenticated account from backend:",
-            admin
-        );
 
 
         /*
@@ -2770,10 +2670,6 @@ if (viewResultModal) {
 
         if (role !== "ADMIN") {
 
-            console.error(
-                "Unauthorized account detected:",
-                admin
-            );
 
 
             localStorage.removeItem(
@@ -3131,10 +3027,7 @@ if (viewResultModal) {
             }
 
 
-            console.log(
-                "Registered users loaded:",
-                users
-            );
+
 
 
             /*
@@ -3410,10 +3303,7 @@ if (viewResultModal) {
             await response.json();
 
 
-        console.log(
-            "Quizzes loaded from backend:",
-            data
-        );
+
 
 
         const quizzes =
@@ -5157,6 +5047,11 @@ if (saveAdminSettings) {
                 if (!confirmed) {
                     return;
                 }
+
+                fetch(`${API_BASE_URL}/auth/admin/logout`, {
+                    method: "POST",
+                    keepalive: true
+                }).catch(() => {});
 
 
                 /*

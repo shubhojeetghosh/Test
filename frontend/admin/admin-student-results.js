@@ -76,6 +76,10 @@
   }
 
   document.getElementById("logoutBtn")?.addEventListener("click", () => {
+    fetch(`${window.API_BASE_URL || ""}/auth/admin/logout`, {
+      method: "POST",
+      keepalive: true
+    }).catch(() => {});
     localStorage.removeItem("admin_access_token");
     localStorage.removeItem("admin_user");
     window.location.replace("../index.html");

@@ -51,7 +51,6 @@ async function renderStudentProfile() {
 
     const student = await response.json();
 
-    console.log("PROFILE RESPONSE:", student);
 
     const studentName =
       student.name ||
@@ -859,10 +858,7 @@ async function submitExam() {
       .remove("hidden");
 
 
-    console.log(
-      "Exam submitted:",
-      result
-    );
+
 
 
   } catch (error) {

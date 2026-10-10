@@ -38,7 +38,7 @@ def create_exam_media_upload_url(
     current_admin: User = Depends(get_current_admin),
 ):
     allowed_types = {
-        "image/jpeg", "image/png", "image/webp", "image/gif",
+        "image/jpeg", "image/png", "image/webp",
         "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav",
         "audio/ogg", "audio/webm", "audio/mp4", "audio/aac",
     }

@@ -1,9 +1,61 @@
+import ipaddress
 import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 from sqlalchemy import text
 from app.core.database import engine
+from app.core.rate_limit import reset_request_ip, set_request_ip
+
+
+class ClientIPMiddleware:
+    """Attach the platform client address to request-scoped rate limiting."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        headers = {key.lower(): value for key, value in scope.get("headers", [])}
+        raw_ip = ""
+        if os.getenv("VERCEL") == "1":
+            raw_ip = headers.get(b"x-real-ip", b"").decode("ascii", "ignore").strip()
+        if not raw_ip and scope.get("client"):
+            raw_ip = scope["client"][0]
+        try:
+            client_ip = str(ipaddress.ip_address(raw_ip))
+        except ValueError:
+            client_ip = ""
+        token = set_request_ip(client_ip)
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            reset_request_ip(token)
+
+
+class CookieCSRFMiddleware:
+    """Require an allowlisted Origin for state-changing cookie-auth requests."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("method") not in {
+            "POST", "PUT", "PATCH", "DELETE"
+        }:
+            return await self.app(scope, receive, send)
+        headers = {key.lower(): value for key, value in scope.get("headers", [])}
+        cookie = headers.get(b"cookie", b"")
+        if b"student_session=" in cookie or b"admin_session=" in cookie:
+            origin = headers.get(b"origin", b"").decode("latin-1").rstrip("/")
+            allowed = set(_cors_options()["allow_origins"])
+            if not origin or origin not in allowed:
+                return await JSONResponse(
+                    {"detail": "Request origin was rejected."}, status_code=403
+                )(scope, receive, send)
+        return await self.app(scope, receive, send)
+
+    def __init__(self, app):
+        self.app = app
 
 from app.routes.auth import router as auth_router
 from app.repository.postgres import (
@@ -61,8 +113,8 @@ def _cors_options() -> dict:
     return {
         "allow_origins": list(dict.fromkeys(allowed_origins)),
         "allow_credentials": True,
-        "allow_methods": ["*"],
-        "allow_headers": ["*"],
+        "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "allow_headers": ["Authorization", "Content-Type", "Accept", "X-Requested-With"],
         "expose_headers": ["X-Total-Count"],
     }
 
@@ -79,6 +131,8 @@ def create_app():
 
     # Retain CORS on factory-created apps (including tests).
     app.add_middleware(CORSMiddleware, **_cors_options())
+    app.add_middleware(ClientIPMiddleware)
+    app.add_middleware(CookieCSRFMiddleware)
 
     # ── PostgreSQL repositories ───────────
     app.state.exam_repo = PostgresExamRepository()
@@ -110,7 +164,7 @@ def create_app():
     app.include_router(contact_router)
     app.include_router(admin_inquiries_router)
 
-       # Student
+    # Student
     app.include_router(student_exams_router)
     app.include_router(student_dashboard_router)
 

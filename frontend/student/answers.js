@@ -2,7 +2,7 @@ document.addEventListener(
     "DOMContentLoaded",
     async function () {
 
-        console.log("ANSWERS PAGE LOADED");
+
 
 
         // =========================================================
@@ -105,10 +105,7 @@ document.addEventListener(
         }
 
 
-        console.log(
-            "Loading result for attempt:",
-            attemptId
-        );
+
 
 
         // =========================================================
@@ -171,10 +168,7 @@ document.addEventListener(
                 `${encodeURIComponent(attemptId)}/result`;
 
 
-            console.log(
-                "RESULT API:",
-                url
-            );
+
 
 
             try {
@@ -196,10 +190,7 @@ document.addEventListener(
                     );
 
 
-                console.log(
-                    "RESULT STATUS:",
-                    response.status
-                );
+
 
 
                 if (!response.ok) {
@@ -225,10 +216,6 @@ document.addEventListener(
                     await response.json();
 
 
-                console.log(
-                    "RESULT DATA:",
-                    data
-                );
 
 
                 /*
@@ -987,6 +974,11 @@ document.addEventListener(
 
         window.logout =
             function () {
+
+                fetch(`${window.API_BASE_URL || ""}/auth/logout`, {
+                    method: "POST",
+                    keepalive: true
+                }).catch(() => {});
 
                 localStorage.removeItem(
                     "access_token"

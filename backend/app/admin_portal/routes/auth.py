@@ -1,16 +1,19 @@
 import hashlib
+import hmac
 import secrets
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Request,
+    Response,
     status,
 )
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -22,6 +25,8 @@ from sqlalchemy.orm import Session
 
 from app.database.database import get_db
 from app.core.rate_limit import enforce_rate_limit
+from app.core.session_cookies import clear_admin_session, set_admin_session
+from app.admin_portal.core.config import settings
 
 from app.admin_portal.models.user import User
 from app.admin_portal.models.email_otp import EmailOTP
@@ -62,6 +67,7 @@ from app.admin_portal.services.email_service import (
 
 ADMIN_CREATE_OTP_PURPOSE = "ADMIN_CREATE"
 ADMIN_FORGOT_PASSWORD_PURPOSE = "ADMIN_FORGOT_PASSWORD"
+ADMIN_LOGIN_OTP_PURPOSE = "ADMIN_LOGIN"
 
 ADMIN_CREATE_OTP_EXPIRY_MINUTES = 10
 ADMIN_FORGOT_PASSWORD_EXPIRY_MINUTES = 10
@@ -81,7 +87,7 @@ router = APIRouter(
 # JWT AUTHENTICATION
 # =========================================================
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 # =========================================================
@@ -110,8 +116,10 @@ def _hash_value(value: str) -> str:
     in the database.
     """
 
-    return hashlib.sha256(
-        value.encode("utf-8")
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        value.encode("utf-8"),
+        hashlib.sha256,
     ).hexdigest()
 
 
@@ -143,6 +151,12 @@ def _validate_password(password: str) -> str:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password must contain at least 8 characters",
+        )
+
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at most 72 UTF-8 bytes.",
         )
 
     return password
@@ -189,7 +203,8 @@ class AdminProfileResponse(BaseModel):
 # =========================================================
 
 def get_current_admin(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """
@@ -205,7 +220,12 @@ def get_current_admin(
     - User still has role='admin'
     """
 
-    token = credentials.credentials
+    token = request.cookies.get("admin_session")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Please sign in to continue.",
+        )
 
     # -----------------------------------------------------
     # Decode JWT
@@ -310,6 +330,7 @@ def get_current_admin(
 )
 def admin_login(
     login_data: LoginRequest,
+    response: Response,
     db: Session = Depends(get_db),
 ):
     """
@@ -370,23 +391,94 @@ def admin_login(
             detail="Invalid admin email or password",
         )
 
-    # -----------------------------------------------------
-    # Create JWT
-    # -----------------------------------------------------
-
-    access_token = create_access_token(
-        user_id=user.id,
-        role="ADMIN",
-    )
+    db.execute(delete(EmailOTP).where(
+        EmailOTP.email == email,
+        EmailOTP.purpose == ADMIN_LOGIN_OTP_PURPOSE,
+    ))
+    code = _generate_otp()
+    db.add(EmailOTP(
+        email=email,
+        otp_hash=_hash_value(code),
+        purpose=ADMIN_LOGIN_OTP_PURPOSE,
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=5),
+        verified=False,
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    try:
+        send_otp_email(email, code)
+    except Exception as exc:
+        db.execute(delete(EmailOTP).where(
+            EmailOTP.email == email,
+            EmailOTP.purpose == ADMIN_LOGIN_OTP_PURPOSE,
+        ))
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We could not send the admin verification code. Please try again.",
+        ) from exc
 
     return LoginResponse(
-        access_token=access_token,
+        email=email,
+        mfa_required=True,
+        message="A sign-in verification code has been sent to your admin email.",
+    )
+
+
+class AdminLoginOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+
+@router.post("/admin/verify-login-otp", response_model=LoginResponse)
+def verify_admin_login_otp(
+    data: AdminLoginOTPRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    email = _normalize_email(data.email)
+    enforce_rate_limit(db, scope="admin-login-otp", subject=email, limit=6, window_seconds=900)
+    record = db.scalar(
+        select(EmailOTP)
+        .where(
+            EmailOTP.email == email,
+            EmailOTP.purpose == ADMIN_LOGIN_OTP_PURPOSE,
+            EmailOTP.verified.is_(False),
+        )
+        .order_by(EmailOTP.id.desc())
+        .with_for_update()
+    )
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if (
+        record is None
+        or record.expires_at <= now
+        or not secrets.compare_digest(record.otp_hash, _hash_value(data.otp))
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The verification code is invalid or expired. Sign in again to request a new code.",
+        )
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None or str(user.role).strip().lower() != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access is required.")
+    db.delete(record)
+    db.commit()
+    access_token = create_access_token(user_id=user.id, role="ADMIN")
+    set_admin_session(response, access_token)
+    return LoginResponse(
+        access_token="cookie-session",
         token_type="bearer",
         user_id=user.id,
         name=user.name,
         email=user.email,
         role="ADMIN",
     )
+
+
+@router.post("/admin/logout")
+def admin_logout(response: Response):
+    clear_admin_session(response)
+    return {"message": "Signed out."}
 
 
 # =========================================================

@@ -111,6 +111,7 @@ function logout() {
   }
 
 
+  fetch(`${API_BASE_URL}/auth/logout`, { method: "POST", keepalive: true }).catch(() => {});
   localStorage.removeItem("access_token");
   localStorage.removeItem("token_type");
 
@@ -808,10 +809,7 @@ if (registerForm) {
       // Get backend response
       const data = await response.json();
 
-      console.log(
-        "Register API response:",
-        data
-      );
+
 
 
       // ==========================================
@@ -1626,9 +1624,9 @@ if (backBtn) {
 
 function startTest(setId, examId) {
 
-    console.log("START TEST");
-    console.log("Exam ID:", examId);
-    console.log("Set ID:", setId);
+
+
+
 
     if (!setId || !examId) {
 
@@ -1690,6 +1688,7 @@ function logout() {
   }
 
 
+  fetch(`${API_BASE_URL}/auth/logout`, { method: "POST", keepalive: true }).catch(() => {});
   localStorage.removeItem(
     "access_token"
   );
@@ -1906,10 +1905,7 @@ async function loadDashboardUserProfile() {
         const user =
             await response.json();
 
-        console.log(
-            "Logged-in user profile:",
-            user
-        );
+
 
 
         /* =================================================
@@ -2180,10 +2176,7 @@ async function loadDashboardProfile() {
             await response.json();
 
 
-        console.log(
-            "PROFILE FROM BACKEND:",
-            user
-        );
+
 
 
         /* =================================================
@@ -2420,10 +2413,7 @@ async function loadStudentDashboard() {
         const quizzes =
             await response.json();
 
-        console.log(
-            "QUIZZES FROM BACKEND:",
-            quizzes
-        );
+
 
 
         /*
@@ -2478,10 +2468,7 @@ async function loadStudentDashboard() {
         });
 
 
-        console.log(
-            "TESTS FOR STUDENT DASHBOARD:",
-            tests
-        );
+
 
 
         /*
@@ -2530,10 +2517,7 @@ if (!dashboardResponse.ok) {
 
 const dashboardData = await dashboardResponse.json();
 
-console.log(
-    "STUDENT DASHBOARD DATA:",
-    dashboardData
-);
+
 
 renderDashboardStats(
     dashboardData.stats
@@ -2663,7 +2647,7 @@ function formatDashboardDate(dateString) {
             date.getTime()
         )
     ) {
-        return dateString;
+        return escapeStudentHtml(dateString);
     }
 
 
@@ -2960,7 +2944,6 @@ function loadDashboardUser() {
     const savedUser =
         localStorage.getItem("user");
 
-    console.log("Saved login user:", savedUser);
 
     if (!savedUser) {
 
@@ -2976,10 +2959,7 @@ function loadDashboardUser() {
         const user =
             JSON.parse(savedUser);
 
-        console.log(
-            "Dashboard user:",
-            user
-        );
+
 
 
         /* =========================
@@ -3316,10 +3296,7 @@ async function refreshBackendExamTimer() {
         const status =
             await response.json();
 
-        console.log(
-            "SERVER TIMER:",
-            status
-        );
+
 
         updateExamTimerDisplay(
             status.time_remaining_seconds
@@ -3447,21 +3424,15 @@ if (setNumberElement) {
            STEP 1 â€” START / RESUME ATTEMPT
            ========================================= */
 
-        console.log(
-            "Starting exam attempt for:",
-            setId
-        );
 
-console.log("========== EXAM START DEBUG ==========");
-console.log("API Base:", apiBase);
-console.log("Exam ID:", examId);
-console.log("Set ID:", setId);
-console.log("Token exists:", !!token);
-console.log(
-    "Start URL:",
-    `${apiBase}/api/attempts/start/${encodeURIComponent(examId)}?set_id=${encodeURIComponent(setId)}`
-);
-console.log("======================================");
+
+
+
+
+
+
+
+
 
 
        const startResponse = await fetch(
@@ -3490,10 +3461,7 @@ console.log("======================================");
         const started =
             await startResponse.json();
 
-        console.log(
-            "ATTEMPT STARTED:",
-            started
-        );
+
 
         /* =========================================
            SAVE ATTEMPT INFORMATION
@@ -3517,15 +3485,9 @@ console.log("======================================");
             );
         }
 
-        console.log(
-            "Attempt ID:",
-            studentAttemptId
-        );
 
-        console.log(
-    "Expires at:",
-    examExpiresAt
-);
+
+
 
 
 /* =========================================
@@ -3540,16 +3502,13 @@ startBackendExamTimer();
            STEP 3 â€” LOAD QUESTIONS FOR ATTEMPT
            ========================================= */
 
-console.log("========== QUESTIONS DEBUG ==========");
-console.log("API Base:", apiBase);
-console.log("Exam ID:", examId);
-console.log("Set ID:", setId);
-console.log(
-    "Questions URL:",
-    `${apiBase}/api/exam-sets/${encodeURIComponent(setId)}/questions`
-);
-console.log("Token exists:", !!token);
-console.log("=====================================");
+
+
+
+
+
+
+
 
 const questionsUrl =
     `${apiBase}/api/exam-sets/${encodeURIComponent(setId)}/questions`;
@@ -3651,10 +3610,7 @@ if (Number.isFinite(questionCount)) {
 }
 }
 
-        console.log(
-            "QUESTIONS FROM ATTEMPT API:",
-            allQuestions
-        );
+
 
         studentExamQuestions = allQuestions;
 
@@ -4437,10 +4393,7 @@ if (answersToSave.length) {
         }
 
 
-        console.log(
-            "EXAM SUBMITTED SUCCESSFULLY:",
-            submitData
-        );
+
 
         const submittedAttemptId = studentAttemptId;
         localStorage.setItem("last_attempt_id", submittedAttemptId);
@@ -4510,10 +4463,7 @@ if (answersToSave.length) {
         }
 
 
-        console.log(
-            "FINAL EXAM RESULT:",
-            resultData
-        );
+
 
 
         /* =====================================================
@@ -4550,9 +4500,7 @@ if (answersToSave.length) {
 
         if (autoSubmit) {
 
-            console.log(
-                "Exam was automatically submitted because the timer expired."
-            );
+
         }
 
 

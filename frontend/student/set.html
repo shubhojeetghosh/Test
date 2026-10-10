@@ -994,10 +994,7 @@ async function loadStudentAccess() {
             (data.used_set_ids || []).map(Number)
         );
 
-        console.log(
-            "Unlocked exam sets:",
-            [...unlockedSetIds]
-        );
+
 
     } catch (error) {
         console.error(
@@ -1113,15 +1110,9 @@ async function loadQuizData() {
             }
         );
 
-        console.log(
-            "Loaded chapters:",
-            categories
-        );
 
-        console.log(
-            "Sets grouped by chapter:",
-            setsByCategory
-        );
+
+
 
         renderCategories();
 
@@ -1543,14 +1534,7 @@ const isSelected =
             `exam-instructions.html?exam=${encodeURIComponent(examId)}` +
             `&set=${encodeURIComponent(setId)}`;
 
-        console.log(
-            "Opening exam instructions:",
-            {
-                examId: examId,
-                setId: setId,
-                unlocked: isUnlocked
-            }
-        );
+
 
         if (!requireLogin(target)) {
             return;

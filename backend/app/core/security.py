@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
 from passlib.context import CryptContext
-from jose import jwt, JWTError
 
 from app.core.config import settings
+from app.core.jwt_tokens import decode_hs256, encode_hs256
 
 
 # ============================================================
@@ -64,13 +64,7 @@ def create_access_token(data: dict, expires_minutes: int | None = None) -> str:
         + timedelta(minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
-    )
-
-    return encoded_jwt
+    return encode_hs256(to_encode, settings.SECRET_KEY)
 
 
 def decode_access_token(token: str) -> dict:
@@ -78,19 +72,7 @@ def decode_access_token(token: str) -> dict:
     Decode and validate a JWT access token.
     """
 
-    try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
-        )
-
-        # Student tokens created before expiry was added must not remain valid
-        # forever. Ask the user to sign in again to receive a time-limited JWT.
-        if "exp" not in payload:
-            raise JWTError("Token expiry is required")
-
-        return payload
-
-    except JWTError:
-        raise
+    keys = [settings.SECRET_KEY]
+    if settings.SECRET_KEY_PREVIOUS:
+        keys.append(settings.SECRET_KEY_PREVIOUS)
+    return decode_hs256(token, keys)

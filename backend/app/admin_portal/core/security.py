@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.admin_portal.core.config import settings
+from app.core.jwt_tokens import decode_hs256, encode_hs256
 
 
 pwd_context = CryptContext(
@@ -40,21 +40,11 @@ def create_access_token(
         "exp": expire,
     }
 
-    return jwt.encode(
-        payload,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
-    )
+    return encode_hs256(payload, settings.SECRET_KEY)
 
 
 def decode_access_token(token: str) -> dict:
-    try:
-        return jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
-            options={"require_exp": True, "require_sub": True},
-        )
-
-    except JWTError:
-        raise ValueError("Invalid or expired token")
+    keys = [settings.SECRET_KEY]
+    if settings.SECRET_KEY_PREVIOUS:
+        keys.append(settings.SECRET_KEY_PREVIOUS)
+    return decode_hs256(token, keys)

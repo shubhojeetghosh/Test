@@ -131,6 +131,12 @@ def create_student(
             detail="Password must contain at least 8 characters",
         )
 
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at most 72 UTF-8 bytes",
+        )
+
     existing_user = db.scalar(
         select(User).where(
             func.lower(User.email) == email
@@ -249,6 +255,11 @@ def update_student(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Password must contain at least 8 characters",
+            )
+        if len(request.password.encode("utf-8")) > 72:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at most 72 UTF-8 bytes",
             )
 
         student.password_hash = hash_password(

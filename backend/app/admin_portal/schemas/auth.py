@@ -11,12 +11,14 @@ class LoginRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str
-    user_id: int
-    name: str
+    access_token: str | None = None
+    token_type: str | None = None
+    user_id: int | None = None
+    name: str | None = None
     email: str
-    role: str
+    role: str | None = None
+    mfa_required: bool = False
+    message: str | None = None
 
 
 # =========================================================

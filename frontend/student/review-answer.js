@@ -173,10 +173,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 `${encodeURIComponent(attemptId)}/result`;
 
 
-            console.log(
-                "Loading exam result:",
-                resultUrl
-            );
+
 
 
             const response =
@@ -196,10 +193,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
 
-            console.log(
-                "Result API status:",
-                response.status
-            );
+
 
 
             if (!response.ok) {
@@ -222,10 +216,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 await response.json();
 
 
-            console.log(
-                "RESULT FROM BACKEND:",
-                data
-            );
 
 
             resultData = data;

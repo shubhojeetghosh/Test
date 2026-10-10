@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # =========================================================
 
     SECRET_KEY: str
+    SECRET_KEY_PREVIOUS: str | None = None
 
     ALGORITHM: str = "HS256"
 
@@ -45,6 +46,22 @@ class Settings(BaseSettings):
     # Recipients for the two-person approval step in admin onboarding.
     ADMIN_EMAIL: str = ""
     DEVELOPER_EMAIL: str = ""
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def require_strong_secret(cls, value: str) -> str:
+        if len(value.encode("utf-8")) < 32 or value.strip().lower() in {
+            "changeme", "secret", "your-secret-key", "replace-me"
+        }:
+            raise ValueError("SECRET_KEY must be a unique secret of at least 32 bytes.")
+        return value
+
+    @field_validator("ALGORITHM")
+    @classmethod
+    def require_supported_jwt_algorithm(cls, value: str) -> str:
+        if value != "HS256":
+            raise ValueError("Only HS256 is supported for JWT signing.")
+        return value
 
 
     # =========================================================

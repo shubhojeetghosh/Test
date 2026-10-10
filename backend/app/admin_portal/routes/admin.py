@@ -165,10 +165,16 @@ def create_user(
             detail="Password is required",
         )
 
-    if len(password) < 6:
+    if len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least 6 characters",
+            detail="Password must contain at least 8 characters",
+        )
+
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at most 72 UTF-8 bytes",
         )
 
     # --------------------------------------------------------
