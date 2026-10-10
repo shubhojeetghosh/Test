@@ -9,8 +9,12 @@ const SET_PRICE = 50;
 // No +, spaces, or hyphens.
 
 const WHATSAPP_BUSINESS_NUMBER = "919547428567";
-const STUDENT_ACCESS_REQUEST_URL =
-  `${(window.EPS_API?.baseUrl || window.API_BASE_URL || "").replace(/\/+$/, "")}/api/student/access-requests`;
+const API_BASE_URL = String(
+  window.EPS_API?.baseUrl || window.API_BASE_URL || ""
+).replace(/\/+$/, "");
+const STUDENT_ACCESS_REQUEST_URL = API_BASE_URL
+  ? `${API_BASE_URL}/api/student/access-requests`
+  : "";
 
 function escapePaymentHtml(value) {
   return String(value ?? "")
@@ -310,7 +314,9 @@ if (cartItems.length > 0) {
         window.location.href = "login.html?next=" + encodeURIComponent("payment.html?mode=cart");
         return;
       }
-      if (!STUDENT_ACCESS_REQUEST_URL.startsWith("http")) {
+      // Production uses a same-origin Vercel proxy ("/backend"), so the
+      // endpoint is intentionally a relative URL rather than an http URL.
+      if (!STUDENT_ACCESS_REQUEST_URL) {
         alert("The payment request service is not configured. Please contact the administrator.");
         return;
       }
@@ -321,10 +327,8 @@ if (cartItems.length > 0) {
       try {
         const response = await fetch(STUDENT_ACCESS_REQUEST_URL, {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             exam_set_ids: cartItems.map(item => Number(item.set))
           })
