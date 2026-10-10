@@ -83,6 +83,17 @@ const API_ENDPOINTS = {
 
 };
 
+let studentSessionRedirecting = false;
+
+function handleExpiredStudentSession() {
+  if (studentSessionRedirecting) return;
+  studentSessionRedirecting = true;
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("token_type");
+  sessionStorage.setItem("student_session_expired", "true");
+  window.location.replace("login.html");
+}
+
 function editProfile() {
 
   window.location.href = "profile.html";
@@ -116,69 +127,78 @@ const profileForm =
 
 const profilePhotoInput =
   document.getElementById("profilePhotoInput");
+let selectedProfilePhotoFile = null;
+let profilePhotoObjectUrl = null;
+
+function showProfileMessage(message, type = "error") {
+  const box = document.getElementById("messageBox");
+  if (!box) return;
+  box.className = `message-box ${type}`;
+  box.textContent = message;
+}
+
+function profileAuthHeaders() {
+  const token = localStorage.getItem("access_token");
+  if (!token) throw new Error("Your session has expired. Please log in again.");
+  return { Authorization: `Bearer ${token}` };
+}
+
+function setProfilePhoto(photoUrl) {
+  const preview = document.getElementById("profilePhotoPreview");
+  const fallback = document.getElementById("profilePhotoFallback");
+  if (!preview || !fallback) return;
+  if (photoUrl) {
+    preview.src = photoUrl;
+    preview.style.display = "block";
+    fallback.style.display = "none";
+  } else {
+    preview.removeAttribute("src");
+    preview.style.display = "none";
+    fallback.style.display = "grid";
+  }
+}
 
 
 /* ================= LOAD PROFILE ================= */
 
-function loadProfilePage() {
-
-  if (!profileForm) {
-    return;
+async function loadProfilePage() {
+  if (!profileForm) return;
+  const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const emailInput = document.getElementById("profileEmail");
+  if (emailInput) {
+    emailInput.value = savedUser.email || localStorage.getItem("user_email") || "";
+    emailInput.readOnly = true;
   }
+  renderProfileDetails(savedUser);
 
+  try {
+    const response = await fetch(API_ENDPOINTS.profile, { headers: profileAuthHeaders() });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || "Could not load your account details.");
+    const user = { ...savedUser, ...data };
+    localStorage.setItem("user", JSON.stringify(user));
+    if (data.email) localStorage.setItem("user_email", data.email);
+    if (emailInput) emailInput.value = data.email || "";
+    renderProfileDetails(user);
+  } catch (error) {
+    showProfileMessage(error.message || "Could not load your account details.");
+  }
+}
 
- const savedUser =
-  JSON.parse(localStorage.getItem("user") || "{}");
-
-const name =
-  savedUser.name || "";
-
-const email =
-  savedUser.email ||
-  localStorage.getItem("user_email") ||
-  "";
-
-  const studentId =
-    savedUser.student_id ||
-    savedUser.studentId ||
-    savedUser.roll_no ||
-    savedUser.rollNo ||
-    localStorage.getItem("student_id") ||
-    "";
-  
-
-  const photo =
-    localStorage.getItem("profile_photo");
-
-
-  /* Form */
-
-  document.getElementById(
-    "profileName"
-  ).value = name;
-
-
-  document.getElementById(
-    "profileEmail"
-  ).value = email;
-
-
-  /* Left card */
-
-  document.getElementById(
-    "profileDisplayName"
-  ).textContent = name;
-
-
-  document.getElementById(
-    "profileDisplayId"
-  ).textContent = studentId;
-
-
+function renderProfileDetails(user) {
+  const name = user.name || localStorage.getItem("user_name") || "";
+  const studentId = user.student_id || user.studentId || user.roll_no || user.rollNo || localStorage.getItem("student_id") || "";
+  const nameInput = document.getElementById("profileName");
+  if (nameInput) nameInput.value = name;
+  const displayName = document.getElementById("profileDisplayName");
+  if (displayName) displayName.textContent = name || "Student";
+  const displayId = document.getElementById("profileDisplayId");
+  if (displayId) displayId.textContent = studentId;
   updateProfileInitials(name);
+  setProfilePhoto(user.profile_photo_url || "");
+}
 
-
-  if (photo) {/* =========================================================
+/* =========================================================
    EXAM RESULT PAGE
    ========================================================= */
 
@@ -315,14 +335,6 @@ EPS TOPIK Exam Platform
   URL.revokeObjectURL(url);
 }
 
-    showProfilePhoto(photo);
-
-  }
-
-}
-
-
-
 /* ================= INITIALS ================= */
 
 function updateProfileInitials(name) {
@@ -399,7 +411,7 @@ if (profilePhotoInput) {
 
       if (file.size > maxSize) {
 
-        showMessage(
+        showProfileMessage(
           "Profile photo must be smaller than 2 MB.",
           "error"
         );
@@ -419,7 +431,7 @@ if (profilePhotoInput) {
         ].includes(file.type)
       ) {
 
-        showMessage(
+        showProfileMessage(
           "Please select a JPG, PNG or WEBP image.",
           "error"
         );
@@ -431,40 +443,11 @@ if (profilePhotoInput) {
       }
 
 
-      const reader =
-        new FileReader();
-
-
-      reader.onload =
-        function (event) {
-
-          const imageData =
-            event.target.result;
-
-
-          showProfilePhoto(
-            imageData
-          );
-
-
-          /*
-             Temporary frontend storage.
-
-             Later this should be uploaded
-             to the backend/server.
-          */
-
-          localStorage.setItem(
-            "profile_photo",
-            imageData
-          );
-
-        };
-
-
-      reader.readAsDataURL(
-        file
-      );
+      selectedProfilePhotoFile = file;
+      if (profilePhotoObjectUrl) URL.revokeObjectURL(profilePhotoObjectUrl);
+      profilePhotoObjectUrl = URL.createObjectURL(file);
+      setProfilePhoto(profilePhotoObjectUrl);
+      showProfileMessage("Photo selected. Save changes to upload it.", "success");
 
     }
   );
@@ -476,85 +459,33 @@ if (profilePhotoInput) {
 /* ================= SHOW PHOTO ================= */
 
 function showProfilePhoto(imageData) {
-
-  const preview =
-    document.getElementById(
-      "profilePhotoPreview"
-    );
-
-
-  const fallback =
-    document.getElementById(
-      "profilePhotoFallback"
-    );
-
-
-  if (!preview || !fallback) {
-    return;
-  }
-
-
-  preview.src =
-    imageData;
-
-
-  preview.style.display =
-    "block";
-
-
-  fallback.style.display =
-    "none";
-
+  setProfilePhoto(imageData);
 }
 
 
 
 /* ================= REMOVE PHOTO ================= */
 
-function removeProfilePhoto() {
-
-  localStorage.removeItem(
-    "profile_photo"
-  );
-
-
-  const preview =
-    document.getElementById(
-      "profilePhotoPreview"
-    );
-
-
-  const fallback =
-    document.getElementById(
-      "profilePhotoFallback"
-    );
-
-
-  if (preview) {
-
-    preview.src = "";
-
-    preview.style.display =
-      "none";
-
+async function removeProfilePhoto() {
+  selectedProfilePhotoFile = null;
+  if (profilePhotoObjectUrl) URL.revokeObjectURL(profilePhotoObjectUrl);
+  profilePhotoObjectUrl = null;
+  if (profilePhotoInput) profilePhotoInput.value = "";
+  try {
+    const response = await fetch(`${API_ENDPOINTS.profile}/photo`, {
+      method: "DELETE",
+      headers: profileAuthHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || "Could not remove your photo.");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    user.profile_photo_url = null;
+    localStorage.setItem("user", JSON.stringify(user));
+    setProfilePhoto("");
+    showProfileMessage("Profile photo removed.", "success");
+  } catch (error) {
+    showProfileMessage(error.message || "Could not remove your photo.");
   }
-
-
-  if (fallback) {
-
-    fallback.style.display =
-      "grid";
-
-  }
-
-
-  if (profilePhotoInput) {
-
-    profilePhotoInput.value =
-      "";
-
-  }
-
 }
 
 
@@ -583,23 +514,8 @@ async function handleProfileUpdate(event) {
       .trim();
 
 
-  const email =
-    document
-      .getElementById("profileEmail")
-      .value
-      .trim();
-
-
   const savedUser =
     JSON.parse(localStorage.getItem("user") || "{}");
-
-  const studentId =
-    savedUser.student_id ||
-    savedUser.studentId ||
-    savedUser.roll_no ||
-    savedUser.rollNo ||
-    localStorage.getItem("student_id") ||
-    "";
 
 
   const currentPassword =
@@ -625,20 +541,8 @@ async function handleProfileUpdate(event) {
 
   if (!name) {
 
-    showMessage(
+    showProfileMessage(
       "Please enter your full name.",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  if (!email) {
-
-    showMessage(
-      "Please enter your email.",
       "error"
     );
 
@@ -663,7 +567,7 @@ async function handleProfileUpdate(event) {
 
     if (!currentPassword) {
 
-      showMessage(
+      showProfileMessage(
         "Enter your current password before changing it.",
         "error"
       );
@@ -675,7 +579,7 @@ async function handleProfileUpdate(event) {
 
     if (!newPassword) {
 
-      showMessage(
+      showProfileMessage(
         "Enter your new password.",
         "error"
       );
@@ -685,12 +589,8 @@ async function handleProfileUpdate(event) {
     }
 
 
-    if (newPassword.length < 6) {
-
-      showMessage(
-        "New password must contain at least 6 characters.",
-        "error"
-      );
+    if (newPassword.length < 8) {
+      showProfileMessage("New password must contain at least 8 characters.");
 
       return;
 
@@ -702,7 +602,7 @@ async function handleProfileUpdate(event) {
       confirmPassword
     ) {
 
-      showMessage(
+      showProfileMessage(
         "New passwords do not match.",
         "error"
       );
@@ -715,64 +615,56 @@ async function handleProfileUpdate(event) {
 
 
 
-  /*
-     FRONTEND STORAGE FOR NOW
+  const saveButton = document.getElementById("profileSaveButton");
+  if (saveButton) { saveButton.disabled = true; saveButton.textContent = "Saving..."; }
+  try {
+    const headers = { ...profileAuthHeaders(), "Content-Type": "application/json" };
+    const profileResponse = await fetch(API_ENDPOINTS.profile, {
+      method: "PUT", headers, body: JSON.stringify({ name }),
+    });
+    const profileData = await profileResponse.json().catch(() => ({}));
+    if (!profileResponse.ok) throw new Error(profileData.detail || "Could not update your profile.");
 
-     Once backend gives the profile endpoint,
-     replace this part with authenticatedFetch().
-  */
+    let photoUrl = savedUser.profile_photo_url || null;
+    if (selectedProfilePhotoFile) {
+      const formData = new FormData();
+      formData.append("photo", selectedProfilePhotoFile);
+      const photoResponse = await fetch(`${API_ENDPOINTS.profile}/photo`, {
+        method: "POST", headers: profileAuthHeaders(), body: formData,
+      });
+      const photoData = await photoResponse.json().catch(() => ({}));
+      if (!photoResponse.ok) throw new Error(photoData.detail || "Your name was saved, but the photo upload failed.");
+      photoUrl = photoData.profile_photo_url;
+      selectedProfilePhotoFile = null;
+      if (profilePhotoObjectUrl) URL.revokeObjectURL(profilePhotoObjectUrl);
+      profilePhotoObjectUrl = null;
+      if (profilePhotoInput) profilePhotoInput.value = "";
+    }
 
+    if (currentPassword || newPassword || confirmPassword) {
+      const passwordResponse = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        method: "POST", headers,
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const passwordData = await passwordResponse.json().catch(() => ({}));
+      if (!passwordResponse.ok) throw new Error(passwordData.detail || "Could not change your password.");
+    }
 
-  localStorage.setItem(
-    "user_name",
-    name
-  );
-
-
-  localStorage.setItem(
-    "user_email",
-    email
-  );
-
-
-  // Keep the registered student ID read-only; profile edits do not change it.
-
-
-  document.getElementById(
-    "profileDisplayName"
-  ).textContent = name;
-
-
-  document.getElementById(
-    "profileDisplayId"
-  ).textContent = studentId;
-
-
-  updateProfileInitials(
-    name
-  );
-
-
-  showMessage(
-    "Profile updated successfully.",
-    "success"
-  );
-
-
-  /*
-     IMPORTANT:
-
-     This does NOT really change the backend
-     password yet.
-
-     When backend provides something like:
-
-     PUT /auth/profile
-     POST /auth/change-password
-
-     we will send currentPassword/newPassword
-     to those APIs.
-  */
+    const updatedUser = { ...savedUser, ...profileData, name, profile_photo_url: photoUrl };
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    localStorage.setItem("user_name", name);
+    // Keep the verified email immutable; never take an email value from this form.
+    renderProfileDetails(updatedUser);
+    ["currentPassword", "newPassword", "confirmNewPassword"].forEach((id) => {
+      const input = document.getElementById(id);
+      if (input) input.value = "";
+    });
+    showProfileMessage("Profile updated successfully.", "success");
+  } catch (error) {
+    showProfileMessage(error.message || "Could not save your profile. Please try again.");
+  } finally {
+    if (saveButton) { saveButton.disabled = false; saveButton.textContent = "Save Changes"; }
+  }
 
 }
 
@@ -1361,6 +1253,14 @@ function getLoginReturnUrl() {
 const loginForm =
   document.getElementById("loginForm");
 
+if (loginForm && sessionStorage.getItem("student_session_expired") === "true") {
+  const messageBox = document.getElementById("messageBox");
+  if (messageBox) {
+    messageBox.className = "message-box error";
+    messageBox.textContent = "Your session expired. Please log in again to view your dashboard and exam results.";
+  }
+  sessionStorage.removeItem("student_session_expired");
+}
 
 if (loginForm) {
 
@@ -2256,6 +2156,11 @@ async function loadDashboardProfile() {
         );
 
 
+        if (response.status === 401) {
+            handleExpiredStudentSession();
+            return;
+        }
+
         if (!response.ok) {
 
             const errorText =
@@ -2495,6 +2400,11 @@ async function loadStudentDashboard() {
 
         if (!response.ok) {
 
+            if (response.status === 401) {
+                handleExpiredStudentSession();
+                return;
+            }
+
             const errorText =
                 await response.text();
 
@@ -2603,6 +2513,10 @@ async function loadStudentDashboard() {
 );
 
 if (!dashboardResponse.ok) {
+    if (dashboardResponse.status === 401) {
+        handleExpiredStudentSession();
+        return;
+    }
     const errorText = await dashboardResponse.text();
 
     console.error(
@@ -3860,6 +3774,8 @@ async function playExamAudio(questionId, audioElement, button, statusElement, op
 
     button.disabled = true;
     if (statusElement) statusElement.textContent = "Checking audio access…";
+    const playbackRequestId = (audioElement._playRequestId || 0) + 1;
+    audioElement._playRequestId = playbackRequestId;
 
     try {
         const response = await fetch(
@@ -3887,6 +3803,7 @@ async function playExamAudio(questionId, audioElement, button, statusElement, op
         if (data.allowed === false) {
             throw new Error(data.detail || "The allowed audio plays for this question have been used.");
         }
+        if (audioElement._playRequestId !== playbackRequestId) return;
 
         if (activeExamAudioElement && activeExamAudioElement !== audioElement) {
             activeExamAudioElement.pause();
@@ -3912,6 +3829,7 @@ async function playExamAudio(questionId, audioElement, button, statusElement, op
             statusElement.textContent = `${data.plays_remaining} replay${data.plays_remaining === 1 ? "" : "s"} remaining`;
         }
     } catch (error) {
+        if (audioElement._playRequestId !== playbackRequestId) return;
         audioElement._authorizedPlayback = false;
         button.textContent = "▶";
         const limitReached = audioElement._playsRemaining === 0
@@ -3926,7 +3844,9 @@ async function playExamAudio(questionId, audioElement, button, statusElement, op
                 : error.message || "Unable to play this audio.";
         }
     } finally {
-        button.disabled = Boolean(audioElement._playLimitReached);
+        if (audioElement._playRequestId === playbackRequestId) {
+            button.disabled = Boolean(audioElement._playLimitReached);
+        }
     }
 }
 
@@ -4053,12 +3973,35 @@ function renderStudentExamQuestion() {
         const audioUrl = question.audio_url
             ? resolveStudentMediaUrl(question.audio_url)
             : "";
-        if (questionAudio._examSource !== audioUrl) {
+        const questionId = String(question.id);
+        if (
+            questionAudio._examSource !== audioUrl
+            || questionAudio._examQuestionId !== questionId
+        ) {
+            if (activeExamAudioElement === questionAudio) {
+                activeExamAudioElement = null;
+                activeExamAudioQuestionId = null;
+            }
             questionAudio.pause();
+            questionAudio._playRequestId = (questionAudio._playRequestId || 0) + 1;
+            questionAudio.onended = null;
+            questionAudio._authorizedPlayback = false;
+            questionAudio._playsRemaining = null;
+            questionAudio._playLimitReached = false;
             questionAudio._examSource = audioUrl;
+            questionAudio._examQuestionId = questionId;
             questionAudio.src = audioUrl;
             if (audioUrl) questionAudio.load();
             else questionAudio.removeAttribute("src");
+
+            const questionAudioButton = document.getElementById("audioButton");
+            if (questionAudioButton) questionAudioButton.disabled = !audioUrl;
+            const questionAudioStatus = document.getElementById("audioStatus");
+            if (questionAudioStatus) {
+                questionAudioStatus.textContent = audioUrl
+                    ? "Listen to the question"
+                    : "No question audio";
+            }
         }
     }
 

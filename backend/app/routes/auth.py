@@ -9,7 +9,7 @@ import logging
 import secrets
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from email_validator import EmailNotValidError, validate_email
 from pydantic import BaseModel, EmailStr, Field
@@ -33,9 +33,20 @@ from app.core.security import (
 from app.core.email import send_otp_email, send_registration_otp_email
 
 from app.models import PasswordResetOTP, PendingStudentRegistration, User
+from app.services.media_storage import resolve_media_urls, upload_media
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
+MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024
+
+
+class StudentProfileUpdateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class StudentPasswordChangeRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -419,7 +430,10 @@ def verify_registration_otp(
                 detail="Email already registered. Please log in.",
             ) from exc
 
-        token = create_access_token({"sub": str(user.id), "email": user.email})
+        token = create_access_token(
+            {"sub": str(user.id), "email": user.email},
+            expires_minutes=settings.STUDENT_ACCESS_TOKEN_EXPIRE_MINUTES,
+        )
         return {
             "message": "Email verified successfully.",
             "access_token": token,
@@ -465,7 +479,10 @@ def verify_registration_otp(
     record.used = True
     user.email_verified = True
     db.commit()
-    token = create_access_token({"sub": str(user.id), "email": user.email})
+    token = create_access_token(
+        {"sub": str(user.id), "email": user.email},
+        expires_minutes=settings.STUDENT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    )
     return {
         "message": "Email verified successfully.",
         "access_token": token,
@@ -594,7 +611,8 @@ def login(
         data={
             "sub": str(user.id),
             "email": user.email
-        }
+        },
+        expires_minutes=settings.STUDENT_ACCESS_TOKEN_EXPIRE_MINUTES,
     )
 
     # --------------------------------------------------------
@@ -625,12 +643,99 @@ def get_profile(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
         )
+    try:
+        signed_photo = resolve_media_urls([user.profile_photo_url]).get(
+            user.profile_photo_url, user.profile_photo_url
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="Profile photo is temporarily unavailable.") from exc
     return {
         "id": user.id,
         "name": user.name,
         "email": user.email,
         "role": user.role,
+        "student_id": user.student_id or user.roll_no,
+        "profile_photo_url": signed_photo,
     }
+
+
+@router.put("/profile")
+def update_profile(
+    data: StudentProfileUpdateRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    user = db.scalar(select(User).where(User.id == current_user_id))
+    if user is None or str(user.role).strip().lower() != "student":
+        raise HTTPException(status_code=404, detail="Student account not found.")
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Name cannot be empty.")
+    user.name = name
+    db.commit()
+    return {"message": "Profile updated successfully.", "name": user.name}
+
+
+@router.post("/profile/photo")
+async def upload_profile_photo(
+    photo: UploadFile = File(...),
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    user = db.scalar(select(User).where(User.id == current_user_id))
+    if user is None or str(user.role).strip().lower() != "student":
+        raise HTTPException(status_code=404, detail="Student account not found.")
+    content_type = (photo.content_type or "").lower()
+    extensions = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+    if content_type not in extensions:
+        raise HTTPException(status_code=400, detail="Choose a JPG, PNG, or WEBP image.")
+    content = await photo.read(MAX_PROFILE_PHOTO_BYTES + 1)
+    if not content or len(content) > MAX_PROFILE_PHOTO_BYTES:
+        raise HTTPException(status_code=413, detail="Profile photo must be smaller than 2 MB.")
+    try:
+        stored_url = upload_media(
+            content,
+            content_type,
+            f"profile.{extensions[content_type]}",
+            folder="profiles",
+        )
+        signed_url = resolve_media_urls([stored_url]).get(stored_url, stored_url)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="Could not save the profile photo. Please try again.") from exc
+    user.profile_photo_url = stored_url
+    db.commit()
+    return {"message": "Profile photo updated.", "profile_photo_url": signed_url}
+
+
+@router.delete("/profile/photo")
+def remove_profile_photo(
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    user = db.scalar(select(User).where(User.id == current_user_id))
+    if user is None or str(user.role).strip().lower() != "student":
+        raise HTTPException(status_code=404, detail="Student account not found.")
+    user.profile_photo_url = None
+    db.commit()
+    return {"message": "Profile photo removed."}
+
+
+@router.post("/change-password")
+def change_student_password(
+    data: StudentPasswordChangeRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    user = db.scalar(select(User).where(User.id == current_user_id))
+    if user is None or str(user.role).strip().lower() != "student":
+        raise HTTPException(status_code=404, detail="Student account not found.")
+    if not verify_password(data.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+    if verify_password(data.new_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Choose a new password different from your current one.")
+    user.password_hash = hash_password(data.new_password)
+    db.commit()
+    return {"message": "Password changed successfully."}
 
 # ============================================================
 # FORGOT PASSWORD

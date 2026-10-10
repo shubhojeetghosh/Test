@@ -2463,6 +2463,19 @@ button {
   border-radius: 13px;
 }
 
+#profileEmail[readonly] {
+  cursor: not-allowed;
+  background: var(--input-bg, #f4f6fa);
+  color: var(--muted);
+}
+
+.profile-email-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 
 .profile-summary-card {
 

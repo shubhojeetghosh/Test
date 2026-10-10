@@ -53,14 +53,16 @@ def _auth_headers(api_key: str) -> dict[str, str]:
     return headers
 
 
-def upload_media(content: bytes, content_type: str, filename: str) -> str:
+def upload_media(content: bytes, content_type: str, filename: str, folder: str = "questions") -> str:
     if not content or len(content) > MAX_MEDIA_BYTES:
         raise ValueError("Media file must be between 1 byte and 50 MB.")
+    if folder not in {"questions", "profiles"}:
+        raise ValueError("Unsupported media folder.")
     base_url, service_key, bucket = _configuration()
     extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
     if not extension.isalnum() or len(extension) > 8:
         extension = "bin"
-    key = f"questions/{uuid4().hex}.{extension}"
+    key = f"{folder}/{uuid4().hex}.{extension}"
     endpoint = (
         f"{base_url}/storage/v1/object/{quote(bucket, safe='')}/"
         f"{quote(key, safe='/')}"

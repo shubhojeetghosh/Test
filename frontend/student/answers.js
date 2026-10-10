@@ -1051,72 +1051,86 @@ document.addEventListener(
                     "—";
 
 
-                const resultText =
+                const safeText = (value) => String(value ?? "—")
+                    .normalize("NFKD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^\x20-\x7E]/g, "?");
+                const pdfEscape = (value) => safeText(value)
+                    .replace(/\\/g, "\\\\")
+                    .replace(/\(/g, "\\(")
+                    .replace(/\)/g, "\\)");
+                const text = (x, y, value, size = 12, font = "F1", color = "0.12 0.18 0.29") =>
+                    `BT /${font} ${size} Tf ${color} rg 1 0 0 1 ${x} ${y} Tm (${pdfEscape(value)}) Tj ET\n`;
+                const rect = (x, y, width, height, fill, stroke = null) => {
+                    let command = `${fill} rg ${x} ${y} ${width} ${height} re `;
+                    command += stroke ? `${stroke} RG B\n` : "f\n";
+                    return command;
+                };
 
-`EPS TOPIK EXAM RESULT
+                const generatedAt = new Date().toLocaleDateString("en-US", {
+                    year: "numeric", month: "long", day: "numeric"
+                });
+                let content = "";
+                content += rect(0, 720, 595, 122, "0.08 0.14 0.27");
+                content += rect(0, 716, 595, 4, "0.16 0.39 0.91");
+                content += text(48, 790, "EPS TOPIK EXAM PLATFORM", 11, "F2", "0.71 0.80 1.00");
+                content += text(48, 754, "Exam Result", 26, "F2", "1 1 1");
+                content += text(48, 735, `Generated ${generatedAt}`, 10, "F1", "0.84 0.88 0.96");
 
-Test: ${testName}
+                content += text(48, 675, "TEST", 9, "F2", "0.30 0.39 0.55");
+                content += text(48, 650, testName, 17, "F2");
+                content += text(48, 620, "Your performance summary", 11, "F1", "0.36 0.42 0.52");
 
-Score: ${score}
+                const metrics = [
+                    { label: "FINAL SCORE", value: score, x: 48, y: 500 },
+                    { label: "PERCENTAGE", value: percentage, x: 310, y: 500 },
+                    { label: "CORRECT ANSWERS", value: correct, x: 48, y: 390 },
+                    { label: "INCORRECT ANSWERS", value: wrong, x: 310, y: 390 },
+                    { label: "UNANSWERED", value: unanswered, x: 48, y: 280, width: 499 }
+                ];
+                metrics.forEach(({ label, value, x, y, width = 237 }) => {
+                    content += rect(x, y, width, 82, "0.96 0.97 0.99", "0.86 0.89 0.93");
+                    content += text(x + 16, y + 54, label, 9, "F2", "0.36 0.43 0.56");
+                    content += text(x + 16, y + 25, value, 19, "F2", "0.08 0.15 0.29");
+                });
+                content += text(48, 115, "Keep practicing and build on your progress.", 12, "F1", "0.23 0.31 0.46");
+                content += "0.86 0.89 0.93 RG 48 82 m 547 82 l S\n";
+                content += text(48, 58, "EPS TOPIK Exam Platform  |  Practice, Learn, Improve", 9, "F1", "0.42 0.48 0.58");
 
-Percentage: ${percentage}
+                const stream = `${content}\n`;
+                const objects = [
+                    "<< /Type /Catalog /Pages 2 0 R >>",
+                    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>",
+                    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+                    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+                    `<< /Length ${stream.length} >>\nstream\n${stream}endstream`
+                ];
+                let pdf = "%PDF-1.4\n% EPS TOPIK Result\n";
+                const offsets = [0];
+                objects.forEach((object, index) => {
+                    offsets.push(pdf.length);
+                    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+                });
+                const xrefOffset = pdf.length;
+                pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+                for (let index = 1; index < offsets.length; index += 1) {
+                    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+                }
+                pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
 
-Correct Answers: ${correct}
-
-Incorrect Answers: ${wrong}
-
-Unanswered: ${unanswered}
-
-EPS TOPIK Exam Platform
-`;
-
-
-                const file =
-                    new Blob(
-                        [resultText],
-                        {
-                            type:
-                                "text/plain"
-                        }
-                    );
-
-
-                const url =
-                    URL.createObjectURL(
-                        file
-                    );
-
-
-                const link =
-                    document.createElement(
-                        "a"
-                    );
-
-
-                link.href =
-                    url;
-
-
-                link.download =
-                    "EPS-TOPIK-Result.txt";
-
-
-                document.body.appendChild(
-                    link
-                );
-
-
+                const file = new Blob([pdf], { type: "application/pdf" });
+                const url = URL.createObjectURL(file);
+                const link = document.createElement("a");
+                const filename = safeText(testName)
+                    .replace(/[^A-Za-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "") || "EPS-TOPIK";
+                link.href = url;
+                link.download = `${filename}-Result.pdf`;
+                document.body.appendChild(link);
                 link.click();
-
-
-                document.body.removeChild(
-                    link
-                );
-
-
-                URL.revokeObjectURL(
-                    url
-                );
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             };
 

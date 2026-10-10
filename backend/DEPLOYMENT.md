@@ -34,6 +34,11 @@ For student set purchase requests and admin set unlocks, apply
 [`migrations/2026_10_student_set_access_requests.sql`](migrations/2026_10_student_set_access_requests.sql)
 to the production database before using checkout or the admin access controls.
 
+For student profile photo uploads, apply
+[`migrations/2026_10_student_profile_photo.sql`](migrations/2026_10_student_profile_photo.sql)
+before deploying the profile API changes. Profile images use the existing private
+`exam-media` Supabase Storage bucket under the `profiles/` prefix.
+
 ## Existing image/audio migration
 
 After Storage and the database are configured, run a dry run from the `backend` directory:

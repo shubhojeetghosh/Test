@@ -52,7 +52,7 @@ def verify_otp(otp: str, hashed_otp: str) -> bool:
 # JWT ACCESS TOKEN
 # ============================================================
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict, expires_minutes: int | None = None) -> str:
     """
     Create a JWT access token.
     """
@@ -61,7 +61,7 @@ def create_access_token(data: dict) -> str:
     to_encode.setdefault(
         "exp",
         datetime.now(timezone.utc)
-        + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        + timedelta(minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
     encoded_jwt = jwt.encode(

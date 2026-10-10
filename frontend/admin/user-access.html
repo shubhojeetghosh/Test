@@ -341,6 +341,11 @@
                 Payments
             </a>
 
+            <a href="admin.html#inquiries" class="nav-item">
+                <span class="nav-icon">✉</span>
+                Student Inquiries
+            </a>
+
             <p class="nav-title">SYSTEM</p>
 
             <a href="admin.html#settings" class="nav-item">
@@ -730,16 +735,34 @@ document.addEventListener("DOMContentLoaded", () => {
        Uses the same localStorage profile picture as admin.js.
        ========================================================= */
 
-    function loadAdminProfile() {
+    async function loadAdminProfile() {
+        let admin = {};
+        try {
+            admin = JSON.parse(localStorage.getItem("admin_user") || "{}");
+        } catch (error) {
+            console.warn("Could not read saved admin profile.", error);
+        }
 
-        const name =
-            localStorage.getItem("user_name") ||
-            "Admin";
+        // Never read user_name/user_role here: student sessions use those keys too.
+        const adminToken = localStorage.getItem("admin_access_token");
+        const apiBase = String(API_BASE_URL || "").replace(/\/+$/, "");
+        if (adminToken && apiBase) {
+            try {
+                const response = await fetch(`${apiBase}/auth/admin/profile`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && String(data.role || "").toUpperCase() === "ADMIN") {
+                    admin = data;
+                    localStorage.setItem("admin_user", JSON.stringify(data));
+                }
+            } catch (error) {
+                console.warn("Could not refresh the admin profile.", error);
+            }
+        }
 
-        const role =
-            localStorage.getItem("user_role") ||
-            "ADMIN";
-
+        const name = admin.name || "Admin";
+        const role = String(admin.role || "ADMIN").toUpperCase();
         const profilePicture =
             localStorage.getItem(
                 "adminProfilePicture"
