@@ -2,6 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/backend/api/quizzes/",
+      "destination": "https://test-pink-six-77.vercel.app/api/quizzes/"
+    },
+    {
+      "source": "/backend/",
+      "destination": "https://test-pink-six-77.vercel.app/"
+    },
+    {
       "source": "/backend/:path*",
       "destination": "https://test-pink-six-77.vercel.app/:path*"
     },
