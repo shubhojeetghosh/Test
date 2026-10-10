@@ -2773,12 +2773,32 @@ function renderAvailableTests(tests) {
             "availableTestsList"
         );
 
+    const viewAllButton =
+        document.getElementById(
+            "toggleAvailableTests"
+        );
+
     if (!container) {
         return;
     }
 
 
     container.innerHTML = "";
+    container.classList.add("tests-collapsed");
+
+    if (viewAllButton) {
+        viewAllButton.hidden = !tests || tests.length <= 3;
+        viewAllButton.setAttribute("aria-expanded", "false");
+        viewAllButton.textContent = `View all${tests && tests.length ? ` (${tests.length})` : ""} →`;
+        viewAllButton.onclick = function () {
+            const showingAll = viewAllButton.getAttribute("aria-expanded") === "true";
+            container.classList.toggle("tests-collapsed", showingAll);
+            viewAllButton.setAttribute("aria-expanded", String(!showingAll));
+            viewAllButton.textContent = showingAll
+                ? `View all (${tests.length}) →`
+                : "Show less ↑";
+        };
+    }
 
 
     if (!tests || tests.length === 0) {

@@ -92,6 +92,10 @@
     /* tests list + results */
     .test-card{transition:transform .3s,box-shadow .3s,border-color .3s}
     .test-card:hover{transform:translateX(6px);box-shadow:0 16px 36px rgba(15,27,61,.1)}
+    #availableTestsList.tests-collapsed>.test-card:nth-child(n+4){display:none}
+    .available-tests-view-all{border:0;padding:7px 0;background:none;color:var(--blue);font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+    .available-tests-view-all:hover{text-decoration:underline}
+    .available-tests-view-all:focus-visible{outline:3px solid #f2b84b;outline-offset:3px;border-radius:4px}
     .test-number{font-family:"Noto Serif KR",serif;transition:transform .35s}
     .test-card:hover .test-number{transform:scale(1.1) rotate(-4deg)}
     .free-badge{animation:pulse 2.4s ease-in-out infinite}
@@ -425,18 +429,19 @@
 
             </div>
 
-            <a
-                href="#tests"
-                class="view-all"
-            >
-                View All →
-            </a>
+            <button
+                type="button"
+                class="available-tests-view-all"
+                id="toggleAvailableTests"
+                aria-expanded="false"
+                hidden
+            >View all →</button>
 
         </div>
 
 
         <!-- Dynamic tests -->
-        <div id="availableTestsList">
+        <div id="availableTestsList" class="tests-collapsed">
 
             <p style="text-align:center; padding:30px;">
                 Loading tests...
