@@ -77,7 +77,9 @@ def get_current_user_id(
             detail="Invalid authentication token",
         )
 
-    user = db.scalar(select(User).where(User.id == user_id))
+    user = db.execute(
+        select(User.id, User.role, User.email_verified).where(User.id == user_id)
+    ).one_or_none()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

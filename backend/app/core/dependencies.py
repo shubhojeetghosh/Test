@@ -39,7 +39,12 @@ def get_current_user(
     except Exception:
         raise credentials_exception
 
-    user = db.scalar(select(User).where(User.id == user_id))
+    # Student exam APIs need only the account ID and role. Avoid selecting the
+    # complete ORM row so unrelated profile columns cannot break exam access
+    # when a database migration is pending.
+    user = db.execute(
+        select(User.id, User.role).where(User.id == user_id)
+    ).one_or_none()
 
     if user is None:
         raise credentials_exception
