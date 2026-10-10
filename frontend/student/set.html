@@ -947,7 +947,10 @@
        ========================================= */
 
       const SET_PRICE = 50;
-      const API_URL = window.API_BASE_URL + "/api/quizzes/";
+      // The frontend Vercel rewrite currently returns 404 for this route when
+      // the trailing slash is present. Keep this path aligned with the working
+      // proxy endpoint at /backend/api/quizzes.
+      const API_URL = window.API_BASE_URL + "/api/quizzes";
       const STUDENT_ACCESS_URL = window.API_BASE_URL + "/api/student/access";
 
       let categories = [];
@@ -1012,7 +1015,7 @@ async function loadQuizData() {
         const response = await fetch(API_URL);
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
+            throw new Error(`Quiz API returned HTTP ${response.status}`);
         }
 
         const exams = await response.json();
@@ -1129,12 +1132,10 @@ async function loadQuizData() {
 
         if (categoryContainer) {
 
-            categoryContainer.innerHTML = `
-                <p style="color: red;">
-                    Unable to load quizzes.
-                    Please check whether the backend is running.
-                </p>
-            `;
+            categoryContainer.style.color = "#dc2626";
+            categoryContainer.textContent = error instanceof Error && error.message.startsWith("Quiz API returned HTTP")
+                ? `Unable to load test sets (${error.message.replace("Quiz API returned ", "")}). Please refresh and try again.`
+                : "Unable to reach the test service. Check your connection and try again.";
         }
     }
 }
