@@ -494,28 +494,6 @@ localStorage.removeItem(
 
           }
 
-          if (data.mfa_required === true) {
-            const otp = window.prompt(
-              "Enter the 6-digit sign-in code sent to your admin email:"
-            );
-            if (!otp || !/^\d{6}$/.test(otp.trim())) {
-              throw new Error("Enter the 6-digit code to finish signing in.");
-            }
-            const verifyResponse = await fetch(
-              `${API_BASE_URL}/auth/admin/verify-login-otp`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, otp: otp.trim() })
-              }
-            );
-            data = await verifyResponse.json().catch(() => ({}));
-            if (!verifyResponse.ok) {
-              throw new Error(data.detail || "The sign-in code could not be verified.");
-            }
-          }
-
-
           /* =============================================
              VERIFY ADMIN ROLE
              ============================================= */

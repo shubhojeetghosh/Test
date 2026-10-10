@@ -17,8 +17,6 @@ class LoginResponse(BaseModel):
     name: str | None = None
     email: str
     role: str | None = None
-    mfa_required: bool = False
-    message: str | None = None
 
 
 # =========================================================

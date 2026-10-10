@@ -13,7 +13,7 @@ from fastapi import (
     status,
 )
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -67,7 +67,6 @@ from app.admin_portal.services.email_service import (
 
 ADMIN_CREATE_OTP_PURPOSE = "ADMIN_CREATE"
 ADMIN_FORGOT_PASSWORD_PURPOSE = "ADMIN_FORGOT_PASSWORD"
-ADMIN_LOGIN_OTP_PURPOSE = "ADMIN_LOGIN"
 
 ADMIN_CREATE_OTP_EXPIRY_MINUTES = 10
 ADMIN_FORGOT_PASSWORD_EXPIRY_MINUTES = 10
@@ -391,78 +390,6 @@ def admin_login(
             detail="Invalid admin email or password",
         )
 
-    db.execute(delete(EmailOTP).where(
-        EmailOTP.email == email,
-        EmailOTP.purpose == ADMIN_LOGIN_OTP_PURPOSE,
-    ))
-    code = _generate_otp()
-    db.add(EmailOTP(
-        email=email,
-        otp_hash=_hash_value(code),
-        purpose=ADMIN_LOGIN_OTP_PURPOSE,
-        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=5),
-        verified=False,
-        created_at=datetime.utcnow(),
-    ))
-    db.commit()
-    try:
-        send_otp_email(email, code)
-    except Exception as exc:
-        db.execute(delete(EmailOTP).where(
-            EmailOTP.email == email,
-            EmailOTP.purpose == ADMIN_LOGIN_OTP_PURPOSE,
-        ))
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="We could not send the admin verification code. Please try again.",
-        ) from exc
-
-    return LoginResponse(
-        email=email,
-        mfa_required=True,
-        message="A sign-in verification code has been sent to your admin email.",
-    )
-
-
-class AdminLoginOTPRequest(BaseModel):
-    email: EmailStr
-    otp: str
-
-
-@router.post("/admin/verify-login-otp", response_model=LoginResponse)
-def verify_admin_login_otp(
-    data: AdminLoginOTPRequest,
-    response: Response,
-    db: Session = Depends(get_db),
-):
-    email = _normalize_email(data.email)
-    enforce_rate_limit(db, scope="admin-login-otp", subject=email, limit=6, window_seconds=900)
-    record = db.scalar(
-        select(EmailOTP)
-        .where(
-            EmailOTP.email == email,
-            EmailOTP.purpose == ADMIN_LOGIN_OTP_PURPOSE,
-            EmailOTP.verified.is_(False),
-        )
-        .order_by(EmailOTP.id.desc())
-        .with_for_update()
-    )
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    if (
-        record is None
-        or record.expires_at <= now
-        or not secrets.compare_digest(record.otp_hash, _hash_value(data.otp))
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The verification code is invalid or expired. Sign in again to request a new code.",
-        )
-    user = db.scalar(select(User).where(User.email == email))
-    if user is None or str(user.role).strip().lower() != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access is required.")
-    db.delete(record)
-    db.commit()
     access_token = create_access_token(user_id=user.id, role="ADMIN")
     set_admin_session(response, access_token)
     return LoginResponse(

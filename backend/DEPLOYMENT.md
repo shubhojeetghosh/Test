@@ -23,8 +23,7 @@ ZEROBOUNCE_API_KEY=...
 CORS_ORIGINS=https://<frontend-project>.vercel.app
 ```
 
-Admin sign-in now requires the SMTP email OTP after the password check. Verify
-SMTP delivery to every admin account before deploying. Browser sessions use
+Admin sign-in uses the admin email address and password. Browser sessions use
 HttpOnly, Secure, SameSite cookies; the frontend Vercel project proxies API
 requests through `/backend/*` so these cookies stay first-party. Deploy the
 frontend rewrite and backend together. Never restore JWT access tokens to
