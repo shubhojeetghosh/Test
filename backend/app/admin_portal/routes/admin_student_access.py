@@ -122,12 +122,19 @@ def approve_set_purchase_request(
         StudentExamAccess.student_id == student.id,
         StudentExamAccess.exam_set_id == exam_set.id,
     ))
+    unlocked_at = datetime.now(timezone.utc).replace(tzinfo=None)
     if access is None:
         db.add(StudentExamAccess(
             student_id=student.id,
             exam_set_id=exam_set.id,
             unlocked_by=current_admin.id,
+            unlocked_at=unlocked_at,
         ))
+    else:
+        # Re-approvals must grant a fresh attempt. Keeping the original
+        # timestamp makes a completed attempt appear to consume this unlock.
+        access.unlocked_by = current_admin.id
+        access.unlocked_at = unlocked_at
 
     purchase_request.status = "UNLOCKED"
     purchase_request.handled_by = current_admin.id

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -63,7 +65,10 @@ def unlock_exam_sets(
     ).all()
 
     existing_ids = {access.exam_set_id for access in existing_access}
+    existing_by_set_id = {access.exam_set_id: access for access in existing_access}
     new_records = []
+    refreshed_ids = []
+    unlocked_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     for exam_set in exam_sets:
         if exam_set.id not in existing_ids:
@@ -72,10 +77,16 @@ def unlock_exam_sets(
                     student_id=request.student_id,
                     exam_set_id=exam_set.id,
                     unlocked_by=current_admin.id,
+                    unlocked_at=unlocked_at,
                 )
             )
+        else:
+            access = existing_by_set_id[exam_set.id]
+            access.unlocked_by = current_admin.id
+            access.unlocked_at = unlocked_at
+            refreshed_ids.append(exam_set.id)
 
-    if new_records:
+    if new_records or refreshed_ids:
         db.add_all(new_records)
         db.commit()
 
@@ -86,6 +97,7 @@ def unlock_exam_sets(
             record.exam_set_id for record in new_records
         ],
         "already_unlocked_exam_set_ids": sorted(existing_ids),
+        "refreshed_exam_set_ids": sorted(refreshed_ids),
         "total_newly_unlocked": len(new_records),
     }
 

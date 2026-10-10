@@ -972,6 +972,8 @@ async function loadStudentAccess() {
 
     try {
         const response = await fetch(STUDENT_ACCESS_URL, {
+            credentials: "include",
+            cache: "no-store",
             headers: {
                 "Authorization": `Bearer ${token}`
             }
@@ -983,8 +985,6 @@ async function loadStudentAccess() {
                 response.status
             );
 
-            unlockedSetIds = new Set();
-            usedSetIds = new Set();
             return;
         }
 
@@ -1005,8 +1005,6 @@ async function loadStudentAccess() {
             error
         );
 
-        unlockedSetIds = new Set();
-        usedSetIds = new Set();
     }
 }
 
@@ -1788,6 +1786,23 @@ priceInfo.textContent =
     await loadStudentAccess();
     await loadQuizData();
 })();
+
+// If an administrator approves a set while the student page is open, refresh
+// access periodically and whenever the student returns to this tab.
+let accessRefreshInFlight = false;
+async function refreshStudentAccess() {
+    if (accessRefreshInFlight || document.visibilityState !== "visible") return;
+    accessRefreshInFlight = true;
+    try {
+        await loadStudentAccess();
+        if (categories.length) renderSets();
+    } finally {
+        accessRefreshInFlight = false;
+    }
+}
+
+document.addEventListener("visibilitychange", refreshStudentAccess);
+window.setInterval(refreshStudentAccess, 30000);
 
   </script>
 
