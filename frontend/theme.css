@@ -520,3 +520,51 @@ html[data-theme="dark"] body:has(#options) > #resultModal .submit {
   background: #4774f4 !important;
   color: #ffffff !important;
 }
+
+/* The exam stylesheet has late light-mode rules marked !important. Keep the
+   exam chrome and question copy legible in dark mode while preserving the
+   white canvas used for uploaded question images. */
+html[data-theme="dark"] body:has(#options) .topbar {
+  background: #101a2a !important;
+  border-color: #2a3850 !important;
+  color: #f1f5ff !important;
+}
+html[data-theme="dark"] body:has(#options) .stats > div {
+  background: #17253a !important;
+  border-color: #405574 !important;
+  color: #b8c5da !important;
+}
+html[data-theme="dark"] body:has(#options) .stats > div b {
+  color: #f1f5ff !important;
+}
+html[data-theme="dark"] body:has(#options) .question-head,
+html[data-theme="dark"] body:has(#options) #group,
+html[data-theme="dark"] body:has(#options) #qTitle,
+html[data-theme="dark"] body:has(#options) #prompt {
+  color: #edf2ff !important;
+}
+html[data-theme="dark"] body:has(#options) .timer-box {
+  background: #17253a !important;
+  border: 1px solid #405574 !important;
+  color: #f1f5ff !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .22) !important;
+}
+html[data-theme="dark"] body:has(#options) .timer-box span {
+  color: #a8b4c9 !important;
+}
+html[data-theme="dark"] body:has(#options) #timer {
+  color: #8cabff !important;
+}
+html[data-theme="dark"] body:has(#options) .question-panel {
+  background: #131e30 !important;
+  border-color: #2a3850 !important;
+}
+html[data-theme="dark"] body:has(#options) .exam-option,
+html[data-theme="dark"] body:has(#options) .exam-option .option-text {
+  color: #e5ebf7 !important;
+}
+html[data-theme="dark"] body:has(#options) #mediaPanel {
+  background: #fff !important;
+  border-color: #dce5f2 !important;
+  color: #172b4d !important;
+}
