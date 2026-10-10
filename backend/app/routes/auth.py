@@ -12,7 +12,7 @@ import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from email_validator import EmailNotValidError, validate_email
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -566,11 +566,19 @@ def login(
         limit=10,
         window_seconds=900,
     )
-    user = (
-        db.query(User)
-        .filter(User.email == normalized_email)
-        .first()
-    )
+    # Select only the fields needed for authentication. Loading the full
+    # student ORM object can fail when an older deployment has not applied an
+    # unrelated optional profile-column migration yet.
+    user = db.execute(
+        select(
+            User.id,
+            User.name,
+            User.email,
+            User.password_hash,
+            User.role,
+            User.email_verified,
+        ).where(User.email == normalized_email)
+    ).one_or_none()
 
     if not user:
 
@@ -607,10 +615,12 @@ def login(
     # password authentication is sufficient to restore that account; new
     # registrations remain in PendingStudentRegistration until OTP succeeds.
     if not user.email_verified:
-        user.email_verified = True
-        db.add(user)
+        db.execute(
+            update(User)
+            .where(User.id == user.id)
+            .values(email_verified=True)
+        )
         db.commit()
-        db.refresh(user)
 
     # --------------------------------------------------------
     # 3. Create JWT
