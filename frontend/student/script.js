@@ -1339,8 +1339,16 @@ if (loginForm) {
           );
 
 
-        const data =
-          await response.json();
+        const responseText = await response.text();
+        let data = {};
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch (parseError) {
+          // Proxies and serverless platforms may return an HTML error page.
+          // Keep the HTTP status visible instead of misreporting it as a
+          // network connection failure.
+          data = {};
+        }
 
 
         /* =========================================
@@ -1349,10 +1357,13 @@ if (loginForm) {
 
         if (!response.ok) {
 
+          const backendMessage = data.detail || data.message;
           const errorMessage =
-            data.detail ||
-            data.message ||
-            "Invalid email or password.";
+            response.status >= 500 &&
+            (!backendMessage || backendMessage === "Internal Server Error")
+              ? `Sign-in service error (${response.status}). Please try again shortly.`
+              : backendMessage ||
+                `Sign-in failed (${response.status}). Please check your email and password.`;
 
           showAuthError(
             messageBox,
@@ -1360,6 +1371,14 @@ if (loginForm) {
             [document.getElementById("loginPassword")]
           );
 
+          return;
+        }
+
+        if (!responseText || !Object.keys(data).length) {
+          showAuthError(
+            messageBox,
+            `The sign-in service returned an unexpected response (${response.status}). Please try again shortly.`
+          );
           return;
         }
 
@@ -1522,7 +1541,7 @@ else {
 
         showAuthError(
           document.getElementById("messageBox"),
-          "Could not connect to backend. Check whether the backend server is running."
+          "Could not reach the sign-in service. Check your internet connection and try again."
         );
 
       }

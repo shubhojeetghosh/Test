@@ -18,7 +18,13 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     roll_no: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    profile_photo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Keep this optional column out of ordinary user lookups. Besides avoiding
+    # loading profile media metadata during authentication, this lets login and
+    # dashboard authorization continue to work if the profile-photo migration
+    # has not yet been applied in an existing deployment.
+    profile_photo_url: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, deferred=True
+    )
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="student")
     # Existing accounts remain active when this column is added; new student
