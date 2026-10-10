@@ -90,10 +90,13 @@
     @keyframes shimmer{to{background-position:-200% 0}}
 
     /* tests list + results */
+    .dashboard-grid{align-items:stretch}
+    #tests.dashboard-main-card{display:flex;flex-direction:column;min-height:100%}
+    #availableTestsList{flex:1}
     .test-card{transition:transform .3s,box-shadow .3s,border-color .3s}
     .test-card:hover{transform:translateX(6px);box-shadow:0 16px 36px rgba(15,27,61,.1)}
     #availableTestsList.tests-collapsed>.test-card:nth-child(n+4){display:none}
-    .available-tests-view-all{border:0;padding:7px 0;background:none;color:var(--blue);font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+    .available-tests-view-all{align-self:flex-end;margin-top:auto;border:0;padding:12px 0 0;background:none;color:var(--blue);font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
     .available-tests-view-all:hover{text-decoration:underline}
     .available-tests-view-all:focus-visible{outline:3px solid #f2b84b;outline-offset:3px;border-radius:4px}
     .test-number{font-family:"Noto Serif KR",serif;transition:transform .35s}
@@ -429,14 +432,6 @@
 
             </div>
 
-            <button
-                type="button"
-                class="available-tests-view-all"
-                id="toggleAvailableTests"
-                aria-expanded="false"
-                hidden
-            >View all →</button>
-
         </div>
 
 
@@ -448,6 +443,14 @@
             </p>
 
         </div>
+
+        <button
+            type="button"
+            class="available-tests-view-all"
+            id="toggleAvailableTests"
+            aria-expanded="false"
+            hidden
+        >View all →</button>
 
     </div>
     
